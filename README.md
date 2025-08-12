@@ -22,7 +22,10 @@ A basic React TypeScript application with minimal dependencies that displays a l
    npm run dev
    ```
 
-3. Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+3. Start the viam proxy:
+    ```bash
+    viam module local-app-testing --app-url http://localhost:3000 --machine-id <machine-id>
+    ```
 
 ## Available Scripts
 
