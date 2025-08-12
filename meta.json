@@ -7,7 +7,7 @@
     {
       "name": "sanding-monitoring-web-app",
       "type": "single_machine",
-      "entrypoint": "dist/index.html"
+      "entrypoint": "module/apps/dist/index.html"
     }
   ]
 }

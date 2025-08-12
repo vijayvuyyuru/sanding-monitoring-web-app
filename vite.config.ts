@@ -7,5 +7,9 @@ export default defineConfig({
   server: {
     port: 3000,
     open: false
-  }
+  },
+  base: "./",
+  build: {
+    outDir: "module/apps/dist",
+  },
 })

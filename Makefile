@@ -16,3 +16,6 @@ update:
 upload: build
 	tar -czvf module.tar.gz dist meta.json
 	viam module upload --version=${VERSION} --platform=any --public-namespace=${ORG_PUBLIC_NAMESPACE} module.tar.gz
+
+clean-all:
+	git clean -fxd
