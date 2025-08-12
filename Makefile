@@ -14,4 +14,5 @@ update:
 	viam module update --module=meta.json
 
 upload: build
-	viam module upload --version=${VERSION} --platform=any --public-namespace=${ORG_PUBLIC_NAMESPACE} module
+	tar -czvf module.tar.gz dist meta.json
+	viam module upload --version=${VERSION} --platform=any --public-namespace=${ORG_PUBLIC_NAMESPACE} module.tar.gz
