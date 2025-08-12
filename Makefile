@@ -7,6 +7,9 @@ ORG_PUBLIC_NAMESPACE := ncs
 build:
 	npm run build
 
+dev:
+	npm run dev
+
 create:
 	viam module create --name=${MODULE_NAME} --public-namespace=${ORG_PUBLIC_NAMESPACE}
 
