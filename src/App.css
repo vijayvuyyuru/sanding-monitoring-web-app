@@ -29,10 +29,38 @@
   padding: 0;
 }
 
-.string-list li {
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.grid-item {
+  display: contents;
+}
+
+.timestamp {
   padding: 10px 15px;
-  margin: 5px 0;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  border-left: 4px solid #28a745;
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.filename {
+  padding: 10px 15px;
   background-color: #f5f5f5;
   border-radius: 5px;
   border-left: 4px solid #007bff;
+}
+
+.filename a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.filename a:hover {
+  text-decoration: underline;
 }

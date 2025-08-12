@@ -44,13 +44,14 @@ function App() {
       <main>
     <div className="string-list">
         <h2>List of Items</h2>
-        <ul>
+        <div className="grid">
             {list.map((item: VIAM.dataApi.BinaryData, index: number) => (
-            <div key={index}>
-                <li><a href={item.metadata?.uri} target="_blank" rel="noopener noreferrer">{item.metadata?.fileName}</a></li>
-                <li>{item.metadata?.timeRequested?.toDate().toISOString()}</li>
-            </div>))}
-        </ul>
+                <div key={index} className="grid-item">
+                    <div className="timestamp">{item.metadata?.timeRequested?.toDate().toISOString()}</div>
+                    <div className="filename"><a href={item.metadata?.uri} target="_blank" rel="noopener noreferrer">{item.metadata?.fileName}</a></div>
+                </div>
+            ))}
+        </div>
     </div>
       </main>
     </div>
