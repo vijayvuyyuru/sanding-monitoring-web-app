@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import * as VIAM from "@viamrobotics/sdk";
 import Cookies from "js-cookie";
@@ -12,12 +12,11 @@ function App() {
     let apiKeyId: string;
     let apiKeySecret: string;
     let machineId: string;
-    let hostname: string;
 
     ({
         apiKey: { id: apiKeyId, key: apiKeySecret },
         machineId: machineId,
-        hostname: hostname,
+        // hostname: hostname,
     } = JSON.parse(Cookies.get(machineInfo)!));
     connect(apiKeyId, apiKeySecret).then(async (robot) => {
         const binaryData = await robot.dataClient.binaryDataByFilter( 

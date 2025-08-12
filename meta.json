@@ -1,0 +1,13 @@
+{
+  "module_id": "ncs:sanding-monitoring-web-app",
+  "visibility": "public",
+  "url": "https://github.com/nicksanford/sanding-monitoring-web-app",
+  "description": "A web app to monitor sanding",
+  "applications": [
+    {
+      "name": "sanding-monitoring-web-app",
+      "type": "single_machine",
+      "entrypoint": "dist/index.html"
+    }
+  ]
+}
