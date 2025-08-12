@@ -43,7 +43,7 @@ function App() {
       </header>
       <main>
     <div className="string-list">
-        <h2>List of Items</h2>
+        <h2>List of Files</h2>
         <div className="grid">
             {list.map((item: VIAM.dataApi.BinaryData, index: number) => (
                 <div key={index} className="grid-item">
