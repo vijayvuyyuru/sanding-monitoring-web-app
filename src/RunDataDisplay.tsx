@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as VIAM from "@viamrobotics/sdk";
 
 interface RunStep {
   name: string;
@@ -18,11 +19,13 @@ interface RunData {
 
 interface RunDataDisplayProps {
   runData: RunData | null;
-  videoFiles?: any[];
+  videoFiles?: VIAM.dataApi.BinaryData[];
+  sanderClient?: VIAM.GenericComponentClient | null;
 }
 
-const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles }) => {
+const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sanderClient }) => {
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+  const [activeView, setActiveView] = useState<'summary' | 'files'>('summary');
 
   const formatDuration = (durationMs: number): string => {
     const seconds = Math.floor(durationMs / 1000);
@@ -67,18 +70,16 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles }) 
       return fileTime >= stepStart && fileTime <= stepEnd;
     }).sort((a, b) => {
       // Sort by timestamp, newest first
-      return b.metadata.timeRequested.toDate().getTime() - a.metadata.timeRequested.toDate().getTime();
+      const aTime = a.metadata?.timeRequested?.toDate().getTime() || 0;
+      const bTime = b.metadata?.timeRequested?.toDate().getTime() || 0;
+      return bTime - aTime;
     });
   };
 
-  // Get all .mp4 files for debugging
-  const mp4Files = videoFiles?.filter(f => f.metadata?.fileName?.endsWith('.mp4')) || [];
-
   if (!runData) return null;
 
-  return (
-    <div className="run-data-section">
-      <h2>Latest Run Summary</h2>
+  const renderSummaryView = () => (
+    <>
       <div className="run-summary">
         <div className={`status ${runData.success ? 'success' : 'error'}`}>
           Status: {runData.success ? 'Success' : 'Failed'}
@@ -87,15 +88,21 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles }) 
           <div className="error-message">Error: {runData.err_string}</div>
         )}
         <div className="run-times">
-          <div>
-            Start: {formatTimestamp(runData.start)}
-            <div className="placeholder"></div>
+          <div className="time-column">
+            <span>Start: {formatTimestamp(runData.start)}</span>
+            <div className="video-placeholder">
+              📹 Video
+            </div>
           </div>
-          <div>
-            End: {formatTimestamp(runData.end)}
-            <div className="placeholder"></div>
+          <div className="time-column">
+            <span>End: {formatTimestamp(runData.end)}</span>
+            <div className="video-placeholder">
+              📹 Video
+            </div>
           </div>
-          <div>Duration: {formatDuration(runData.duration_ms)}</div>
+          <div className="duration-center">
+            Duration: {formatDuration(runData.duration_ms)}
+          </div>
         </div>
       </div>
 
@@ -127,9 +134,12 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles }) 
                     {stepVideos.map((video, videoIndex) => (
                       <div key={videoIndex} className="video-card">
                         <div className="video-info">
-                          <div className="camera-name">📹 {extractCameraName(video.metadata?.fileName)}</div>
+                          <div className="camera-name">📹 {extractCameraName(video.metadata?.fileName || '')}</div>
                           <div className="video-time">
-                            {formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString())}
+                            {video.metadata?.timeRequested ? 
+                              formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
+                              'Unknown time'
+                            }
                           </div>
                         </div>
                         <div className="video-actions">
@@ -156,6 +166,75 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles }) 
             </div>
           );
         })}
+      </div>
+    </>
+  );
+
+  const renderFilesView = () => (
+    <div className="files-view">
+      {sanderClient && (
+        <div className="sander-controls">
+          <button 
+            onClick={() => {
+              console.log("sanding");
+              // sanderClient.doCommand(command)
+            }}
+            className="start-sanding-btn"
+          >
+            Start Sanding
+          </button>
+        </div>
+      )}
+      <div className="files-grid">
+        {videoFiles?.map((item: VIAM.dataApi.BinaryData, index: number) => (
+          <div key={index} className="file-item">
+            <div className="file-info">
+              <div className="file-name">{item.metadata?.fileName || 'Unknown file'}</div>
+              <div className="file-timestamp">
+                {item.metadata?.timeRequested ? 
+                  formatTimestamp(item.metadata.timeRequested.toDate().toISOString()) : 
+                  'Unknown time'
+                }
+              </div>
+            </div>
+            <div className="file-actions">
+              {item.metadata?.uri && (
+                <a 
+                  href={item.metadata.uri} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="file-link-btn"
+                >
+                  View
+                </a>
+              )}
+            </div>
+          </div>
+        )) || <div className="no-files">No files available</div>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="run-data-section">
+      <div className="section-nav">
+        <button 
+          className={`section-nav-item ${activeView === 'summary' ? 'active' : ''}`}
+          onClick={() => setActiveView('summary')}
+        >
+          Latest Run Summary
+        </button>
+        <button 
+          className={`section-nav-item ${activeView === 'files' ? 'active' : ''}`}
+          onClick={() => setActiveView('files')}
+        >
+          Robot operator
+        </button>
+      </div>
+
+      <div className="section-content">
+        {activeView === 'summary' && renderSummaryView()}
+        {activeView === 'files' && renderFilesView()}
       </div>
     </div>
   );
