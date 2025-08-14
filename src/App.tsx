@@ -36,6 +36,7 @@ function App() {
   const [runData, setRunData] = useState<RunData | null>(null);
   const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
   const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
 
   // Check for showui URL parameter
   const urlParams = new URLSearchParams(window.location.search);
@@ -67,6 +68,13 @@ function App() {
         const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
         setSanderClient(sanderClient);
       }
+
+      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "generic-1"))) {
+        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "generic-1");
+        setVideoStoreClient(videoStoreClient);
+      }
+      
+      // debugger;
       
       const binaryData = await viamClient.dataClient.binaryDataByFilter( 
         filter, 
@@ -127,7 +135,7 @@ function App() {
   }
 
   // Default monitoring interface
-  return <MonitoringView runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
+  return <MonitoringView videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
 }
 
 async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.ViamClient> {
