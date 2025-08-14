@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import './App.css';
 import * as VIAM from "@viamrobotics/sdk";
-import RunDataDisplay from './RunDataDisplay';
+import MonitoringView from './MonitoringView';
+import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
 
 /*
@@ -36,6 +36,10 @@ function App() {
   const [runData, setRunData] = useState<RunData | null>(null);
   const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
   const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
+
+  // Check for showui URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const showUI = urlParams.has('showui');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -117,17 +121,13 @@ function App() {
     fetchData();
   }, []);
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Sanding Monitoring Web App</h1>
-      </header>
-      
-      <main className="main-content">
-        <RunDataDisplay runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />
-      </main>
-    </div>
-  );
+  // Render different UI based on showui parameter
+  if (showUI) {
+    return <AppInterface />;
+  }
+
+  // Default monitoring interface
+  return <MonitoringView runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
 }
 
 async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.ViamClient> {

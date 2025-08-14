@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
-
+import './App.css';
 interface RunStep {
   name: string;
   start: string;
