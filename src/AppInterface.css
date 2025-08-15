@@ -499,7 +499,7 @@ button:focus {
   background: white;
   border: 1px solid #e4e4e7;
   border-radius: 6px;
-  padding: 12px;
+  padding: 4px 0 15px;
 }
 
 .step-header {
@@ -509,6 +509,8 @@ button:focus {
   margin-bottom: 15px;
   padding: 6px 10px !important;
   font-size: 1px;
+  background: #fff;
+  border-bottom: 1px solid #e4e4e7;
 }
 
 .step-name {
@@ -521,8 +523,8 @@ button:focus {
   white-space: nowrap;
   font-size: 11px;
   font-weight: 500;
-  color: #52525b;
   background: #fff;
+  color: #18181b;
   padding: 3px 8px;
   border-radius: 12px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,

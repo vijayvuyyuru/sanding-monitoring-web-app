@@ -26,13 +26,13 @@ const sampleRunsData = [
           "duration_ms": 180000
         },
         {
-          "name": "GenerateLobes",
+          "name": "Generate Lobes",
           "start": "2025-01-21T20:48:00.000Z",
           "end": "2025-01-21T20:52:00.000Z",
           "duration_ms": 240000
         },
         {
-          "name": "GenerateWaypoints",
+          "name": "Generate Waypoints",
           "start": "2025-01-21T20:52:00.000Z",
           "end": "2025-01-21T21:02:00.000Z",
           "duration_ms": 600000
