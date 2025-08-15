@@ -9,151 +9,101 @@ interface AppViewProps {
   sanderClient: VIAM.GenericComponentClient | null;
 }
 
-// Sample data for the runs table - updated to show passes concept
+// Sample data for the runs table - updated to match new JSON structure
 const sampleRunsData = [
   {
-    "success": true,
-    "err_string": null,
     "start": "2025-01-21T20:45:00.000Z",
     "end": "2025-01-21T21:15:00.000Z",
-    "duration_ms": 1800000,
-    "passes": [
+    "steps": [
       {
-        "pass_number": 1,
-        "success": true,
         "start": "2025-01-21T20:45:00.000Z",
-        "end": "2025-01-21T20:55:00.000Z",
-        "duration_ms": 600000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T20:45:00.000Z",
-            "end": "2025-01-21T20:47:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T20:47:00.000Z",
-            "end": "2025-01-21T20:50:00.000Z",
-            "duration_ms": 180000
-          },
-          {
-            "name": "Execution",
-            "start": "2025-01-21T20:50:00.000Z",
-            "end": "2025-01-21T20:55:00.000Z",
-            "duration_ms": 300000
-          }
-        ]
+        "end": "2025-01-21T20:47:00.000Z",
+        "name": "Imaging"
+      },
+      {
+        "start": "2025-01-21T20:47:00.000Z",
+        "end": "2025-01-21T20:50:00.000Z",
+        "name": "GeneratingLobes"
+      },
+      {
+        "start": "2025-01-21T20:50:00.000Z",
+        "end": "2025-01-21T21:15:00.000Z",
+        "name": "Execution"
       }
-    ]
+    ],
+    "success": true,
+    "pass_id": "a1b2c3d4-5e6f-7890-abcd-ef1234567890",
+    "err_string": null
   },
   {
-    "success": false,
-    "err_string": "rpc error: code = Unavailable desc = not connected to remote robot",
     "start": "2025-01-21T21:20:00.000Z",
     "end": "2025-01-21T21:32:00.000Z",
-    "duration_ms": 720000,
-    "passes": [
+    "steps": [
       {
-        "pass_number": 1,
-        "success": false,
         "start": "2025-01-21T21:20:00.000Z",
-        "end": "2025-01-21T21:32:00.000Z",
-        "duration_ms": 720000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T21:20:00.000Z",
-            "end": "2025-01-21T21:22:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T21:22:00.000Z",
-            "end": "2025-01-21T21:25:00.000Z",
-            "duration_ms": 180000
-          },
-          {
-            "name": "Execution",
-            "start": "2025-01-21T21:25:00.000Z",
-            "end": "2025-01-21T21:32:00.000Z",
-            "duration_ms": 420000
-          }
-        ]
+        "end": "2025-01-21T21:22:00.000Z",
+        "name": "Imaging"
+      },
+      {
+        "start": "2025-01-21T21:22:00.000Z",
+        "end": "2025-01-21T21:25:00.000Z",
+        "name": "GeneratingLobes"
       }
-    ]
+    ],
+    "success": false,
+    "pass_id": "b2c3d4e5-6f78-9012-bcde-f23456789012",
+    "err_string": "rpc error: code = Unavailable desc = not connected to remote robot"
   },
   {
-    "success": true,
-    "err_string": null,
     "start": "2025-01-21T19:30:00.000Z",
     "end": "2025-01-21T19:48:00.000Z",
-    "duration_ms": 1080000,
-    "passes": [
+    "steps": [
       {
-        "pass_number": 1,
-        "success": true,
         "start": "2025-01-21T19:30:00.000Z",
+        "end": "2025-01-21T19:32:00.000Z",
+        "name": "Imaging"
+      },
+      {
+        "start": "2025-01-21T19:32:00.000Z",
+        "end": "2025-01-21T19:35:00.000Z",
+        "name": "GeneratingLobes"
+      },
+      {
+        "start": "2025-01-21T19:35:00.000Z",
         "end": "2025-01-21T19:48:00.000Z",
-        "duration_ms": 1080000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T19:30:00.000Z",
-            "end": "2025-01-21T19:32:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T19:32:00.000Z",
-            "end": "2025-01-21T19:35:00.000Z",
-            "duration_ms": 180000
-          },
-          {
-            "name": "Execution",
-            "start": "2025-01-21T19:35:00.000Z",
-            "end": "2025-01-21T19:48:00.000Z",
-            "duration_ms": 780000
-          }
-        ]
+        "name": "Execution"
       }
-    ]
+    ],
+    "success": true,
+    "pass_id": "c3d4e5f6-7890-1234-cdef-345678901234",
+    "err_string": null
   },
   {
-    "success": false,
-    "err_string": "timeout error: operation exceeded maximum duration",
     "start": "2025-01-21T18:15:00.000Z",
     "end": "2025-01-21T18:25:00.000Z",
-    "duration_ms": 600000,
-    "passes": [
+    "steps": [
       {
-        "pass_number": 1,
-        "success": false,
         "start": "2025-01-21T18:15:00.000Z",
+        "end": "2025-01-21T18:17:00.000Z",
+        "name": "Imaging"
+      },
+      {
+        "start": "2025-01-21T18:17:00.000Z",
         "end": "2025-01-21T18:25:00.000Z",
-        "duration_ms": 600000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T18:15:00.000Z",
-            "end": "2025-01-21T18:17:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T18:17:00.000Z",
-            "end": "2025-01-21T18:25:00.000Z",
-            "duration_ms": 480000
-          }
-        ]
+        "name": "GeneratingLobes"
       }
-    ]
+    ],
+    "success": false,
+    "pass_id": "d4e5f6a7-8901-2345-defa-456789012345",
+    "err_string": "generating lobes failed: rpc error: code = Unknown desc = getting inputs failed: No points found in region of interest after filtering"
   }
 ];
 
 const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
+  const expectedSteps = ["Imaging", "GeneratingLobes", "Execution"];
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -176,7 +126,10 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
     });
   };
 
-  const formatDuration = (ms: number) => {
+  const formatDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const ms = end.getTime() - start.getTime();
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}m ${seconds}s`;
@@ -267,9 +220,9 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                           <td>{getStatusBadge(run.success)}</td>
                           <td className="text-zinc-700">{formatTime(run.start)}</td>
                           <td className="text-zinc-700">{formatTime(run.end)}</td>
-                          <td className="text-zinc-700">{formatDuration(run.duration_ms)}</td>
+                          <td className="text-zinc-700">{formatDuration(run.start, run.end)}</td>
                           <td className="text-zinc-700">
-                            {run.passes.filter(pass => pass.success).length} / {run.passes.length}
+                            {run.success ? '1 / 1' : '0 / 1'}
                           </td>
                           <td className="text-zinc-700">
                             {run.err_string ? (
@@ -284,54 +237,63 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                         {expandedRows.has(index) && (
                           <tr className="expanded-content">
                             <td colSpan={7}>
-                              <div className="run-details">                                
-                                {/* Steps header - shown once above all passes */}
+                              <div className="run-details">
                                 <div className="steps-header-container">
                                   <div className="pass-header-spacer"></div>
                                   <div className="steps-header">
                                     <div className='step-spacer'></div>
-                                    <div className="step-header-label">Imaging</div>
-                                    <div className="step-header-label">Planning</div>
-                                    <div className="step-header-label">Execution</div>
+                                    {expectedSteps.map((stepName) => (
+                                      <div key={stepName} className="step-header-label">{stepName}</div>
+                                    ))}
                                   </div>
                                 </div>
                                 
                                 <div className="passes-container">
-                                  {run.passes.map((pass, passIndex) => (
-                                    <div key={passIndex} className="pass-section">
-                                      <div className="pass-header">
-                                        <span className="pass-duration">{formatDuration(pass.duration_ms)}</span>
-                                      </div>
-                                      <div className="steps-row">
-                                        {pass.steps.map((step, stepIndex) => (
-                                          <div key={stepIndex} className="step-inline">
-                                            <div className="step-content">
-                                              <div className="step-timeline">
-                                                <div className="step-moment">
-                                                  <div className="placeholder-image before"></div>
-                                                  <div className="step-time">
-                                                    <span className="time-label">Start</span>
-                                                    <span className="time-value">{formatTime(step.start)}</span>
+                                  <div className="pass-section">
+                                    <div className="pass-header">
+                                      <span className="pass-duration">{formatDuration(run.start, run.end)}</span>
+                                    </div>
+                                    <div className="steps-row">
+                                      {expectedSteps.map((stepName) => {
+                                        const step = run.steps.find((s: any) => s.name === stepName);
+                                        if (step) {
+                                          return (
+                                            <div key={stepName} className="step-inline">
+                                              <div className="step-content">
+                                                <div className="step-timeline">
+                                                  <div className="step-moment">
+                                                    <div className="placeholder-image before"></div>
+                                                    <div className="step-time">
+                                                      <span className="time-label">Start</span>
+                                                      <span className="time-value">{formatTime(step.start)}</span>
+                                                    </div>
+                                                  </div>
+                                                  
+                                                  <div className="timeline-arrow">→</div>
+                                                  
+                                                  <div className="step-moment">
+                                                    <div className="placeholder-image after"></div>
+                                                    <div className="step-time">
+                                                      <span className="time-label">End</span>
+                                                      <span className="time-value">{formatTime(step.end)}</span>
+                                                    </div>
                                                   </div>
                                                 </div>
-                                                
-                                                <div className="timeline-arrow">→</div>
-                                                
-                                                <div className="step-moment">
-                                                  <div className="placeholder-image after"></div>
-                                                  <div className="step-time">
-                                                    <span className="time-label">End</span>
-                                                    <span className="time-value">{formatTime(step.end)}</span>
-                                                  </div>
-                                                </div>
+                                                <div className="step-duration-inline">{formatDuration(step.start, step.end)}</div>
                                               </div>
-                                              <div className="step-duration-inline">{formatDuration(step.duration_ms)}</div>
+                                            </div>
+                                          );
+                                        }
+                                        return (
+                                          <div key={stepName} className="step-inline step-missing">
+                                            <div className="step-content">
+                                              <span className="step-missing-text">Step not executed</span>
                                             </div>
                                           </div>
-                                        ))}
-                                      </div>
+                                        );
+                                      })}
                                     </div>
-                                  ))}
+                                  </div>
                                 </div>
                               </div>
                             </td>

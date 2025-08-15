@@ -16,20 +16,23 @@ TODO:
 
 */
 
-interface RunStep {
+interface ReadingStep {
   name: string;
   start: string;
   end: string;
-  duration_ms: number;
+}
+
+interface Readings {
+  start: string;
+  end: string;
+  steps: ReadingStep[];
+  success: boolean;
+  pass_id: string;
+  err_string?: string | null;
 }
 
 interface RunData {
-  success: boolean;
-  err_string?: string;
-  start: string;
-  end: string;
-  duration_ms: number;
-  runs: RunStep[][];
+  readings: Readings;
 }
 
 function App() {
@@ -89,39 +92,26 @@ function App() {
       setVideoFiles(filenames);
 
       const exampleRunData: RunData = {
-        "success": false,
-        "err_string": "rpc error: code = Unavailable desc = not connected to remote robot",
-        "start": "2025-01-21T21:11:00.000Z",
-        "end": "2025-01-21T21:32:00.000Z",
-        "duration_ms": 1260000,
-        "runs": [
-          [
+        readings: {
+          start: "2025-08-15T18:34:13.877418758Z",
+          end: "2025-08-15T18:34:15.497700711Z",
+          steps: [
             {
-              "name": "Imaging",
-              "start": "2025-01-21T21:11:00.000Z",
-              "end": "2025-01-21T21:15:00.000Z",
-              "duration_ms": 240000
+              start: "2025-08-15T18:34:13.877418758Z",
+              end: "2025-08-15T18:34:13.877696724Z",
+              name: "Imaging",
             },
             {
-              "name": "GenerateLobes",
-              "start": "2025-01-21T21:15:00.000Z",
-              "end": "2025-01-21T21:20:00.000Z",
-              "duration_ms": 300000
+              start: "2025-08-15T18:34:13.877696794Z",
+              end: "2025-08-15T18:34:15.497700711Z",
+              name: "GeneratingLobes",
             },
-            {
-              "name": "GenerateWaypoints",
-              "start": "2025-01-21T21:20:00.000Z",
-              "end": "2025-01-21T21:30:00.000Z",
-              "duration_ms": 600000
-            },
-            {
-              "name": "Execute",
-              "start": "2025-01-21T21:30:00.000Z",
-              "end": "2025-01-21T21:32:00.000Z",
-              "duration_ms": 120000
-            }
-          ]
-        ]
+          ],
+          success: false,
+          pass_id: "d0e0fc7c-9b8f-4706-abfb-96c6c517bcac",
+          err_string:
+            "generating lobes failed: rpc error: code = Unknown desc = getting inputs failed: No points found in region of interest after filtering",
+        },
       };
       setRunData(exampleRunData);
     };

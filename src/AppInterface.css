@@ -723,3 +723,17 @@ button:focus {
 .step-spacer {
   width: 3rem; /* Allow flex shrinking */
 }
+
+.step-missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fcfcfc;
+  border-style: dashed;
+}
+
+.step-missing-text {
+  color: #b0b0b0;
+  font-size: 12px;
+  font-weight: 500;
+}
