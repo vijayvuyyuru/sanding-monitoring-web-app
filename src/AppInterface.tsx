@@ -149,9 +149,20 @@ const sampleRunsData = [
 
 const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
   const [activeRoute, setActiveRoute] = useState('live');
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
+
+  const toggleRowExpansion = (index: number) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(index)) {
+      newExpandedRows.delete(index);
+    } else {
+      newExpandedRows.add(index);
+    }
+    setExpandedRows(newExpandedRows);
+  };
 
   const formatTime = (isoString: string) => {
     return new Date(isoString).toLocaleTimeString('en-US', { 
@@ -170,13 +181,13 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
   const getStatusBadge = (success: boolean) => {
     if (success) {
       return (
-        <span className="inline-flex items-center justify-center -ml-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 status-badge-width">
+        <span className="moveleft inline-flex items-center justify-center py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 status-badge-width">
           Success
         </span>
       );
     } else {
       return (
-        <span className="inline-flex items-center justify-center py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 status-badge-width">
+        <span className="moveleft inline-flex items-center justify-center py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 status-badge-width">
           Failed
         </span>
       );
@@ -218,6 +229,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                 <table className="viam-table">
                   <thead>
                     <tr>
+                      <th style={{ width: '20px' }}></th>
                       <th>Status</th>
                       <th>Start Time</th>
                       <th>Duration</th>
@@ -227,65 +239,79 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                   </thead>
                   <tbody>
                     {sampleRunsData.map((run, index) => (
-                      <tr key={index}>
-                        <td className="-ml-2">{getStatusBadge(run.success)}</td>
-                        <td className="text-zinc-700">{formatTime(run.start)}</td>
-                        <td className="text-zinc-700">{formatDuration(run.duration_ms)}</td>
-                        <td className="text-zinc-700">
-                          {run.runs[0]?.length || 0} / 4
-                        </td>
-                        <td className="text-zinc-700">
-                          {run.err_string ? (
-                            <span className="text-red-600 text-xs truncate max-w-xs font-mono" title={run.err_string}>
-                              {run.err_string}
+                      <React.Fragment key={index}>
+                        <tr 
+                          className="expandable-row"
+                          onClick={() => toggleRowExpansion(index)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleRowExpansion(index);
+                            }
+                          }}
+                          aria-expanded={expandedRows.has(index)}
+                          aria-label={`${expandedRows.has(index) ? 'Collapse' : 'Expand'} details for run from ${formatTime(run.start)}`}
+                        >
+                          <td>
+                            <span className={`expand-icon ${expandedRows.has(index) ? 'expanded' : ''}`} aria-hidden="true">
+                              ▶
                             </span>
-                          ) : (
-                            <span className="text-zinc-400">—</span>
-                          )}
-                        </td>
-                      </tr>
+                          </td>
+                          <td>{getStatusBadge(run.success)}</td>
+                          <td className="text-zinc-700">{formatTime(run.start)}</td>
+                          <td className="text-zinc-700">{formatDuration(run.duration_ms)}</td>
+                          <td className="text-zinc-700">
+                            {run.runs[0]?.length || 0} / 4
+                          </td>
+                          <td className="text-zinc-700">
+                            {run.err_string ? (
+                              <span className="text-red-600 text-xs font-mono error-text" title={run.err_string}>
+                                {run.err_string}
+                              </span>
+                            ) : (
+                              <span className="text-zinc-400">—</span>
+                            )}
+                          </td>
+                        </tr>
+                        {expandedRows.has(index) && (
+                          <tr className="expanded-content">
+                            <td colSpan={6}>
+                              <div className="run-details">
+                                <h4 className="run-details-title">Run Steps</h4>
+                                <div className="steps-grid">
+                                  {run.runs[0]?.map((step, stepIndex) => (
+                                    <div key={stepIndex} className="step-card">
+                                      <div className="step-header">
+                                        <span className="step-name">{step.name}</span>
+                                        <span className="step-duration">{formatDuration(step.duration_ms)}</span>
+                                      </div>
+                                      <div className="step-times">
+                                        <div className="placeholder-image"></div>
+                                        <div className="flex-col">
+                                        <div className="step-time">
+                                          <span className="time-label">Start:</span>
+                                          <span className="time-value">{formatTime(step.start)}</span>
+                                        </div>
+                                        <div className="step-time">
+                                          <span className="time-label">End:</span>
+                                          <span className="time-value">{formatTime(step.end)}</span>
+                                        </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )) || <div className="no-steps">No steps completed</div>}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
               </div>
-
-              {/* <h2>Video Files ({videoFiles.length})</h2>
-              <ul>
-                {videoFiles.map((file, index) => (
-                  <li key={index}>
-                    <strong>File {index + 1}:</strong> {file.binary.length} bytes
-                    <br />
-                    <small>Captured: {file.metadata?.timeRequested?.toJsonString() || 'unknown'}</small>
-                    <br />
-                    <small>Received: {file.metadata?.timeReceived?.toJsonString() || 'unknown'}</small>
-                  </li>
-                ))}
-              </ul>
-            </section>
-
-            <section>
-              <h2>Run Data</h2>
-              <pre>{JSON.stringify(runData, null, 2)}</pre>
-            </section>
-
-            <section>
-              <h2>Sander Client</h2>
-              <p>Status: {sanderClient ? 'Connected' : 'Not Connected'}</p>
-              {sanderClient && (
-                <div>
-                  <p>Name: {sanderClient.name}</p>
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2>Video Store Client</h2>
-              <p>Status: {videoStoreClient ? 'Connected' : 'Not Connected'}</p>
-              {videoStoreClient && (
-                <div>
-                  <p>Name: {videoStoreClient.name}</p>
-                </div>
-              )} */}
             </section>
           </>
         ) : (
