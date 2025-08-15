@@ -548,7 +548,8 @@ button:focus {
 
 .step-inline {
   flex: 1;
-  min-width: 200px;
+  width: 100%;
+  max-width: 256px;
   background: white;
   border: 1px solid #e4e4e7;
   border-radius: 6px;
