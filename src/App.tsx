@@ -131,7 +131,7 @@ function App() {
 
   // Render different UI based on showui parameter
   if (showUI) {
-    return <AppInterface />;
+    return <AppInterface videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
   }
 
   // Default monitoring interface

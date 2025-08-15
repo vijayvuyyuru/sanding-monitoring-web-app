@@ -1,311 +1,312 @@
-diff --git a/src/App.tsx b/src/App.tsx
-index 9ed809a..eea263b 100644
---- a/src/App.tsx
-+++ b/src/App.tsx
-@@ -36,6 +36,7 @@ function App() {
-   const [runData, setRunData] = useState<RunData | null>(null);
-   const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
-   const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
-+  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
- 
-   // Check for showui URL parameter
-   const urlParams = new URLSearchParams(window.location.search);
-@@ -67,6 +68,13 @@ function App() {
-         const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
-         setSanderClient(sanderClient);
-       }
-+
-+      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "generic-1"))) {
-+        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "generic-1");
-+        setVideoStoreClient(videoStoreClient);
-+      }
-+      
-+      // debugger;
-       
-       const binaryData = await viamClient.dataClient.binaryDataByFilter( 
-         filter, 
-@@ -127,7 +135,7 @@ function App() {
-   }
- 
-   // Default monitoring interface
--  return <MonitoringView runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
-+  return <MonitoringView videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
- }
- 
- async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.ViamClient> {
-diff --git a/src/AppInterface.module.css b/src/AppInterface.module.css
-index bea0d54..28381eb 100644
---- a/src/AppInterface.module.css
-+++ b/src/AppInterface.module.css
-@@ -3,7 +3,6 @@
-   margin: 0;
-   padding: 0;
-   height: 100vh;
--  overflow: hidden;
- }
- 
- :global(#root) {
-diff --git a/src/MonitoringView.tsx b/src/MonitoringView.tsx
-index 81628a5..039f9a9 100644
---- a/src/MonitoringView.tsx
-+++ b/src/MonitoringView.tsx
-@@ -5,10 +5,11 @@ import RunDataDisplay from './RunDataDisplay';
- interface MonitoringViewProps {
-   runData: any;
-   videoFiles: VIAM.dataApi.BinaryData[];
-+  videoStoreClient?: VIAM.GenericComponentClient | null;
-   sanderClient: VIAM.GenericComponentClient | null;
- }
- 
--const MonitoringView: React.FC<MonitoringViewProps> = ({ runData, videoFiles, sanderClient }) => {
-+const MonitoringView: React.FC<MonitoringViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
-   return (
-     <div className="App">
-       <header className="App-header">
-@@ -16,7 +17,7 @@ const MonitoringView: React.FC<MonitoringViewProps> = ({ runData, videoFiles, sa
-       </header>
-       
-       <main className="main-content">
--        <RunDataDisplay runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />
-+        <RunDataDisplay videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />
-       </main>
-     </div>
-   );
-diff --git a/src/RunDataDisplay.tsx b/src/RunDataDisplay.tsx
-index dc16712..97e3b96 100644
---- a/src/RunDataDisplay.tsx
-+++ b/src/RunDataDisplay.tsx
-@@ -20,13 +20,104 @@ interface RunData {
- interface RunDataDisplayProps {
-   runData: RunData | null;
-   videoFiles?: VIAM.dataApi.BinaryData[];
-+  videoStoreClient?: VIAM.GenericComponentClient | null;
-   sanderClient?: VIAM.GenericComponentClient | null;
- }
- 
--const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sanderClient }) => {
-+const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
-   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
-   const [activeView, setActiveView] = useState<'summary' | 'files'>('summary');
- 
-+  const handleVideoStoreCommand = async () => {
-+    console.log("handleVideoStoreCommand called");
-+    
-+    if (!videoStoreClient) {
-+      console.log("No videoStoreClient available, returning early");
-+      return;
-+    }
-+    
-+    try {
-+      console.log("Creating storage state command...");
-+      // First get storage state
-+      const storageStateCommand = VIAM.Struct.fromJson({
-+        "command": "get-storage-state"
-+      });
-+      console.log("Storage state command created:", storageStateCommand);
-+      
-+      console.log("Executing storage state command...");
-+      const storageResponse = await videoStoreClient.doCommand(storageStateCommand);
-+      console.log("Storage state response:", storageResponse);
-+      
-+      console.log("Creating fetch command...");
-+      // Then fetch videos for a specific time range
-+      const fetchCommand = VIAM.Struct.fromJson({
-+        "command": "fetch",
-+        "from": "2025-08-14_20-50-26Z",
-+        "to": "2025-08-14_20-50-56Z"
-+      });
-+      console.log("Fetch command created:", fetchCommand);
-+      
-+      console.log("Executing fetch command...");
-+      const fetchResponse = await videoStoreClient.doCommand(fetchCommand);
-+      console.log("Fetch command response:", fetchResponse);
-+      
-+      // Convert base64 video data to downloadable MP4
-+      // Type cast the response to access the video property
-+      const responseObj = fetchResponse as { video?: string };
-+      if (responseObj && responseObj.video) {
-+        convertBase64ToMp4(responseObj.video, 'fetched_video.mp4');
-+      }
-+      
-+      console.log("handleVideoStoreCommand completed successfully");
-+    } catch (error) {
-+      console.error("Error executing video store commands:", error);
-+      console.log("Error details:", {
-+        message: error instanceof Error ? error.message : 'Unknown error',
-+        stack: error instanceof Error ? error.stack : undefined
-+      });
-+    }
-+  };
-+
-+  const convertBase64ToMp4 = (base64Data: string, filename: string) => {
-+    try {
-+      console.log("Converting base64 to MP4...");
-+      
-+      // Remove data URL prefix if present (e.g., "data:video/mp4;base64,")
-+      const base64String = base64Data.includes(',') 
-+        ? base64Data.split(',')[1] 
-+        : base64Data;
-+      
-+      // Convert base64 to binary
-+      const binaryString = atob(base64String);
-+      const bytes = new Uint8Array(binaryString.length);
-+      
-+      for (let i = 0; i < binaryString.length; i++) {
-+        bytes[i] = binaryString.charCodeAt(i);
-+      }
-+      
-+      // Create blob with MP4 MIME type
-+      const blob = new Blob([bytes], { type: 'video/mp4' });
-+      
-+      // Create download link
-+      const url = URL.createObjectURL(blob);
-+      const link = document.createElement('a');
-+      link.href = url;
-+      link.download = filename;
-+      
-+      // Trigger download
-+      document.body.appendChild(link);
-+      link.click();
-+      
-+      // Cleanup
-+      document.body.removeChild(link);
-+      URL.revokeObjectURL(url);
-+      
-+      console.log(`MP4 file "${filename}" downloaded successfully`);
-+    } catch (error) {
-+      console.error("Error converting base64 to MP4:", error);
-+    }
-+  };
-+
-   const formatDuration = (durationMs: number): string => {
-     const seconds = Math.floor(durationMs / 1000);
-     const minutes = Math.floor(seconds / 60);
-@@ -60,10 +151,10 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-   // Find video files that match a step's timeframe
-   const getStepVideos = (step: RunStep) => {
-     if (!videoFiles) return [];
--    
-+
-     const stepStart = new Date(step.start);
-     const stepEnd = new Date(step.end);
--    
-+
-     return videoFiles.filter(file => {
-       if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
-       const fileTime = file.metadata.timeRequested.toDate();
-@@ -104,6 +195,18 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-             Duration: {formatDuration(runData.duration_ms)}
-           </div>
-         </div>
-+        
-+        {/* Add test button for video store commands */}
-+        {videoStoreClient && (
-+          <div className="test-controls">
-+            <button
-+              onClick={handleVideoStoreCommand}
-+              className="test-video-store-btn"
-+            >
-+              Test Video Store Commands
-+            </button>
-+          </div>
-+        )}
-       </div>
- 
-       <h3>Run Steps</h3>
-@@ -111,7 +214,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-         {runData.runs[0]?.map((step, index) => {
-           const stepVideos = getStepVideos(step);
-           const isExpanded = expandedSteps.has(index);
--          
-+
-           return (
-             <div key={index} className="run-step-card">
-               <div className="step-header" onClick={() => toggleStep(index)}>
-@@ -127,7 +230,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-                   <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>▼</span>
-                 </div>
-               </div>
--              
-+
-               {isExpanded && stepVideos.length > 0 && (
-                 <div className="step-videos-expanded">
-                   <div className="videos-grid">
-@@ -136,16 +239,16 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-                         <div className="video-info">
-                           <div className="camera-name">📹 {extractCameraName(video.metadata?.fileName || '')}</div>
-                           <div className="video-time">
--                            {video.metadata?.timeRequested ? 
-+                            {video.metadata?.timeRequested ?
-                               formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
-                               'Unknown time'
-                             }
-                           </div>
-                         </div>
-                         <div className="video-actions">
--                          <a 
--                            href={video.metadata?.uri} 
--                            target="_blank" 
-+                          <a
-+                            href={video.metadata?.uri}
-+                            target="_blank"
-                             rel="noopener noreferrer"
-                             className="video-link-btn"
-                           >
-@@ -157,7 +260,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-                   </div>
-                 </div>
-               )}
--              
-+
-               {isExpanded && stepVideos.length === 0 && (
-                 <div className="no-videos-message">
-                   No videos found for this step
-@@ -174,7 +277,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-     <div className="files-view">
-       {sanderClient && (
-         <div className="sander-controls">
--          <button 
-+          <button
-             onClick={() => {
-               console.log("sanding");
-               // sanderClient.doCommand(command)
-@@ -191,17 +294,17 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-             <div className="file-info">
-               <div className="file-name">{item.metadata?.fileName || 'Unknown file'}</div>
-               <div className="file-timestamp">
--                {item.metadata?.timeRequested ? 
--                  formatTimestamp(item.metadata.timeRequested.toDate().toISOString()) : 
-+                {item.metadata?.timeRequested ?
-+                  formatTimestamp(item.metadata.timeRequested.toDate().toISOString()) :
-                   'Unknown time'
-                 }
-               </div>
-             </div>
-             <div className="file-actions">
-               {item.metadata?.uri && (
--                <a 
--                  href={item.metadata.uri} 
--                  target="_blank" 
-+                <a
-+                  href={item.metadata.uri}
-+                  target="_blank"
-                   rel="noopener noreferrer"
-                   className="file-link-btn"
-                 >
-@@ -218,13 +321,13 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
-   return (
-     <div className="run-data-section">
-       <div className="section-nav">
--        <button 
-+        <button
-           className={`section-nav-item ${activeView === 'summary' ? 'active' : ''}`}
-           onClick={() => setActiveView('summary')}
-         >
-           Latest Run Summary
-         </button>
--        <button 
-+        <button
-           className={`section-nav-item ${activeView === 'files' ? 'active' : ''}`}
-           onClick={() => setActiveView('files')}
-         >
+diff --git a/diff.diff b/diff.diff
+index 7654c8a..e69de29 100644
+--- a/diff.diff
++++ b/diff.diff
+@@ -1,311 +0,0 @@
+-diff --git a/src/App.tsx b/src/App.tsx
+-index 9ed809a..eea263b 100644
+---- a/src/App.tsx
+-+++ b/src/App.tsx
+-@@ -36,6 +36,7 @@ function App() {
+-   const [runData, setRunData] = useState<RunData | null>(null);
+-   const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+-   const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
+-+  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+- 
+-   // Check for showui URL parameter
+-   const urlParams = new URLSearchParams(window.location.search);
+-@@ -67,6 +68,13 @@ function App() {
+-         const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
+-         setSanderClient(sanderClient);
+-       }
+-+
+-+      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "generic-1"))) {
+-+        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "generic-1");
+-+        setVideoStoreClient(videoStoreClient);
+-+      }
+-+      
+-+      // debugger;
+-       
+-       const binaryData = await viamClient.dataClient.binaryDataByFilter( 
+-         filter, 
+-@@ -127,7 +135,7 @@ function App() {
+-   }
+- 
+-   // Default monitoring interface
+--  return <MonitoringView runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
+-+  return <MonitoringView videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
+- }
+- 
+- async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.ViamClient> {
+-diff --git a/src/AppInterface.module.css b/src/AppInterface.module.css
+-index bea0d54..28381eb 100644
+---- a/src/AppInterface.module.css
+-+++ b/src/AppInterface.module.css
+-@@ -3,7 +3,6 @@
+-   margin: 0;
+-   padding: 0;
+-   height: 100vh;
+--  overflow: hidden;
+- }
+- 
+- :global(#root) {
+-diff --git a/src/MonitoringView.tsx b/src/MonitoringView.tsx
+-index 81628a5..039f9a9 100644
+---- a/src/MonitoringView.tsx
+-+++ b/src/MonitoringView.tsx
+-@@ -5,10 +5,11 @@ import RunDataDisplay from './RunDataDisplay';
+- interface MonitoringViewProps {
+-   runData: any;
+-   videoFiles: VIAM.dataApi.BinaryData[];
+-+  videoStoreClient?: VIAM.GenericComponentClient | null;
+-   sanderClient: VIAM.GenericComponentClient | null;
+- }
+- 
+--const MonitoringView: React.FC<MonitoringViewProps> = ({ runData, videoFiles, sanderClient }) => {
+-+const MonitoringView: React.FC<MonitoringViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
+-   return (
+-     <div className="App">
+-       <header className="App-header">
+-@@ -16,7 +17,7 @@ const MonitoringView: React.FC<MonitoringViewProps> = ({ runData, videoFiles, sa
+-       </header>
+-       
+-       <main className="main-content">
+--        <RunDataDisplay runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />
+-+        <RunDataDisplay videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />
+-       </main>
+-     </div>
+-   );
+-diff --git a/src/RunDataDisplay.tsx b/src/RunDataDisplay.tsx
+-index dc16712..97e3b96 100644
+---- a/src/RunDataDisplay.tsx
+-+++ b/src/RunDataDisplay.tsx
+-@@ -20,13 +20,104 @@ interface RunData {
+- interface RunDataDisplayProps {
+-   runData: RunData | null;
+-   videoFiles?: VIAM.dataApi.BinaryData[];
+-+  videoStoreClient?: VIAM.GenericComponentClient | null;
+-   sanderClient?: VIAM.GenericComponentClient | null;
+- }
+- 
+--const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sanderClient }) => {
+-+const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
+-   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
+-   const [activeView, setActiveView] = useState<'summary' | 'files'>('summary');
+- 
+-+  const handleVideoStoreCommand = async () => {
+-+    console.log("handleVideoStoreCommand called");
+-+    
+-+    if (!videoStoreClient) {
+-+      console.log("No videoStoreClient available, returning early");
+-+      return;
+-+    }
+-+    
+-+    try {
+-+      console.log("Creating storage state command...");
+-+      // First get storage state
+-+      const storageStateCommand = VIAM.Struct.fromJson({
+-+        "command": "get-storage-state"
+-+      });
+-+      console.log("Storage state command created:", storageStateCommand);
+-+      
+-+      console.log("Executing storage state command...");
+-+      const storageResponse = await videoStoreClient.doCommand(storageStateCommand);
+-+      const fetchCommand = VIAM.Struct.fromJson({
+-+        "command": "fetch",
+-+        "from": "2025-08-14_20-50-26Z",
+-+        "to": "2025-08-14_20-50-56Z"
+-+      });
+-+      console.log("Fetch command created:", fetchCommand);
+-+      
+-+      console.log("Executing fetch command...");
+-+      const fetchResponse = await videoStoreClient.doCommand(fetchCommand);
+-+      console.log("Fetch command response:", fetchResponse);
+-+      
+-+      // Convert base64 video data to downloadable MP4
+-+      // Type cast the response to access the video property
+-+      const responseObj = fetchResponse as { video?: string };
+-+      if (responseObj && responseObj.video) {
+-+        convertBase64ToMp4(responseObj.video, 'fetched_video.mp4');
+-+      }
+-+      
+-+      console.log("handleVideoStoreCommand completed successfully");
+-+    } catch (error) {
+-+      console.error("Error executing video store commands:", error);
+-+      console.log("Error details:", {
+-+        message: error instanceof Error ? error.message : 'Unknown error',
+-+        stack: error instanceof Error ? error.stack : undefined
+-+      });
+-+    }
+-+  };
+-+
+-+  const convertBase64ToMp4 = (base64Data: string, filename: string) => {
+-+    try {
+-+      console.log("Converting base64 to MP4...");
+-+      
+-+      // Remove data URL prefix if present (e.g., "data:video/mp4;base64,")
+-+      const base64String = base64Data.includes(',') 
+-+        ? base64Data.split(',')[1] 
+-+        : base64Data;
+-+      
+-+      // Convert base64 to binary
+-+      const binaryString = atob(base64String);
+-+      const bytes = new Uint8Array(binaryString.length);
+-+      
+-+      for (let i = 0; i < binaryString.length; i++) {
+-+        bytes[i] = binaryString.charCodeAt(i);
+-+      }
+-+      
+-+      // Create blob with MP4 MIME type
+-+      const blob = new Blob([bytes], { type: 'video/mp4' });
+-+      
+-+      // Create download link
+-+      const url = URL.createObjectURL(blob);
+-+      const link = document.createElement('a');
+-+      link.href = url;
+-+      link.download = filename;
+-+      
+-+      // Trigger download
+-+      document.body.appendChild(link);
+-+      link.click();
+-+      
+-+      // Cleanup
+-+      document.body.removeChild(link);
+-+      URL.revokeObjectURL(url);
+-+      
+-+      console.log(`MP4 file "${filename}" downloaded successfully`);
+-+    } catch (error) {
+-+      console.error("Error converting base64 to MP4:", error);
+-+    }
+-+  };
+-+
+-   const formatDuration = (durationMs: number): string => {
+-     const seconds = Math.floor(durationMs / 1000);
+-     const minutes = Math.floor(seconds / 60);
+-@@ -60,10 +151,10 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-   // Find video files that match a step's timeframe
+-   const getStepVideos = (step: RunStep) => {
+-     if (!videoFiles) return [];
+--    
+-+
+-     const stepStart = new Date(step.start);
+-     const stepEnd = new Date(step.end);
+--    
+-+
+-     return videoFiles.filter(file => {
+-       if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
+-       const fileTime = file.metadata.timeRequested.toDate();
+-@@ -104,6 +195,18 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-             Duration: {formatDuration(runData.duration_ms)}
+-           </div>
+-         </div>
+-+        
+-+        {/* Add test button for video store commands */}
+-+        {videoStoreClient && (
+-+          <div className="test-controls">
+-+            <button
+-+              onClick={handleVideoStoreCommand}
+-+              className="test-video-store-btn"
+-+            >
+-+              Test Video Store Commands
+-+            </button>
+-+          </div>
+-+        )}
+-       </div>
+- 
+-       <h3>Run Steps</h3>
+-@@ -111,7 +214,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-         {runData.runs[0]?.map((step, index) => {
+-           const stepVideos = getStepVideos(step);
+-           const isExpanded = expandedSteps.has(index);
+--          
+-+
+-           return (
+-             <div key={index} className="run-step-card">
+-               <div className="step-header" onClick={() => toggleStep(index)}>
+-@@ -127,7 +230,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-                   <span className={`expand-icon ${isExpanded ? 'expanded' : ''}`}>▼</span>
+-                 </div>
+-               </div>
+--              
+-+
+-               {isExpanded && stepVideos.length > 0 && (
+-                 <div className="step-videos-expanded">
+-                   <div className="videos-grid">
+-@@ -136,16 +239,16 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-                         <div className="video-info">
+-                           <div className="camera-name">📹 {extractCameraName(video.metadata?.fileName || '')}</div>
+-                           <div className="video-time">
+--                            {video.metadata?.timeRequested ? 
+-+                            {video.metadata?.timeRequested ?
+-                               formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
+-                               'Unknown time'
+-                             }
+-                           </div>
+-                         </div>
+-                         <div className="video-actions">
+--                          <a 
+--                            href={video.metadata?.uri} 
+--                            target="_blank" 
+-+                          <a
+-+                            href={video.metadata?.uri}
+-+                            target="_blank"
+-                             rel="noopener noreferrer"
+-                             className="video-link-btn"
+-                           >
+-@@ -157,7 +260,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-                   </div>
+-                 </div>
+-               )}
+--              
+-+
+-               {isExpanded && stepVideos.length === 0 && (
+-                 <div className="no-videos-message">
+-                   No videos found for this step
+-@@ -174,7 +277,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-     <div className="files-view">
+-       {sanderClient && (
+-         <div className="sander-controls">
+--          <button 
+-+          <button
+-             onClick={() => {
+-               console.log("sanding");
+-               // sanderClient.doCommand(command)
+-@@ -191,17 +294,17 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-             <div className="file-info">
+-               <div className="file-name">{item.metadata?.fileName || 'Unknown file'}</div>
+-               <div className="file-timestamp">
+--                {item.metadata?.timeRequested ? 
+--                  formatTimestamp(item.metadata.timeRequested.toDate().toISOString()) : 
+-+                {item.metadata?.timeRequested ?
+-+                  formatTimestamp(item.metadata.timeRequested.toDate().toISOString()) :
+-                   'Unknown time'
+-                 }
+-               </div>
+-             </div>
+-             <div className="file-actions">
+-               {item.metadata?.uri && (
+--                <a 
+--                  href={item.metadata.uri} 
+--                  target="_blank" 
+-+                <a
+-+                  href={item.metadata.uri}
+-+                  target="_blank"
+-                   rel="noopener noreferrer"
+-                   className="file-link-btn"
+-                 >
+-@@ -218,13 +321,13 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
+-   return (
+-     <div className="run-data-section">
+-       <div className="section-nav">
+--        <button 
+-+        <button
+-           className={`section-nav-item ${activeView === 'summary' ? 'active' : ''}`}
+-           onClick={() => setActiveView('summary')}
+-         >
+-           Latest Run Summary
+-         </button>
+--        <button 
+-+        <button
+-           className={`section-nav-item ${activeView === 'files' ? 'active' : ''}`}
+-           onClick={() => setActiveView('files')}
+-         >
