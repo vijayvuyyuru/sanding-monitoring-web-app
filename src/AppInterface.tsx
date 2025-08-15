@@ -44,60 +44,6 @@ const sampleRunsData = [
             "duration_ms": 300000
           }
         ]
-      },
-      {
-        "pass_number": 2,
-        "success": true,
-        "start": "2025-01-21T20:55:00.000Z",
-        "end": "2025-01-21T21:05:00.000Z",
-        "duration_ms": 600000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T20:55:00.000Z",
-            "end": "2025-01-21T20:57:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T20:57:00.000Z",
-            "end": "2025-01-21T21:00:00.000Z",
-            "duration_ms": 180000
-          },
-          {
-            "name": "Execution",
-            "start": "2025-01-21T21:00:00.000Z",
-            "end": "2025-01-21T21:05:00.000Z",
-            "duration_ms": 300000
-          }
-        ]
-      },
-      {
-        "pass_number": 3,
-        "success": true,
-        "start": "2025-01-21T21:05:00.000Z",
-        "end": "2025-01-21T21:15:00.000Z",
-        "duration_ms": 600000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T21:05:00.000Z",
-            "end": "2025-01-21T21:07:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T21:07:00.000Z",
-            "end": "2025-01-21T21:10:00.000Z",
-            "duration_ms": 180000
-          },
-          {
-            "name": "Execution",
-            "start": "2025-01-21T21:10:00.000Z",
-            "end": "2025-01-21T21:15:00.000Z",
-            "duration_ms": 300000
-          }
-        ]
       }
     ]
   },
@@ -110,10 +56,10 @@ const sampleRunsData = [
     "passes": [
       {
         "pass_number": 1,
-        "success": true,
+        "success": false,
         "start": "2025-01-21T21:20:00.000Z",
-        "end": "2025-01-21T21:30:00.000Z",
-        "duration_ms": 600000,
+        "end": "2025-01-21T21:32:00.000Z",
+        "duration_ms": 720000,
         "steps": [
           {
             "name": "Imaging",
@@ -130,23 +76,8 @@ const sampleRunsData = [
           {
             "name": "Execution",
             "start": "2025-01-21T21:25:00.000Z",
-            "end": "2025-01-21T21:30:00.000Z",
-            "duration_ms": 300000
-          }
-        ]
-      },
-      {
-        "pass_number": 2,
-        "success": false,
-        "start": "2025-01-21T21:30:00.000Z",
-        "end": "2025-01-21T21:32:00.000Z",
-        "duration_ms": 120000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T21:30:00.000Z",
             "end": "2025-01-21T21:32:00.000Z",
-            "duration_ms": 120000
+            "duration_ms": 420000
           }
         ]
       }
@@ -163,8 +94,8 @@ const sampleRunsData = [
         "pass_number": 1,
         "success": true,
         "start": "2025-01-21T19:30:00.000Z",
-        "end": "2025-01-21T19:39:00.000Z",
-        "duration_ms": 540000,
+        "end": "2025-01-21T19:48:00.000Z",
+        "duration_ms": 1080000,
         "steps": [
           {
             "name": "Imaging",
@@ -181,35 +112,8 @@ const sampleRunsData = [
           {
             "name": "Execution",
             "start": "2025-01-21T19:35:00.000Z",
-            "end": "2025-01-21T19:39:00.000Z",
-            "duration_ms": 240000
-          }
-        ]
-      },
-      {
-        "pass_number": 2,
-        "success": true,
-        "start": "2025-01-21T19:39:00.000Z",
-        "end": "2025-01-21T19:48:00.000Z",
-        "duration_ms": 540000,
-        "steps": [
-          {
-            "name": "Imaging",
-            "start": "2025-01-21T19:39:00.000Z",
-            "end": "2025-01-21T19:41:00.000Z",
-            "duration_ms": 120000
-          },
-          {
-            "name": "Planning",
-            "start": "2025-01-21T19:41:00.000Z",
-            "end": "2025-01-21T19:44:00.000Z",
-            "duration_ms": 180000
-          },
-          {
-            "name": "Execution",
-            "start": "2025-01-21T19:44:00.000Z",
             "end": "2025-01-21T19:48:00.000Z",
-            "duration_ms": 240000
+            "duration_ms": 780000
           }
         ]
       }
@@ -323,7 +227,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
         {activeRoute === 'live' ? (
           <>
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Runs</h2>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes</h2>
               
               <div className="viam-table-container">
                 <table className="viam-table">
@@ -380,13 +284,12 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                         {expandedRows.has(index) && (
                           <tr className="expanded-content">
                             <td colSpan={7}>
-                              <div className="run-details">
-                                <h4 className="run-details-title">Passes</h4>
-                                
+                              <div className="run-details">                                
                                 {/* Steps header - shown once above all passes */}
                                 <div className="steps-header-container">
                                   <div className="pass-header-spacer"></div>
                                   <div className="steps-header">
+                                    <div className='step-spacer'></div>
                                     <div className="step-header-label">Imaging</div>
                                     <div className="step-header-label">Planning</div>
                                     <div className="step-header-label">Execution</div>
@@ -397,9 +300,6 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                   {run.passes.map((pass, passIndex) => (
                                     <div key={passIndex} className="pass-section">
                                       <div className="pass-header">
-                                        <h5 className="pass-title">
-                                          Pass {pass.pass_number}
-                                        </h5>
                                         <span className="pass-duration">{formatDuration(pass.duration_ms)}</span>
                                       </div>
                                       <div className="steps-row">
