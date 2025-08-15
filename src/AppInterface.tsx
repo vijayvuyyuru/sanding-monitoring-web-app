@@ -305,7 +305,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
               onClick={() => setActiveRoute('live')}
               className={`${activeRoute === 'live' ? activeTabStyle : inactiveTabStyle} h-9 sm:h-10 px-4 rounded`}
             >
-              Latest run summary
+              Run summary
             </button>
             <button
               onClick={() => setActiveRoute('past')}
@@ -323,7 +323,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
         {activeRoute === 'live' ? (
           <>
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Latest runs</h2>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Runs</h2>
               
               <div className="viam-table-container">
                 <table className="viam-table">
@@ -332,8 +332,9 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                       <th style={{ width: '20px' }}></th>
                       <th>Status</th>
                       <th>Start Time</th>
+                      <th>End Time</th>
                       <th>Duration</th>
-                      <th>Passes Completed</th>
+                      <th>Completed</th>
                       <th>Error</th>
                     </tr>
                   </thead>
@@ -361,6 +362,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                           </td>
                           <td>{getStatusBadge(run.success)}</td>
                           <td className="text-zinc-700">{formatTime(run.start)}</td>
+                          <td className="text-zinc-700">{formatTime(run.end)}</td>
                           <td className="text-zinc-700">{formatDuration(run.duration_ms)}</td>
                           <td className="text-zinc-700">
                             {run.passes.filter(pass => pass.success).length} / {run.passes.length}
@@ -377,7 +379,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                         </tr>
                         {expandedRows.has(index) && (
                           <tr className="expanded-content">
-                            <td colSpan={6}>
+                            <td colSpan={7}>
                               <div className="run-details">
                                 <h4 className="run-details-title">Passes</h4>
                                 <div className="passes-container">
