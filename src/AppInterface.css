@@ -534,34 +534,75 @@ button:focus {
 }
 
 .step-times {
+  margin-top: 12px;
+  padding: 0 12px;
+}
+
+.step-timeline {
   display: flex;
-  gap: 10px !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.step-moment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-image-container {
+  display: flex;
+  align-items: center;
   gap: 4px;
-  padding: 0 40px;
+}
+
+.placeholder-image.before {
+  background-color: #f3f4f6;
+  border: 2px dashed #d1d5db;
+}
+
+.placeholder-image.after {
+  background-color: #dbeafe;
+  border: 2px dashed #3b82f6;
+}
+
+.timeline-arrow {
+  font-size: 20px;
+  color: #9ca3af;
+  font-weight: bold;
 }
 
 .step-time {
   display: flex;
-  gap: 4px;
-  font-size: 12px;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
 }
 
-.step-time > div {
-  width: 50%;
+.time-label {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.time-value {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
 }
 
 .placeholder-image {
   display: grid;
-  width: 33%;
+  width: 40px;
   height: 30px;
   background-color: #e4e4e7;
   border-radius: 4px;
 }
 
-.time-label {
-  width: 2rem;
-  text-align: right;
-  color: #71717a;
+.placeholder-images-container {
+  display: flex;
+  gap: 0.05rem;
 }
 
 .time-value {
@@ -576,4 +617,38 @@ button:focus {
   font-style: italic;
   text-align: center;
   padding: 20px;
+}
+
+.pass-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pass-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pass-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.pass-duration {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.passes-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pass-section {
+  display: flex;
+  flex-direction: column;
 }

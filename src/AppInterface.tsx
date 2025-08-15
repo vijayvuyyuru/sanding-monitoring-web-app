@@ -9,76 +9,147 @@ interface AppViewProps {
   sanderClient: VIAM.GenericComponentClient | null;
 }
 
-// Sample data for the runs table
+// Sample data for the runs table - updated to show passes concept
 const sampleRunsData = [
   {
     "success": true,
     "err_string": null,
     "start": "2025-01-21T20:45:00.000Z",
-    "end": "2025-01-21T21:05:00.000Z",
-    "duration_ms": 1200000,
-    "runs": [
-      [
-        {
-          "name": "Imaging",
-          "start": "2025-01-21T20:45:00.000Z",
-          "end": "2025-01-21T20:48:00.000Z",
-          "duration_ms": 180000
-        },
-        {
-          "name": "Generate Lobes",
-          "start": "2025-01-21T20:48:00.000Z",
-          "end": "2025-01-21T20:52:00.000Z",
-          "duration_ms": 240000
-        },
-        {
-          "name": "Generate Waypoints",
-          "start": "2025-01-21T20:52:00.000Z",
-          "end": "2025-01-21T21:02:00.000Z",
-          "duration_ms": 600000
-        },
-        {
-          "name": "Execute",
-          "start": "2025-01-21T21:02:00.000Z",
-          "end": "2025-01-21T21:05:00.000Z",
-          "duration_ms": 180000
-        }
-      ]
+    "end": "2025-01-21T21:15:00.000Z",
+    "duration_ms": 1800000,
+    "passes": [
+      {
+        "pass_number": 1,
+        "success": true,
+        "start": "2025-01-21T20:45:00.000Z",
+        "end": "2025-01-21T20:55:00.000Z",
+        "duration_ms": 600000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T20:45:00.000Z",
+            "end": "2025-01-21T20:47:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T20:47:00.000Z",
+            "end": "2025-01-21T20:50:00.000Z",
+            "duration_ms": 180000
+          },
+          {
+            "name": "Execution",
+            "start": "2025-01-21T20:50:00.000Z",
+            "end": "2025-01-21T20:55:00.000Z",
+            "duration_ms": 300000
+          }
+        ]
+      },
+      {
+        "pass_number": 2,
+        "success": true,
+        "start": "2025-01-21T20:55:00.000Z",
+        "end": "2025-01-21T21:05:00.000Z",
+        "duration_ms": 600000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T20:55:00.000Z",
+            "end": "2025-01-21T20:57:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T20:57:00.000Z",
+            "end": "2025-01-21T21:00:00.000Z",
+            "duration_ms": 180000
+          },
+          {
+            "name": "Execution",
+            "start": "2025-01-21T21:00:00.000Z",
+            "end": "2025-01-21T21:05:00.000Z",
+            "duration_ms": 300000
+          }
+        ]
+      },
+      {
+        "pass_number": 3,
+        "success": true,
+        "start": "2025-01-21T21:05:00.000Z",
+        "end": "2025-01-21T21:15:00.000Z",
+        "duration_ms": 600000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T21:05:00.000Z",
+            "end": "2025-01-21T21:07:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T21:07:00.000Z",
+            "end": "2025-01-21T21:10:00.000Z",
+            "duration_ms": 180000
+          },
+          {
+            "name": "Execution",
+            "start": "2025-01-21T21:10:00.000Z",
+            "end": "2025-01-21T21:15:00.000Z",
+            "duration_ms": 300000
+          }
+        ]
+      }
     ]
   },
   {
     "success": false,
     "err_string": "rpc error: code = Unavailable desc = not connected to remote robot",
-    "start": "2025-01-21T21:11:00.000Z",
+    "start": "2025-01-21T21:20:00.000Z",
     "end": "2025-01-21T21:32:00.000Z",
-    "duration_ms": 1260000,
-    "runs": [
-      [
-        {
-          "name": "Imaging",
-          "start": "2025-01-21T21:11:00.000Z",
-          "end": "2025-01-21T21:15:00.000Z",
-          "duration_ms": 240000
-        },
-        {
-          "name": "GenerateLobes",
-          "start": "2025-01-21T21:15:00.000Z",
-          "end": "2025-01-21T21:20:00.000Z",
-          "duration_ms": 300000
-        },
-        {
-          "name": "GenerateWaypoints",
-          "start": "2025-01-21T21:20:00.000Z",
-          "end": "2025-01-21T21:30:00.000Z",
-          "duration_ms": 600000
-        },
-        {
-          "name": "Execute",
-          "start": "2025-01-21T21:30:00.000Z",
-          "end": "2025-01-21T21:32:00.000Z",
-          "duration_ms": 120000
-        }
-      ]
+    "duration_ms": 720000,
+    "passes": [
+      {
+        "pass_number": 1,
+        "success": true,
+        "start": "2025-01-21T21:20:00.000Z",
+        "end": "2025-01-21T21:30:00.000Z",
+        "duration_ms": 600000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T21:20:00.000Z",
+            "end": "2025-01-21T21:22:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T21:22:00.000Z",
+            "end": "2025-01-21T21:25:00.000Z",
+            "duration_ms": 180000
+          },
+          {
+            "name": "Execution",
+            "start": "2025-01-21T21:25:00.000Z",
+            "end": "2025-01-21T21:30:00.000Z",
+            "duration_ms": 300000
+          }
+        ]
+      },
+      {
+        "pass_number": 2,
+        "success": false,
+        "start": "2025-01-21T21:30:00.000Z",
+        "end": "2025-01-21T21:32:00.000Z",
+        "duration_ms": 120000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T21:30:00.000Z",
+            "end": "2025-01-21T21:32:00.000Z",
+            "duration_ms": 120000
+          }
+        ]
+      }
     ]
   },
   {
@@ -87,62 +158,91 @@ const sampleRunsData = [
     "start": "2025-01-21T19:30:00.000Z",
     "end": "2025-01-21T19:48:00.000Z",
     "duration_ms": 1080000,
-    "runs": [
-      [
-        {
-          "name": "Imaging",
-          "start": "2025-01-21T19:30:00.000Z",
-          "end": "2025-01-21T19:33:00.000Z",
-          "duration_ms": 180000
-        },
-        {
-          "name": "GenerateLobes",
-          "start": "2025-01-21T19:33:00.000Z",
-          "end": "2025-01-21T19:37:00.000Z",
-          "duration_ms": 240000
-        },
-        {
-          "name": "GenerateWaypoints",
-          "start": "2025-01-21T19:37:00.000Z",
-          "end": "2025-01-21T19:45:00.000Z",
-          "duration_ms": 480000
-        },
-        {
-          "name": "Execute",
-          "start": "2025-01-21T19:45:00.000Z",
-          "end": "2025-01-21T19:48:00.000Z",
-          "duration_ms": 180000
-        }
-      ]
+    "passes": [
+      {
+        "pass_number": 1,
+        "success": true,
+        "start": "2025-01-21T19:30:00.000Z",
+        "end": "2025-01-21T19:39:00.000Z",
+        "duration_ms": 540000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T19:30:00.000Z",
+            "end": "2025-01-21T19:32:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T19:32:00.000Z",
+            "end": "2025-01-21T19:35:00.000Z",
+            "duration_ms": 180000
+          },
+          {
+            "name": "Execution",
+            "start": "2025-01-21T19:35:00.000Z",
+            "end": "2025-01-21T19:39:00.000Z",
+            "duration_ms": 240000
+          }
+        ]
+      },
+      {
+        "pass_number": 2,
+        "success": true,
+        "start": "2025-01-21T19:39:00.000Z",
+        "end": "2025-01-21T19:48:00.000Z",
+        "duration_ms": 540000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T19:39:00.000Z",
+            "end": "2025-01-21T19:41:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T19:41:00.000Z",
+            "end": "2025-01-21T19:44:00.000Z",
+            "duration_ms": 180000
+          },
+          {
+            "name": "Execution",
+            "start": "2025-01-21T19:44:00.000Z",
+            "end": "2025-01-21T19:48:00.000Z",
+            "duration_ms": 240000
+          }
+        ]
+      }
     ]
   },
   {
     "success": false,
     "err_string": "timeout error: operation exceeded maximum duration",
     "start": "2025-01-21T18:15:00.000Z",
-    "end": "2025-01-21T18:35:00.000Z",
-    "duration_ms": 1200000,
-    "runs": [
-      [
-        {
-          "name": "Imaging",
-          "start": "2025-01-21T18:15:00.000Z",
-          "end": "2025-01-21T18:18:00.000Z",
-          "duration_ms": 180000
-        },
-        {
-          "name": "GenerateLobes",
-          "start": "2025-01-21T18:18:00.000Z",
-          "end": "2025-01-21T18:22:00.000Z",
-          "duration_ms": 240000
-        },
-        {
-          "name": "GenerateWaypoints",
-          "start": "2025-01-21T18:22:00.000Z",
-          "end": "2025-01-21T18:35:00.000Z",
-          "duration_ms": 780000
-        }
-      ]
+    "end": "2025-01-21T18:25:00.000Z",
+    "duration_ms": 600000,
+    "passes": [
+      {
+        "pass_number": 1,
+        "success": false,
+        "start": "2025-01-21T18:15:00.000Z",
+        "end": "2025-01-21T18:25:00.000Z",
+        "duration_ms": 600000,
+        "steps": [
+          {
+            "name": "Imaging",
+            "start": "2025-01-21T18:15:00.000Z",
+            "end": "2025-01-21T18:17:00.000Z",
+            "duration_ms": 120000
+          },
+          {
+            "name": "Planning",
+            "start": "2025-01-21T18:17:00.000Z",
+            "end": "2025-01-21T18:25:00.000Z",
+            "duration_ms": 480000
+          }
+        ]
+      }
     ]
   }
 ];
@@ -233,7 +333,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                       <th>Status</th>
                       <th>Start Time</th>
                       <th>Duration</th>
-                      <th>Steps Completed</th>
+                      <th>Passes Completed</th>
                       <th>Error</th>
                     </tr>
                   </thead>
@@ -263,7 +363,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                           <td className="text-zinc-700">{formatTime(run.start)}</td>
                           <td className="text-zinc-700">{formatDuration(run.duration_ms)}</td>
                           <td className="text-zinc-700">
-                            {run.runs[0]?.length || 0} / 4
+                            {run.passes.filter(pass => pass.success).length} / {run.passes.length}
                           </td>
                           <td className="text-zinc-700">
                             {run.err_string ? (
@@ -279,29 +379,53 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                           <tr className="expanded-content">
                             <td colSpan={6}>
                               <div className="run-details">
-                                <h4 className="run-details-title">Run Steps</h4>
-                                <div className="steps-grid">
-                                  {run.runs[0]?.map((step, stepIndex) => (
-                                    <div key={stepIndex} className="step-card">
-                                      <div className="step-header">
-                                        <span className="step-name">{step.name}</span>
-                                        <span className="step-duration">{formatDuration(step.duration_ms)}</span>
+                                <h4 className="run-details-title">Passes</h4>
+                                <div className="passes-container">
+                                  {run.passes.map((pass, passIndex) => (
+                                    <div key={passIndex} className="pass-section">
+                                      <div className="pass-header">
+                                        <h5 className="pass-title">
+                                          Pass {pass.pass_number}
+                                        </h5>
+                                        <span className="pass-duration">{formatDuration(pass.duration_ms)}</span>
                                       </div>
-                                      <div className="step-times">
-                                        <div className="placeholder-image"></div>
-                                        <div className="flex-col">
-                                        <div className="step-time">
-                                          <span className="time-label">Start:</span>
-                                          <span className="time-value">{formatTime(step.start)}</span>
-                                        </div>
-                                        <div className="step-time">
-                                          <span className="time-label">End:</span>
-                                          <span className="time-value">{formatTime(step.end)}</span>
-                                        </div>
-                                        </div>
+                                      <div className="steps-grid">
+                                        {pass.steps.map((step, stepIndex) => (
+                                          <div key={stepIndex} className="step-card">
+                                            <div className="step-header">
+                                              <span className="step-name">{step.name}</span>
+                                              <span className="step-duration">{formatDuration(step.duration_ms)}</span>
+                                            </div>
+                                            <div className="step-times">
+                                              <div className="step-timeline">
+                                                <div className="step-moment">
+                                                  <div className="step-image-container">
+                                                    <div className="placeholder-image before"></div>
+                                                  </div>
+                                                  <div className="step-time">
+                                                    <span className="time-label">Start</span>
+                                                    <span className="time-value">{formatTime(step.start)}</span>
+                                                  </div>
+                                                </div>
+                                                
+                                                <div className="timeline-arrow">→</div>
+                                                
+                                                <div className="step-moment">
+                                                  <div className="step-image-container">
+                                                    <div className="placeholder-image after"></div>
+                                                  </div>
+                                                  <div className="step-time">
+                                                    <span className="time-label">End</span>
+                                                    <span className="time-value">{formatTime(step.end)}</span>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
                                       </div>
                                     </div>
-                                  )) || <div className="no-steps">No steps completed</div>}
+                                  ))}
                                 </div>
                               </div>
                             </td>
