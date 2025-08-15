@@ -170,7 +170,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
   const getStatusBadge = (success: boolean) => {
     if (success) {
       return (
-        <span className="inline-flex items-center justify-center py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 status-badge-width">
+        <span className="inline-flex items-center justify-center -ml-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 status-badge-width">
           Success
         </span>
       );
@@ -228,7 +228,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                   <tbody>
                     {sampleRunsData.map((run, index) => (
                       <tr key={index}>
-                        <td className="moveleft">{getStatusBadge(run.success)}</td>
+                        <td className="-ml-2">{getStatusBadge(run.success)}</td>
                         <td className="text-zinc-700">{formatTime(run.start)}</td>
                         <td className="text-zinc-700">{formatDuration(run.duration_ms)}</td>
                         <td className="text-zinc-700">
@@ -236,7 +236,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                         </td>
                         <td className="text-zinc-700">
                           {run.err_string ? (
-                            <span className="text-red-600 text-xs font-mono error-text" title={run.err_string}>
+                            <span className="text-red-600 text-xs truncate max-w-xs font-mono" title={run.err_string}>
                               {run.err_string}
                             </span>
                           ) : (
@@ -248,6 +248,44 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                   </tbody>
                 </table>
               </div>
+
+              {/* <h2>Video Files ({videoFiles.length})</h2>
+              <ul>
+                {videoFiles.map((file, index) => (
+                  <li key={index}>
+                    <strong>File {index + 1}:</strong> {file.binary.length} bytes
+                    <br />
+                    <small>Captured: {file.metadata?.timeRequested?.toJsonString() || 'unknown'}</small>
+                    <br />
+                    <small>Received: {file.metadata?.timeReceived?.toJsonString() || 'unknown'}</small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            <section>
+              <h2>Run Data</h2>
+              <pre>{JSON.stringify(runData, null, 2)}</pre>
+            </section>
+
+            <section>
+              <h2>Sander Client</h2>
+              <p>Status: {sanderClient ? 'Connected' : 'Not Connected'}</p>
+              {sanderClient && (
+                <div>
+                  <p>Name: {sanderClient.name}</p>
+                </div>
+              )}
+            </section>
+
+            <section>
+              <h2>Video Store Client</h2>
+              <p>Status: {videoStoreClient ? 'Connected' : 'Not Connected'}</p>
+              {videoStoreClient && (
+                <div>
+                  <p>Name: {videoStoreClient.name}</p>
+                </div>
+              )} */}
             </section>
           </>
         ) : (
