@@ -486,7 +486,7 @@ button:focus {
   font-size: 14px;
   font-weight: 600;
   color: #18181b;
-  margin: 0 0 12px 0;
+  margin: 0 0 0 0;
 }
 
 .steps-grid {
@@ -500,6 +500,7 @@ button:focus {
   border: 1px solid #e4e4e7;
   border-radius: 6px;
   padding: 4px 0 15px;
+  max-width: 320px;
 }
 
 .step-header {
@@ -538,11 +539,54 @@ button:focus {
   padding: 0 12px;
 }
 
+.steps-row {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-width: 0; /* Allow flex shrinking */
+}
+
+.step-inline {
+  flex: 1;
+  min-width: 200px;
+  background: white;
+  border: 1px solid #e4e4e7;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.step-name-inline {
+  font-weight: 600;
+  color: #18181b;
+  font-size: 13px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-duration-inline {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  padding: 2px 6px;
+  background: #f9fafb;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
+    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
 .step-timeline {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
+  padding: 0 8px;
 }
 
 .step-moment {
@@ -555,6 +599,12 @@ button:focus {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.placeholder-image {
+  width: 40px;
+  height: 30px;
+  border-radius: 4px;
 }
 
 .placeholder-image.before {
@@ -587,68 +637,84 @@ button:focus {
 }
 
 .time-value {
-  font-size: 13px;
+  font-size: 12px;
   color: #374151;
   font-weight: 500;
 }
 
-.placeholder-image {
-  display: grid;
-  width: 40px;
-  height: 30px;
-  background-color: #e4e4e7;
+.step-duration-inline {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  padding: 2px 6px;
+  background: #f9fafb;
   border-radius: 4px;
-}
-
-.placeholder-images-container {
-  display: flex;
-  gap: 0.05rem;
-}
-
-.time-value {
-  color: #3f3f46;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
     "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 11px;
-}
-
-.no-steps {
-  color: #71717a;
-  font-style: italic;
-  text-align: center;
-  padding: 20px;
-}
-
-.pass-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.pass-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pass-title {
-  margin: 0;
-  font-weight: 600;
-}
-
-.pass-duration {
-  font-size: 12px;
-  color: #6b7280;
 }
 
 .passes-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .pass-section {
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+
+.pass-header {
+  display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  min-width: 90px;
+  flex-shrink: 0;
+  padding-top: 12px;
+}
+
+.pass-title {
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: #18181b;
+}
+
+.pass-duration {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
+    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.steps-header-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.pass-header-spacer {
+  min-width: 110px; /* Same width as pass-header */
+  flex-shrink: 0;
+}
+
+.steps-header {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-width: 0; /* Allow flex shrinking */
+}
+
+.step-header-label {
+  flex: 1;
+  text-align: center;
+  font-weight: 600;
+  font-size: 13px;
+  color: #374151;
+  padding: 4px 12px; /* Match step-inline padding */
+  min-width: 200px; /* Match step-inline min-width */
 }

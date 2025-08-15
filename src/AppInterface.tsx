@@ -382,6 +382,17 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                             <td colSpan={7}>
                               <div className="run-details">
                                 <h4 className="run-details-title">Passes</h4>
+                                
+                                {/* Steps header - shown once above all passes */}
+                                <div className="steps-header-container">
+                                  <div className="pass-header-spacer"></div>
+                                  <div className="steps-header">
+                                    <div className="step-header-label">Imaging</div>
+                                    <div className="step-header-label">Planning</div>
+                                    <div className="step-header-label">Execution</div>
+                                  </div>
+                                </div>
+                                
                                 <div className="passes-container">
                                   {run.passes.map((pass, passIndex) => (
                                     <div key={passIndex} className="pass-section">
@@ -391,19 +402,13 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                         </h5>
                                         <span className="pass-duration">{formatDuration(pass.duration_ms)}</span>
                                       </div>
-                                      <div className="steps-grid">
+                                      <div className="steps-row">
                                         {pass.steps.map((step, stepIndex) => (
-                                          <div key={stepIndex} className="step-card">
-                                            <div className="step-header">
-                                              <span className="step-name">{step.name}</span>
-                                              <span className="step-duration">{formatDuration(step.duration_ms)}</span>
-                                            </div>
-                                            <div className="step-times">
+                                          <div key={stepIndex} className="step-inline">
+                                            <div className="step-content">
                                               <div className="step-timeline">
                                                 <div className="step-moment">
-                                                  <div className="step-image-container">
-                                                    <div className="placeholder-image before"></div>
-                                                  </div>
+                                                  <div className="placeholder-image before"></div>
                                                   <div className="step-time">
                                                     <span className="time-label">Start</span>
                                                     <span className="time-value">{formatTime(step.start)}</span>
@@ -413,15 +418,14 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                                 <div className="timeline-arrow">→</div>
                                                 
                                                 <div className="step-moment">
-                                                  <div className="step-image-container">
-                                                    <div className="placeholder-image after"></div>
-                                                  </div>
+                                                  <div className="placeholder-image after"></div>
                                                   <div className="step-time">
                                                     <span className="time-label">End</span>
                                                     <span className="time-value">{formatTime(step.end)}</span>
                                                   </div>
                                                 </div>
                                               </div>
+                                              <div className="step-duration-inline">{formatDuration(step.duration_ms)}</div>
                                             </div>
                                           </div>
                                         ))}
