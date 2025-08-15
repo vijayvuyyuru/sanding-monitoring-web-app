@@ -277,7 +277,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                 {run.err_string}
                               </span>
                             ) : (
-                              <span className="text-zinc-400">—</span>
+                              <span className="text-gray-600">—</span>
                             )}
                           </td>
                         </tr>
