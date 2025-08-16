@@ -289,19 +289,18 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
         )}
         <div className="run-times">
           <div className="time-column">
+            <span>Duration: {formatDuration(runData.duration_ms)}</span>
+          </div>
+          <div className="time-column">
             <span>Start: {formatTimestamp(runData.start)}</span>
-            <div className="video-placeholder">
-              📹 Video
-            </div>
+            <div className="video-placeholder">📹 Video</div>
           </div>
           <div className="time-column">
             <span>End: {formatTimestamp(runData.end)}</span>
-            <div className="video-placeholder">
-              📹 Video
-            </div>
+            <div className="video-placeholder">📹 Video</div>
           </div>
-          <div className="duration-center">
-            Duration: {formatDuration(runData.duration_ms)}
+          <div className="time-column">
+            {/* Reserved for future content */}
           </div>
         </div>
         
@@ -329,8 +328,16 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
               <div className="step-header" onClick={() => toggleStep(index)}>
                 <div className="step-info">
                   <div className="step-name">{step.name}</div>
-                  <div className="step-timing">
-                    {formatTimestamp(step.start)} → {formatTimestamp(step.end)}
+                  <div className="step-timeline">
+                    <div className="step-time">
+                      <span className="time-label">Start</span>
+                      <span className="time-value">{formatShortTimestamp(step.start)}</span>
+                    </div>
+                    <div className="timeline-arrow">→</div>
+                    <div className="step-time">
+                      <span className="time-label">End</span>
+                      <span className="time-value">{formatShortTimestamp(step.end)}</span>
+                    </div>
                   </div>
                   <div className="step-duration">{formatDuration(step.duration_ms, step.start, step.end)}</div>
                 </div>

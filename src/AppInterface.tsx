@@ -263,61 +263,39 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                           <tr className="expanded-content">
                             <td colSpan={7}>
                               <div className="run-details">
-                                <div className="steps-header-container">
-                                  <div className="pass-header-spacer"></div>
-                                  <div className="steps-header">
-                                    <div className='step-spacer'></div>
-                                    {expectedSteps.map((stepName) => (
-                                      <div key={stepName} className="step-header-label">{stepName}</div>
-                                    ))}
-                                  </div>
-                                </div>
-                                
                                 <div className="passes-container">
-                                  <div className="pass-section">
-                                    <div className="pass-header">
-                                      <span className="pass-duration">{formatDuration(run.start, run.end)}</span>
-                                    </div>
-                                    <div className="steps-row">
-                                      {expectedSteps.map((stepName) => {
-                                        const step = run.steps.find((s: any) => s.name === stepName);
-                                        if (step) {
-                                          return (
-                                            <div key={stepName} className="step-inline">
-                                              <div className="step-content">
-                                                <div className="step-timeline">
-                                                  <div className="step-moment">
-                                                    <div className="placeholder-image before"></div>
-                                                    <div className="step-time">
-                                                      <span className="time-label">Start</span>
-                                                      <span className="time-value">{formatTime(step.start)}</span>
-                                                    </div>
-                                                  </div>
-                                                  
-                                                  <div className="timeline-arrow">→</div>
-                                                  
-                                                  <div className="step-moment">
-                                                    <div className="placeholder-image after"></div>
-                                                    <div className="step-time">
-                                                      <span className="time-label">End</span>
-                                                      <span className="time-value">{formatTime(step.end)}</span>
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                                <div className="step-duration-inline">{formatDuration(step.start, step.end)}</div>
+                                  <div className="pass-info">
+                                    <span className="pass-duration">{formatDuration(run.start, run.end)}</span>
+                                  </div>
+                                  <div className="steps-grid">
+                                    {expectedSteps.map((stepName) => {
+                                      const step = run.steps.find((s: any) => s.name === stepName);
+                                      if (step) {
+                                        return (
+                                          <div key={stepName} className="step-card">
+                                            <div className="step-name">{stepName}</div>
+                                            <div className="step-timeline">
+                                              <div className="step-time">
+                                                <span className="time-label">Start</span>
+                                                <span className="time-value">{formatTime(step.start)}</span>
+                                              </div>
+                                              <div className="timeline-arrow">→</div>
+                                              <div className="step-time">
+                                                <span className="time-label">End</span>
+                                                <span className="time-value">{formatTime(step.end)}</span>
                                               </div>
                                             </div>
-                                          );
-                                        }
-                                        return (
-                                          <div key={stepName} className="step-inline step-missing">
-                                            <div className="step-content">
-                                              <span className="step-missing-text">Step not executed</span>
-                                            </div>
+                                            <div className="step-duration">{formatDuration(step.start, step.end)}</div>
                                           </div>
                                         );
-                                      })}
-                                    </div>
+                                      }
+                                      return (
+                                        <div key={stepName} className="step-card step-missing">
+                                          <div className="step-name">{stepName}</div>
+                                          <div className="step-missing-text">Step not executed</div>
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               </div>
