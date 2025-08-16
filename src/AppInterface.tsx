@@ -9,118 +9,61 @@ interface AppViewProps {
   sanderClient: VIAM.GenericComponentClient | null;
 }
 
-// Sample data for the runs table - updated to match new JSON structure
-const sampleRunsData = [
-  {
-    "start": "2025-01-21T20:45:00.000Z",
-    "end": "2025-01-21T21:15:00.000Z",
-    "steps": [
-      {
-        "start": "2025-01-21T20:45:00.000Z",
-        "end": "2025-01-21T20:47:00.000Z",
-        "name": "Imaging"
-      },
-      {
-        "start": "2025-01-21T20:47:00.000Z",
-        "end": "2025-01-21T20:50:00.000Z",
-        "name": "GeneratingLobes"
-      },
-      {
-        "start": "2025-01-21T20:50:00.000Z",
-        "end": "2025-01-21T21:15:00.000Z",
-        "name": "Execution"
-      }
-    ],
-    "success": true,
-    "pass_id": "a1b2c3d4-5e6f-7890-abcd-ef1234567890",
-    "err_string": null
-  },
-  {
-    "start": "2025-01-21T21:20:00.000Z",
-    "end": "2025-01-21T21:32:00.000Z",
-    "steps": [
-      {
-        "start": "2025-01-21T21:20:00.000Z",
-        "end": "2025-01-21T21:22:00.000Z",
-        "name": "Imaging"
-      },
-      {
-        "start": "2025-01-21T21:22:00.000Z",
-        "end": "2025-01-21T21:25:00.000Z",
-        "name": "GeneratingLobes"
-      }
-    ],
-    "success": false,
-    "pass_id": "b2c3d4e5-6f78-9012-bcde-f23456789012",
-    "err_string": "rpc error: code = Unavailable desc = not connected to remote robot"
-  },
-  {
-    "start": "2025-01-21T19:30:00.000Z",
-    "end": "2025-01-21T19:48:00.000Z",
-    "steps": [
-      {
-        "start": "2025-01-21T19:30:00.000Z",
-        "end": "2025-01-21T19:32:00.000Z",
-        "name": "Imaging"
-      },
-      {
-        "start": "2025-01-21T19:32:00.000Z",
-        "end": "2025-01-21T19:35:00.000Z",
-        "name": "GeneratingLobes"
-      },
-      {
-        "start": "2025-01-21T19:35:00.000Z",
-        "end": "2025-01-21T19:48:00.000Z",
-        "name": "Execution"
-      }
-    ],
-    "success": true,
-    "pass_id": "c3d4e5f6-7890-1234-cdef-345678901234",
-    "err_string": null
-  },
-  {
-    "start": "2025-01-21T18:15:00.000Z",
-    "end": "2025-01-21T18:25:00.000Z",
-    "steps": [
-      {
-        "start": "2025-01-21T18:15:00.000Z",
-        "end": "2025-01-21T18:17:00.000Z",
-        "name": "Imaging"
-      },
-      {
-        "start": "2025-01-21T18:17:00.000Z",
-        "end": "2025-01-21T18:25:00.000Z",
-        "name": "GeneratingLobes"
-      }
-    ],
-    "success": false,
-    "pass_id": "d4e5f6a7-8901-2345-defa-456789012345",
-    "err_string": "generating lobes failed: rpc error: code = Unknown desc = getting inputs failed: No points found in region of interest after filtering"
+// Helper to generate dynamic sample data from video files
+const generateSampleRunsFromVideos = (videoFiles: VIAM.dataApi.BinaryData[]) => {
+  if (!videoFiles || videoFiles.length === 0) {
+    return [];
   }
-];
 
-const exampleRunData = {
-  readings: {
-    start: "2025-08-15T18:34:13.877418758Z",
-    end: "2025-08-15T18:34:15.497700711Z",
-    steps: [
-      {
-        start: "2025-08-15T18:34:13.877418758Z",
-        end: "2025-08-15T18:34:13.877696724Z",
-        name: "Imaging",
-      },
-      {
-        start: "2025-08-15T18:34:13.877696794Z",
-        end: "2025-08-15T18:34:15.497700711Z",
-        name: "GeneratingLobes",
-      },
-    ],
-    success: false,
-    pass_id: "d0e0fc7c-9b8f-4706-abfb-96c6c517bcac",
-    err_string:
-      "generating lobes failed: rpc error: code = Unknown desc = getting inputs failed: No points found in region of interest after filtering",
-  },
+  // Sort videos by time
+  const sortedVideos = [...videoFiles].sort((a, b) => {
+    const timeA = a.metadata?.timeRequested?.toDate().getTime() || 0;
+    const timeB = b.metadata?.timeRequested?.toDate().getTime() || 0;
+    return timeA - timeB;
+  });
+
+  const runs = [];
+  const videosPerRun = Math.max(1, Math.floor(sortedVideos.length / 4));
+
+  for (let i = 0; i < 4; i++) {
+    const runVideos = sortedVideos.slice(i * videosPerRun, (i + 1) * videosPerRun);
+    if (runVideos.length === 0) continue;
+
+    const firstVideoTime = runVideos[0].metadata!.timeRequested!.toDate();
+    const lastVideoTime = runVideos[runVideos.length - 1].metadata!.timeRequested!.toDate();
+    
+    const runStart = new Date(firstVideoTime.getTime() - 10000); // 10s before first video
+    const runEnd = new Date(lastVideoTime.getTime() + 10000); // 10s after last video
+
+    const success = i % 2 === 0;
+    const steps = [];
+    const stepCount = success ? 3 : 2;
+    const timePerStep = (runEnd.getTime() - runStart.getTime()) / stepCount;
+
+    const stepNames = ["Imaging", "GeneratingLobes", "Execution"];
+
+    for (let j = 0; j < stepCount; j++) {
+      const stepStart = new Date(runStart.getTime() + j * timePerStep);
+      const stepEnd = new Date(runStart.getTime() + (j + 1) * timePerStep);
+      steps.push({
+        name: stepNames[j],
+        start: stepStart.toISOString(),
+        end: stepEnd.toISOString(),
+      });
+    }
+
+    runs.push({
+      start: runStart.toISOString(),
+      end: runEnd.toISOString(),
+      steps: steps,
+      success: success,
+      pass_id: `generated-pass-${i}`,
+      err_string: success ? null : "Generated failure example",
+    });
+  }
+  return runs;
 };
+
 
 const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
   const [activeRoute, setActiveRoute] = useState('live');
@@ -139,6 +82,23 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
       newExpandedRows.add(index);
     }
     setExpandedRows(newExpandedRows);
+  };
+
+  const getStepVideos = (step: { start: string; end:string; }) => {
+    if (!videoFiles) return [];
+
+    const stepStart = new Date(step.start);
+    const stepEnd = new Date(step.end);
+
+    return videoFiles.filter(file => {
+      if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
+      const fileTime = file.metadata.timeRequested.toDate();
+      return fileTime >= stepStart && fileTime <= stepEnd;
+    }).sort((a, b) => {
+      const timeA = a.metadata!.timeRequested!.toDate().getTime();
+      const timeB = b.metadata!.timeRequested!.toDate().getTime();
+      return timeA - timeB;
+    });
   };
 
   const formatTime = (isoString: string) => {
@@ -174,7 +134,9 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
     }
   };
 
-  const displayData = runData || exampleRunData;
+  const runsToDisplay = runData?.runs?.length > 0 
+    ? runData.runs 
+    : generateSampleRunsFromVideos(videoFiles);
 
   return (
     <div className="appInterface">
@@ -221,7 +183,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                     </tr>
                   </thead>
                   <tbody>
-                    {sampleRunsData.map((run, index) => (
+                    {runsToDisplay.map((run: any, index: number) => (
                       <React.Fragment key={index}>
                         <tr 
                           className="expandable-row"
@@ -271,12 +233,39 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                     {expectedSteps.map((stepName) => {
                                       const step = run.steps.find((s: any) => s.name === stepName);
                                       if (step) {
+                                        const stepVideos = getStepVideos(step);
+                                        const firstVideo = stepVideos.length > 0 ? stepVideos[0] : null;
+                                        const lastVideo = stepVideos.length > 1 ? stepVideos[stepVideos.length - 1] : (stepVideos.length === 1 ? stepVideos[0] : null);
+
+                                        if (firstVideo) {
+                                          console.log(`Step "${step.name}" start video:`, firstVideo.metadata?.uri);
+                                        }
+                                        if (lastVideo) {
+                                          console.log(`Step "${step.name}" end video:`, lastVideo.metadata?.uri);
+                                        }
+
+                                        const beforeImage = firstVideo ? (
+                                          <a href={firstVideo.metadata?.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${firstVideo.metadata?.fileName}`}>
+                                            <div className="placeholder-image before"></div>
+                                          </a>
+                                        ) : (
+                                          <div className="placeholder-image before"></div>
+                                        );
+
+                                        const afterImage = lastVideo ? (
+                                          <a href={lastVideo.metadata?.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${lastVideo.metadata?.fileName}`}>
+                                            <div className="placeholder-image after"></div>
+                                          </a>
+                                        ) : (
+                                          <div className="placeholder-image after"></div>
+                                        );
+
                                         return (
                                           <div key={stepName} className="step-card">
                                             <div className="step-name">{stepName}</div>
                                             <div className="step-timeline">
                                               <div className="step-moment">
-                                                <div className="placeholder-image before"></div>
+                                                {beforeImage}
                                                 <div className="step-time">
                                                   <span className="time-label">Start</span>
                                                   <span className="time-value">{formatTime(step.start)}</span>
@@ -284,7 +273,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                               </div>
                                               <div className="timeline-arrow">→</div>
                                               <div className="step-moment">
-                                                <div className="placeholder-image after"></div>
+                                                {afterImage}
                                                 <div className="step-time">
                                                   <span className="time-label">End</span>
                                                   <span className="time-value">{formatTime(step.end)}</span>
