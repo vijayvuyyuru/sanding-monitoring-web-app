@@ -58,19 +58,72 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
       const storageResponse = await videoStoreClient.doCommand(storageStateCommand);
       console.log("Storage state response:", storageResponse);
       
+      // Helper function to convert custom time format to Date
+      const parseCustomTimeFormat = (timeStr: string): Date => {
+        // Convert "2025-08-15_11-31-26Z" to "2025-08-15T11:31:26Z"
+        const isoString = timeStr.replace('_', 'T').replace(/-(\d{2})-(\d{2})Z$/, ':$1:$2Z');
+        return new Date(isoString);
+      };
+      
+      // Helper function to convert Date back to custom format
+      const formatToCustomTime = (date: Date): string => {
+        return date.toISOString().replace('T', '_').replace(/:/g, '-').replace(/\.\d{3}Z$/, 'Z');
+      };
+      
       // Extract available time ranges from storage response
       const storageData = storageResponse as any;
-      let fromTime = "2025-08-14_20-50-26Z";
-      let toTime = "2025-08-14_20-50-56Z";
+      let fromTime: string;
+      let toTime: string;
       
-      // If storage response has available ranges, use the first one
-      if (storageData && storageData.ranges && storageData.ranges.length > 0) {
+      // Check if storage response has stored_video array with time ranges
+      if (storageData && storageData.stored_video && storageData.stored_video.length > 0) {
+        const firstVideo = storageData.stored_video[0];
+        
+        // Try different possible property names for time ranges
+        if (firstVideo.start && firstVideo.end) {
+          fromTime = firstVideo.start;
+          toTime = firstVideo.end;
+        } else if (firstVideo.from && firstVideo.to) {
+          fromTime = firstVideo.from;
+          toTime = firstVideo.to;
+        } else if (firstVideo.time_range) {
+          fromTime = firstVideo.time_range.start || firstVideo.time_range.from;
+          toTime = firstVideo.time_range.end || firstVideo.time_range.to;
+        } else {
+          throw new Error("No valid time range found in stored_video");
+        }
+        
+        console.log("Full time range from stored_video:", fromTime, "to", toTime);
+        
+        // For testing, use a much smaller time range (just 5 minutes from the start)
+        const startTime = parseCustomTimeFormat(fromTime);
+        const endTime = new Date(startTime.getTime() + 5 * 60 * 1000); // Add 5 minutes
+        
+        // Ensure we don't go beyond the available range
+        const maxEndTime = parseCustomTimeFormat(toTime);
+        if (endTime > maxEndTime) {
+          // Use original end time if 5 minutes exceeds available range
+          toTime = toTime;
+        } else {
+          toTime = formatToCustomTime(endTime);
+        }
+        
+        console.log("Using shortened time range for testing:", fromTime, "to", toTime);
+      } else if (storageData && storageData.ranges && storageData.ranges.length > 0) {
+        // Fallback to ranges array if available
         const firstRange = storageData.ranges[0];
         fromTime = firstRange.start || firstRange.from;
         toTime = firstRange.end || firstRange.to;
-        console.log("Using time range from storage:", fromTime, "to", toTime);
+        console.log("Using time range from ranges:", fromTime, "to", toTime);
       } else {
-        console.log("No ranges found in storage response, using default range");
+        // If we have runData, try to use its time range
+        if (runData && runData.start && runData.end) {
+          fromTime = runData.start;
+          toTime = runData.end;
+          console.log("Using time range from runData:", fromTime, "to", toTime);
+        } else {
+          throw new Error("No valid time ranges found in storage response and no runData available");
+        }
       }
       
       console.log("Creating fetch command...");
@@ -81,8 +134,15 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
       });
       console.log("Fetch command created:", fetchCommand);
       
-      console.log("Executing fetch command...");
-      const fetchResponse = await videoStoreClient.doCommand(fetchCommand);
+      console.log("Executing fetch command with 30 second timeout...");
+      
+      // Add timeout to prevent hanging
+      const fetchPromise = videoStoreClient.doCommand(fetchCommand);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Fetch command timed out after 30 seconds')), 30000);
+      });
+      
+      const fetchResponse = await Promise.race([fetchPromise, timeoutPromise]);
       console.log("Fetch command response:", fetchResponse);
       
       // Convert base64 video data to downloadable MP4
@@ -90,6 +150,8 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
       const responseObj = fetchResponse as { video?: string };
       if (responseObj && responseObj.video) {
         convertBase64ToMp4(responseObj.video, 'fetched_video.mp4');
+      } else {
+        console.log("No video data in response");
       }
       
       console.log("handleVideoStoreCommand completed successfully");
