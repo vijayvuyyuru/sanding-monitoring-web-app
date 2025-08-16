@@ -99,6 +99,29 @@ const sampleRunsData = [
   }
 ];
 
+const exampleRunData = {
+  readings: {
+    start: "2025-08-15T18:34:13.877418758Z",
+    end: "2025-08-15T18:34:15.497700711Z",
+    steps: [
+      {
+        start: "2025-08-15T18:34:13.877418758Z",
+        end: "2025-08-15T18:34:13.877696724Z",
+        name: "Imaging",
+      },
+      {
+        start: "2025-08-15T18:34:13.877696794Z",
+        end: "2025-08-15T18:34:15.497700711Z",
+        name: "GeneratingLobes",
+      },
+    ],
+    success: false,
+    pass_id: "d0e0fc7c-9b8f-4706-abfb-96c6c517bcac",
+    err_string:
+      "generating lobes failed: rpc error: code = Unknown desc = getting inputs failed: No points found in region of interest after filtering",
+  },
+};
+
 const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -150,6 +173,8 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
       );
     }
   };
+
+  const displayData = runData || exampleRunData;
 
   return (
     <div className="appInterface">

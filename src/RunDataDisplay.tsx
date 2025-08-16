@@ -5,7 +5,16 @@ interface RunStep {
   name: string;
   start: string;
   end: string;
-  duration_ms: number;
+  duration_ms?: number; // Make optional since new structure doesn't have this
+}
+
+interface Readings {
+  start: string;
+  end: string;
+  steps: RunStep[];
+  success: boolean;
+  pass_id: string;
+  err_string?: string | null;
 }
 
 interface RunData {
@@ -15,6 +24,7 @@ interface RunData {
   end: string;
   duration_ms: number;
   runs: RunStep[][];
+  readings?: Readings; // Add support for old structure
 }
 
 interface RunDataDisplayProps {
@@ -48,12 +58,26 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
       const storageResponse = await videoStoreClient.doCommand(storageStateCommand);
       console.log("Storage state response:", storageResponse);
       
+      // Extract available time ranges from storage response
+      const storageData = storageResponse as any;
+      let fromTime = "2025-08-14_20-50-26Z";
+      let toTime = "2025-08-14_20-50-56Z";
+      
+      // If storage response has available ranges, use the first one
+      if (storageData && storageData.ranges && storageData.ranges.length > 0) {
+        const firstRange = storageData.ranges[0];
+        fromTime = firstRange.start || firstRange.from;
+        toTime = firstRange.end || firstRange.to;
+        console.log("Using time range from storage:", fromTime, "to", toTime);
+      } else {
+        console.log("No ranges found in storage response, using default range");
+      }
+      
       console.log("Creating fetch command...");
-      // Then fetch videos for a specific time range
       const fetchCommand = VIAM.Struct.fromJson({
         "command": "fetch",
-        "from": "2025-08-14_20-50-26Z",
-        "to": "2025-08-14_20-50-56Z"
+        "from": fromTime,
+        "to": toTime
       });
       console.log("Fetch command created:", fetchCommand);
       
@@ -118,8 +142,17 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
     }
   };
 
-  const formatDuration = (durationMs: number): string => {
-    const seconds = Math.floor(durationMs / 1000);
+  const formatDuration = (durationMs?: number, start?: string, end?: string): string => {
+    let ms = durationMs;
+    
+    // If no duration_ms provided, calculate from start/end times
+    if (!ms && start && end) {
+      ms = new Date(end).getTime() - new Date(start).getTime();
+    }
+    
+    if (!ms) return '0:00';
+    
+    const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -159,13 +192,27 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
       if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
       const fileTime = file.metadata.timeRequested.toDate();
       return fileTime >= stepStart && fileTime <= stepEnd;
-    }).sort((a, b) => {
-      // Sort by timestamp, newest first
-      const aTime = a.metadata?.timeRequested?.toDate().getTime() || 0;
-      const bTime = b.metadata?.timeRequested?.toDate().getTime() || 0;
-      return bTime - aTime;
     });
   };
+
+  // Handle both old and new data structures
+  const getRunSteps = () => {
+    if (!runData) return [];
+    
+    // New structure: runData.runs[0]
+    if (runData.runs && runData.runs[0]) {
+      return runData.runs[0];
+    }
+    
+    // Old structure: runData.readings.steps
+    if (runData.readings && runData.readings.steps) {
+      return runData.readings.steps;
+    }
+    
+    return [];
+  };
+
+  const runSteps = getRunSteps();
 
   if (!runData) return null;
 
@@ -210,8 +257,8 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
       </div>
 
       <h3>Run Steps</h3>
-      <div className="run-steps-container">
-        {runData.runs[0]?.map((step, index) => {
+      <div className="run-steps">
+        {runSteps.map((step, index) => {
           const stepVideos = getStepVideos(step);
           const isExpanded = expandedSteps.has(index);
 
@@ -223,7 +270,7 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
                   <div className="step-timing">
                     {formatTimestamp(step.start)} → {formatTimestamp(step.end)}
                   </div>
-                  <div className="step-duration">{formatDuration(step.duration_ms)}</div>
+                  <div className="step-duration">{formatDuration(step.duration_ms, step.start, step.end)}</div>
                 </div>
                 <div className="step-videos-summary">
                   <span className="video-count">{stepVideos.length} videos</span>

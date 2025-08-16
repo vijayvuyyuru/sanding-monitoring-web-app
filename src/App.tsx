@@ -20,6 +20,7 @@ interface ReadingStep {
   name: string;
   start: string;
   end: string;
+  duration_ms?: number;
 }
 
 interface Readings {
@@ -32,7 +33,13 @@ interface Readings {
 }
 
 interface RunData {
-  readings: Readings;
+  success: boolean;
+  err_string?: string | null;
+  start: string;
+  end: string;
+  duration_ms: number;
+  runs: ReadingStep[][];
+  readings?: Readings; // Keep for backward compatibility
 }
 
 function App() {
@@ -91,29 +98,7 @@ function App() {
       const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
       setVideoFiles(filenames);
 
-      const exampleRunData: RunData = {
-        readings: {
-          start: "2025-08-15T18:34:13.877418758Z",
-          end: "2025-08-15T18:34:15.497700711Z",
-          steps: [
-            {
-              start: "2025-08-15T18:34:13.877418758Z",
-              end: "2025-08-15T18:34:13.877696724Z",
-              name: "Imaging",
-            },
-            {
-              start: "2025-08-15T18:34:13.877696794Z",
-              end: "2025-08-15T18:34:15.497700711Z",
-              name: "GeneratingLobes",
-            },
-          ],
-          success: false,
-          pass_id: "d0e0fc7c-9b8f-4706-abfb-96c6c517bcac",
-          err_string:
-            "generating lobes failed: rpc error: code = Unknown desc = getting inputs failed: No points found in region of interest after filtering",
-        },
-      };
-      setRunData(exampleRunData);
+      // Remove example data - components will handle their own data
     };
     
     fetchData();
