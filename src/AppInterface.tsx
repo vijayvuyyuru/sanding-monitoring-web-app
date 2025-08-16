@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './appInterface.css';
+import { formatShortTimestamp, formatDurationToMinutesSeconds } from './lib/videoUtils';
 
 interface AppViewProps {
   runData: any;
@@ -101,23 +102,6 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
     });
   };
 
-  const formatTime = (isoString: string) => {
-    return new Date(isoString).toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
-  };
-
-  const formatDuration = (startTime: string, endTime: string) => {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const ms = end.getTime() - start.getTime();
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  };
-
   const getStatusBadge = (success: boolean) => {
     if (success) {
       return (
@@ -197,7 +181,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                             }
                           }}
                           aria-expanded={expandedRows.has(index)}
-                          aria-label={`${expandedRows.has(index) ? 'Collapse' : 'Expand'} details for run from ${formatTime(run.start)}`}
+                          aria-label={`${expandedRows.has(index) ? 'Collapse' : 'Expand'} details for run from ${formatShortTimestamp(run.start)}`}
                         >
                           <td>
                             <span className={`expand-icon ${expandedRows.has(index) ? 'expanded' : ''}`} aria-hidden="true">
@@ -205,9 +189,9 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                             </span>
                           </td>
                           <td>{getStatusBadge(run.success)}</td>
-                          <td className="text-zinc-700">{formatTime(run.start)}</td>
-                          <td className="text-zinc-700">{formatTime(run.end)}</td>
-                          <td className="text-zinc-700">{formatDuration(run.start, run.end)}</td>
+                          <td className="text-zinc-700">{formatShortTimestamp(run.start)}</td>
+                          <td className="text-zinc-700">{formatShortTimestamp(run.end)}</td>
+                          <td className="text-zinc-700">{formatDurationToMinutesSeconds(run.start, run.end)}</td>
                           <td className="text-zinc-700">
                             {run.success ? '1 / 1' : '0 / 1'}
                           </td>
@@ -227,7 +211,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                               <div className="run-details">
                                 <div className="passes-container">
                                   <div className="pass-info">
-                                    <span className="pass-duration">{formatDuration(run.start, run.end)}</span>
+                                    <span className="pass-duration">{formatDurationToMinutesSeconds(run.start, run.end)}</span>
                                   </div>
                                   <div className="steps-grid">
                                     {expectedSteps.map((stepName) => {
@@ -244,17 +228,17 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                           console.log(`Step "${step.name}" end video:`, lastVideo.metadata?.uri);
                                         }
 
-                                        const beforeImage = firstVideo ? (
-                                          <a href={firstVideo.metadata?.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${firstVideo.metadata?.fileName}`}>
-                                            <div className="placeholder-image before"></div>
+                                        const beforeImage = firstVideo?.metadata?.uri ? (
+                                          <a href={firstVideo.metadata.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${firstVideo.metadata?.fileName}`}>
+                                            <video src={firstVideo.metadata.uri} className="placeholder-image before" preload="metadata" muted playsInline />
                                           </a>
                                         ) : (
                                           <div className="placeholder-image before"></div>
                                         );
 
-                                        const afterImage = lastVideo ? (
-                                          <a href={lastVideo.metadata?.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${lastVideo.metadata?.fileName}`}>
-                                            <div className="placeholder-image after"></div>
+                                        const afterImage = lastVideo?.metadata?.uri ? (
+                                          <a href={lastVideo.metadata.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${lastVideo.metadata?.fileName}`}>
+                                            <video src={lastVideo.metadata.uri} className="placeholder-image after" preload="metadata" muted playsInline />
                                           </a>
                                         ) : (
                                           <div className="placeholder-image after"></div>
@@ -268,7 +252,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                                 {beforeImage}
                                                 <div className="step-time">
                                                   <span className="time-label">Start</span>
-                                                  <span className="time-value">{formatTime(step.start)}</span>
+                                                  <span className="time-value">{formatShortTimestamp(step.start)}</span>
                                                 </div>
                                               </div>
                                               <div className="timeline-arrow">→</div>
@@ -276,11 +260,11 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                                 {afterImage}
                                                 <div className="step-time">
                                                   <span className="time-label">End</span>
-                                                  <span className="time-value">{formatTime(step.end)}</span>
+                                                  <span className="time-value">{formatShortTimestamp(step.end)}</span>
                                                 </div>
                                               </div>
                                             </div>
-                                            <div className="step-duration">{formatDuration(step.start, step.end)}</div>
+                                            <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
                                           </div>
                                         );
                                       }

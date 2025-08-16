@@ -93,7 +93,7 @@ function App() {
         undefined,
         false,
         false,
-        false,
+        true,
       );
       const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
       setVideoFiles(filenames);

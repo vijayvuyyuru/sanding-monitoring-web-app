@@ -68,7 +68,7 @@ export const handleVideoStoreCommand = async (
 
       const maxEndTime = parseCustomTimeFormat(toTime);
       if (endTime > maxEndTime) {
-        toTime = toTime;
+        toTime = formatToCustomTime(maxEndTime);
       } else {
         toTime = formatToCustomTime(endTime);
       }
@@ -171,6 +171,16 @@ export const formatDuration = (durationMs?: number, start?: string, end?: string
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+export const formatDurationToMinutesSeconds = (startTime: string, endTime: string): string => {
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const ms = end.getTime() - start.getTime();
+  if (isNaN(ms) || ms < 0) return '0m 0s';
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}m ${seconds}s`;
 };
 
 export const formatTimestamp = (timestamp: string): string => {
