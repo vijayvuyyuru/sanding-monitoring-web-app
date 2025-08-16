@@ -275,14 +275,20 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                           <div key={stepName} className="step-card">
                                             <div className="step-name">{stepName}</div>
                                             <div className="step-timeline">
-                                              <div className="step-time">
-                                                <span className="time-label">Start</span>
-                                                <span className="time-value">{formatTime(step.start)}</span>
+                                              <div className="step-moment">
+                                                <div className="placeholder-image before"></div>
+                                                <div className="step-time">
+                                                  <span className="time-label">Start</span>
+                                                  <span className="time-value">{formatTime(step.start)}</span>
+                                                </div>
                                               </div>
                                               <div className="timeline-arrow">→</div>
-                                              <div className="step-time">
-                                                <span className="time-label">End</span>
-                                                <span className="time-value">{formatTime(step.end)}</span>
+                                              <div className="step-moment">
+                                                <div className="placeholder-image after"></div>
+                                                <div className="step-time">
+                                                  <span className="time-label">End</span>
+                                                  <span className="time-value">{formatTime(step.end)}</span>
+                                                </div>
                                               </div>
                                             </div>
                                             <div className="step-duration">{formatDuration(step.start, step.end)}</div>
