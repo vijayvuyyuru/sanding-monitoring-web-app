@@ -13,12 +13,12 @@ interface RunData {
 export const handleVideoStoreCommand = async (
   videoStoreClient: VIAM.GenericComponentClient,
   runData?: RunData | null
-) => {
+): Promise<{ videoUrl?: string; error?: string }> => {
   console.log("handleVideoStoreCommand called");
 
   if (!videoStoreClient) {
     console.log("No videoStoreClient available, returning early");
-    return;
+    return { error: "No video store client available" };
   }
 
   try {
@@ -109,22 +109,27 @@ export const handleVideoStoreCommand = async (
 
     const responseObj = fetchResponse as { video?: string };
     if (responseObj && responseObj.video) {
-      convertBase64ToMp4(responseObj.video, 'fetched_video.mp4');
+      // Create video stream URL for playback
+      const videoUrl = createVideoStreamFromBase64(responseObj.video);
+
+      if (videoUrl) {
+        return { videoUrl };
+      } else {
+        return { error: "Failed to create video stream" };
+      }
     } else {
       console.log("No video data in response");
+      return { error: "No video data in response" };
     }
-
-    console.log("handleVideoStoreCommand completed successfully");
   } catch (error) {
     console.error("Error executing video store commands:", error);
-    console.log("Error details:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined
-    });
+    return {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 };
 
-export const convertBase64ToMp4 = (base64Data: string, filename: string) => {
+export const convertBase64ToMp4 = (base64Data: string, filename: string): string | null => {
   try {
     console.log("Converting base64 to MP4...");
 
@@ -140,21 +145,50 @@ export const convertBase64ToMp4 = (base64Data: string, filename: string) => {
     }
 
     const blob = new Blob([bytes], { type: 'video/mp4' });
-
     const url = URL.createObjectURL(blob);
+
+    // Create download link
     const link = document.createElement('a');
     link.href = url;
     link.download = filename;
 
     document.body.appendChild(link);
     link.click();
-
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 
     console.log(`MP4 file "${filename}" downloaded successfully`);
+
+    // Return the blob URL for streaming (don't revoke it immediately)
+    return url;
   } catch (error) {
     console.error("Error converting base64 to MP4:", error);
+    return null;
+  }
+};
+
+export const createVideoStreamFromBase64 = (base64Data: string): string | null => {
+  try {
+    console.log("Creating video stream from base64...");
+
+    const base64String = base64Data.includes(',')
+      ? base64Data.split(',')[1]
+      : base64Data;
+
+    const binaryString = atob(base64String);
+    const bytes = new Uint8Array(binaryString.length);
+
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const blob = new Blob([bytes], { type: 'video/mp4' });
+    const url = URL.createObjectURL(blob);
+
+    console.log("Video stream URL created successfully");
+    return url;
+  } catch (error) {
+    console.error("Error creating video stream:", error);
+    return null;
   }
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './App.css';
 import { 
@@ -45,10 +45,36 @@ interface RunDataDisplayProps {
 const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
   const [activeView, setActiveView] = useState<'summary' | 'files'>('summary');
+  const [base64VideoUrl, setBase64VideoUrl] = useState<string | null>(null);
+  const [loadingBase64Video, setLoadingBase64Video] = useState(false);
+
+  // Cleanup video URLs when component unmounts or video changes
+  useEffect(() => {
+    return () => {
+      if (base64VideoUrl && base64VideoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(base64VideoUrl);
+      }
+    };
+  }, [base64VideoUrl]);
 
   const handleVideoStoreCommandWrapper = async () => {
     if (!videoStoreClient) return;
-    await handleVideoStoreCommand(videoStoreClient, runData);
+    
+    setLoadingBase64Video(true);
+    try {
+      const result = await handleVideoStoreCommand(videoStoreClient, runData);
+      
+      if (result.videoUrl) {
+        setBase64VideoUrl(result.videoUrl);
+      } else if (result.error) {
+        alert(`Error fetching video: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Error in video store command:", error);
+      alert("Failed to fetch video from store");
+    } finally {
+      setLoadingBase64Video(false);
+    }
   };
 
   const toggleStep = (stepIndex: number) => {
@@ -122,14 +148,85 @@ const RunDataDisplay: React.FC<RunDataDisplayProps> = ({ runData, videoFiles, sa
           </div>
         </div>
         
+        {/* Base64 Video player */}
+        {base64VideoUrl && (
+          <div className="base64-video-container" style={{ 
+            marginTop: '20px',
+            padding: '20px',
+            backgroundColor: '#f0f0f0',
+            border: '2px solid #28a745',
+            borderRadius: '8px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
+              <h4 style={{ margin: 0 }}>Video from Video Store (Base64)</h4>
+              <button 
+                onClick={() => {
+                  if (base64VideoUrl) {
+                    URL.revokeObjectURL(base64VideoUrl);
+                  }
+                  setBase64VideoUrl(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#6c757d'
+                }}
+              >
+                ×
+              </button>
+            </div>
+            
+            <video 
+              controls 
+              autoPlay
+              src={base64VideoUrl}
+              style={{ 
+                width: '100%', 
+                maxWidth: '800px',
+                borderRadius: '4px'
+              }}
+              onError={(e) => {
+                console.error("Video playback error:", e);
+                alert("Error playing video");
+              }}
+            />
+            
+            <div style={{ 
+              marginTop: '15px',
+              padding: '10px',
+              backgroundColor: '#d4edda',
+              borderRadius: '4px',
+              fontSize: '14px',
+              color: '#155724',
+              textAlign: 'center'
+            }}>
+              ✅ This video is loaded from base64 data - no CORS issues!
+            </div>
+            <div style={{ 
+              marginTop: '15px',
+              padding: '10px',
+              backgroundColor: '#ddd',
+              borderRadius: '4px',
+              fontSize: '14px',
+              color: '#151515',
+              textAlign: 'center'
+            }}>
+              🥺 Entire video must be loaded before playback
+            </div>
+          </div>
+        )}
+        
         {/* Add test button for video store commands */}
         {videoStoreClient && (
           <div className="test-controls">
             <button
               onClick={handleVideoStoreCommandWrapper}
               className="test-video-store-btn"
+              disabled={loadingBase64Video}
             >
-              Test Video Store Commands
+              {loadingBase64Video ? 'Fetching Video...' : 'Fetch Video from Store'}
             </button>
           </div>
         )}
