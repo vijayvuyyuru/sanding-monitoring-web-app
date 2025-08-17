@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './appInterface.css';
+import RobotOperator from './RobotOperator';
 import { 
   formatShortTimestamp, 
   formatDurationToMinutesSeconds,
@@ -14,6 +15,7 @@ interface AppViewProps {
   videoFiles: VIAM.dataApi.BinaryData[];
   videoStoreClient?: VIAM.GenericComponentClient | null;
   sanderClient: VIAM.GenericComponentClient | null;
+  robotClient?: VIAM.RobotClient | null;
 }
 
 // Helper to generate dynamic sample data from video files
@@ -72,7 +74,7 @@ const generateSampleRunsFromVideos = (videoFiles: VIAM.dataApi.BinaryData[]) => 
 };
 
 
-const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
+const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient, robotClient }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
@@ -398,8 +400,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
           </>
         ) : (
           <section>
-            <h2>Robot operator</h2>
-            <p>Not available yet.</p>
+            <RobotOperator sanderClient={sanderClient} robotClient={robotClient} />
           </section>
         )}
       </main>

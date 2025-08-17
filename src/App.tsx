@@ -47,6 +47,7 @@ function App() {
   const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
   const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
 
   // Check for showui URL parameter
   const urlParams = new URLSearchParams(window.location.search);
@@ -72,6 +73,7 @@ function App() {
       
       const viamClient = await connect(apiKeyId, apiKeySecret);
       const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
+      setRobotClient(robotClient); // Store the robot client
       const resources = await robotClient.resourceNames();
       
       if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
@@ -106,7 +108,7 @@ function App() {
 
   // Render different UI based on showui parameter
   if (showUI) {
-    return <AppInterface videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} />;
+    return <AppInterface videoStoreClient={videoStoreClient} runData={runData} videoFiles={videoFiles} sanderClient={sanderClient} robotClient={robotClient} />;
   }
 
   // Default monitoring interface
