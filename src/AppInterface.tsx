@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './appInterface.css';
-import { formatShortTimestamp, formatDurationToMinutesSeconds } from './lib/videoUtils';
+import { 
+  formatShortTimestamp, 
+  formatDurationToMinutesSeconds,
+  extractCameraName,
+  formatTimestamp,
+  handleVideoStoreCommand
+} from './lib/videoUtils';
 
 interface AppViewProps {
   runData: any;
@@ -69,6 +75,9 @@ const generateSampleRunsFromVideos = (videoFiles: VIAM.dataApi.BinaryData[]) => 
 const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
+  const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
+  const [loadingModalVideo, setLoadingModalVideo] = useState(false);
 
   const expectedSteps = ["Imaging", "GeneratingLobes", "Execution"];
 
@@ -121,6 +130,108 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
   const runsToDisplay = runData?.runs?.length > 0 
     ? runData.runs 
     : generateSampleRunsFromVideos(videoFiles);
+
+  const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
+    setSelectedVideo(video);
+    
+    // Try to fetch video from video store if available
+    if (videoStoreClient && video.metadata?.timeRequested) {
+      setLoadingModalVideo(true);
+      try {
+        // Create a time range around the video's timestamp
+        const videoTime = video.metadata.timeRequested.toDate();
+        const rangeStart = new Date(videoTime.getTime() - 30000); // 30 seconds before
+        const rangeEnd = new Date(videoTime.getTime() + 30000); // 30 seconds after
+        
+        const mockRunData = {
+          success: true,
+          start: rangeStart.toISOString(),
+          end: rangeEnd.toISOString(),
+          duration_ms: 60000,
+          runs: []
+        };
+        
+        const result = await handleVideoStoreCommand(videoStoreClient, mockRunData);
+        
+        if (result.videoUrl) {
+          setModalVideoUrl(result.videoUrl);
+        }
+      } catch (error) {
+        console.error("Error fetching video:", error);
+      } finally {
+        setLoadingModalVideo(false);
+      }
+    }
+  };
+
+  const closeVideoModal = () => {
+    // Clean up video URL if it exists
+    if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(modalVideoUrl);
+    }
+    setSelectedVideo(null);
+    setModalVideoUrl(null);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(modalVideoUrl);
+      }
+    };
+  }, [modalVideoUrl]);
+
+  const runs = [
+    {
+      "start": "2023-10-01T10:00:00Z",
+      "end": "2023-10-01T10:15:00Z",
+      "steps": [
+        {
+          "name": "Imaging",
+          "start": "2023-10-01T10:00:00Z",
+          "end": "2023-10-01T10:05:00Z"
+        },
+        {
+          "name": "GeneratingLobes",
+          "start": "2023-10-01T10:05:00Z",
+          "end": "2023-10-01T10:10:00Z"
+        },
+        {
+          "name": "Execution",
+          "start": "2023-10-01T10:10:00Z",
+          "end": "2023-10-01T10:15:00Z"
+        }
+      ],
+      "success": true,
+      "pass_id": "1",
+      "err_string": null
+    },
+    {
+      "start": "2023-10-01T09:45:00Z",
+      "end": "2023-10-01T10:00:00Z",
+      "steps": [
+        {
+          "name": "Imaging",
+          "start": "2023-10-01T09:45:00Z",
+          "end": "2023-10-01T09:50:00Z"
+        },
+        {
+          "name": "GeneratingLobes",
+          "start": "2023-10-01T09:50:00Z",
+          "end": "2023-10-01T09:55:00Z"
+        },
+        {
+          "name": "Execution",
+          "start": "2023-10-01T09:55:00Z",
+          "end": "2023-10-01T10:00:00Z"
+        }
+      ],
+      "success": false,
+      "pass_id": "2",
+      "err_string": "Error in execution step"
+    }
+  ];
 
   return (
     <div className="appInterface">
@@ -218,53 +329,53 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                       const step = run.steps.find((s: any) => s.name === stepName);
                                       if (step) {
                                         const stepVideos = getStepVideos(step);
-                                        const firstVideo = stepVideos.length > 0 ? stepVideos[0] : null;
-                                        const lastVideo = stepVideos.length > 1 ? stepVideos[stepVideos.length - 1] : (stepVideos.length === 1 ? stepVideos[0] : null);
-
-                                        if (firstVideo) {
-                                          console.log(`Step "${step.name}" start video:`, firstVideo.metadata?.uri);
-                                        }
-                                        if (lastVideo) {
-                                          console.log(`Step "${step.name}" end video:`, lastVideo.metadata?.uri);
-                                        }
-
-                                        const beforeImage = firstVideo?.metadata?.uri ? (
-                                          <a href={firstVideo.metadata.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${firstVideo.metadata?.fileName}`}>
-                                            <video src={firstVideo.metadata.uri} className="placeholder-image before" preload="metadata" muted playsInline />
-                                          </a>
-                                        ) : (
-                                          <div className="placeholder-image before"></div>
-                                        );
-
-                                        const afterImage = lastVideo?.metadata?.uri ? (
-                                          <a href={lastVideo.metadata.uri} target="_blank" rel="noopener noreferrer" title={`View video: ${lastVideo.metadata?.fileName}`}>
-                                            <video src={lastVideo.metadata.uri} className="placeholder-image after" preload="metadata" muted playsInline />
-                                          </a>
-                                        ) : (
-                                          <div className="placeholder-image after"></div>
-                                        );
 
                                         return (
                                           <div key={stepName} className="step-card">
                                             <div className="step-name">{stepName}</div>
                                             <div className="step-timeline">
-                                              <div className="step-moment">
-                                                {beforeImage}
-                                                <div className="step-time">
-                                                  <span className="time-label">Start</span>
-                                                  <span className="time-value">{formatShortTimestamp(step.start)}</span>
-                                                </div>
+                                              <div className="step-time">
+                                                <span className="time-label">Start</span>
+                                                <span className="time-value">{formatShortTimestamp(step.start)}</span>
                                               </div>
                                               <div className="timeline-arrow">→</div>
-                                              <div className="step-moment">
-                                                {afterImage}
-                                                <div className="step-time">
-                                                  <span className="time-label">End</span>
-                                                  <span className="time-value">{formatShortTimestamp(step.end)}</span>
-                                                </div>
+                                              <div className="step-time">
+                                                <span className="time-label">End</span>
+                                                <span className="time-value">{formatShortTimestamp(step.end)}</span>
                                               </div>
                                             </div>
                                             <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
+                                            
+                                            {stepVideos.length > 0 ? (
+                                              <div className="step-videos-grid">
+                                                {stepVideos.map((video, videoIndex) => (
+                                                  <div 
+                                                    key={videoIndex} 
+                                                    className="step-video-item"
+                                                    onClick={() => handleVideoClick(video)}
+                                                  >
+                                                    <div className="video-thumbnail-container">
+                                                      <div className="video-thumbnail">
+                                                        <span className="video-icon">🎬</span>
+                                                      </div>
+                                                    </div>
+                                                    <div className="video-info">
+                                                      <div className="camera-name" title={extractCameraName(video.metadata?.fileName || '')}>
+                                                        {extractCameraName(video.metadata?.fileName || '')}
+                                                      </div>
+                                                      <div className="video-time">
+                                                        {video.metadata?.timeRequested ?
+                                                          formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
+                                                          'Unknown'
+                                                        }
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <div className="no-videos-message">No videos found</div>
+                                            )}
                                           </div>
                                         );
                                       }
@@ -295,6 +406,100 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
           </section>
         )}
       </main>
+
+      {/* Video Modal */}
+      {selectedVideo && (
+        <div className="video-modal-overlay" onClick={closeVideoModal}>
+          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="video-modal-header">
+              <h3>{extractCameraName(selectedVideo.metadata?.fileName || '')}</h3>
+              <button className="video-modal-close" onClick={closeVideoModal}>×</button>
+            </div>
+            <div className="video-modal-content">
+              <div className="video-modal-player">
+                {loadingModalVideo ? (
+                  <>
+                    <div className="loading-spinner">⏳</div>
+                    <p>Loading video...</p>
+                  </>
+                ) : modalVideoUrl ? (
+                  <video 
+                    controls 
+                    autoPlay
+                    src={modalVideoUrl}
+                    style={{ 
+                      width: '100%', 
+                      height: '100%',
+                      borderRadius: '8px'
+                    }}
+                    onError={(e) => {
+                      console.error("Video playback error:", e);
+                      alert("Error playing video");
+                    }}
+                  />
+                ) : (
+                  <>
+                    <span className="video-icon-large">🎬</span>
+                    <p>Video Preview</p>
+                    {videoStoreClient && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (selectedVideo) {
+                            await handleVideoClick(selectedVideo);
+                          }
+                        }}
+                        className="fetch-video-btn"
+                        style={{
+                          marginTop: '10px',
+                          padding: '8px 16px',
+                          backgroundColor: '#007bff',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}
+                      >
+                        Load Video from Store
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="video-modal-info">
+                <p><strong>Time:</strong> {selectedVideo.metadata?.timeRequested ? 
+                  formatTimestamp(selectedVideo.metadata.timeRequested.toDate().toISOString()) : 
+                  'Unknown'
+                }</p>
+                <p><strong>File:</strong> {selectedVideo.metadata?.fileName || 'Unknown'}</p>
+                {modalVideoUrl && (
+                  <p style={{ fontSize: '12px', color: '#28a745', marginTop: '10px' }}>
+                    ✅ Video loaded from base64 data
+                  </p>
+                )}
+              </div>
+              <div className="video-modal-actions">
+                <a 
+                  href={selectedVideo.metadata?.uri} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="video-modal-button primary"
+                >
+                  Open in New Tab
+                </a>
+                <a 
+                  href={selectedVideo.metadata?.uri} 
+                  download={selectedVideo.metadata?.fileName || 'video.mp4'}
+                  className="video-modal-button secondary"
+                >
+                  Download
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
