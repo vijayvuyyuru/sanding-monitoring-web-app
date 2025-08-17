@@ -321,9 +321,6 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                             <td colSpan={7}>
                               <div className="run-details">
                                 <div className="passes-container">
-                                  <div className="pass-info">
-                                    <span className="pass-duration">{formatDurationToMinutesSeconds(run.start, run.end)}</span>
-                                  </div>
                                   <div className="steps-grid">
                                     {expectedSteps.map((stepName) => {
                                       const step = run.steps.find((s: any) => s.name === stepName);

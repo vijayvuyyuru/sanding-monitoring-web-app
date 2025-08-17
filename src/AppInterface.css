@@ -507,7 +507,7 @@ button:focus {
 }
 
 .run-details {
-  padding: 4px 16px 12px 16px;
+  padding: 8px;
 }
 
 .run-details-title {
@@ -521,11 +521,6 @@ button:focus {
   display: flex;
   flex-direction: column;
   padding: 4px;
-}
-
-.pass-info {
-  text-align: center;
-  margin-bottom: 8px;
 }
 
 .pass-duration {
