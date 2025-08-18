@@ -38,7 +38,7 @@ interface RunData {
   end: string;
   duration_ms: number;
   runs: ReadingStep[][];
-  readings?: Readings; // Keep for backward compatibility
+  readings?: Readings; 
 }
 
 function App() {
@@ -110,7 +110,6 @@ function App() {
     fetchData();
   }, []);
 
-  // Always show the AppInterface (no URL parameter checking)
   return (
     <AppInterface 
       runData={runData}
