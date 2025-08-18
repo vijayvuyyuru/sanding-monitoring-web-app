@@ -108,8 +108,9 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
     }
 
     try {
+      // Create command with startSandingOption as per original implementation
       const command = VIAM.Struct.fromJson({
-        "command": "start_sanding"
+        "startSandingOption": true
       });
       
       const response = await sanderClient.doCommand(command);
@@ -128,8 +129,9 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
     }
 
     try {
+      // Create command to stop sanding (you may need to adjust this based on your API)
       const command = VIAM.Struct.fromJson({
-        "command": "stop_sanding"
+        "stopSandingOption": true  // or whatever the correct command structure is
       });
       
       const response = await sanderClient.doCommand(command);

@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 /*
 TODO:
 - detect if there is a sanding resource
-    - if so show a button to stat sanding
+    - if so show a button to start sanding
     - if not, show a warning that there is no sanding resource
 - detect if there is a video-store resource
     - if so show request a video from the past 1 minute and show the video
@@ -71,18 +71,26 @@ function App() {
       setRobotClient(robotClient); // Store the robot client
       const resources = await robotClient.resourceNames();
       
+      // Check for sander module resource
       if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
         const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
         setSanderClient(sanderClient);
+        // TODO: Add visual indication that sander resource is available
+      } else {
+        // TODO: Show warning that there is no sanding resource
+        console.warn("No sander-module resource found");
       }
 
+      // Check for video-store resource
       if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "generic-1"))) {
         const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "generic-1");
         setVideoStoreClient(videoStoreClient);
+        // TODO: Request a video from the past 1 minute and show the video
+      } else {
+        console.warn("No video-store resource found");
       }
       
-      // debugger;
-      
+      // Fetch binary data (video files)
       const binaryData = await viamClient.dataClient.binaryDataByFilter( 
         filter, 
         undefined,
@@ -90,18 +98,19 @@ function App() {
         undefined,
         false,
         false,
-        true,
+        true, // Include metadata
       );
       const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
       setVideoFiles(filenames);
 
-      // Remove example data - components will handle their own data
+      // TODO: Fetch and display runtime start/end and substep durations
+      // TODO: Implement pagination for large datasets
     };
     
     fetchData();
   }, []);
 
-  // Always show the AppInterface
+  // Always show the AppInterface (no URL parameter checking)
   return (
     <AppInterface 
       runData={runData}

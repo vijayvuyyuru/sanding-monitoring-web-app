@@ -1,0 +1,3263 @@
+diff --git a/index.html b/index.html
+index 9db2647..1fc9a96 100644
+--- a/index.html
++++ b/index.html
+@@ -1,13 +1,17 @@
+ <!DOCTYPE html>
+ <html lang="en">
+-  <head>
+-    <meta charset="UTF-8" />
+-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Sanding Monitoring Web App</title>
+-  </head>
+-  <body>
+-    <div id="root"></div>
+-    <script type="module" src="/src/index.tsx"></script>
+-  </body>
+-</html>
++
++<head>
++  <meta charset="UTF-8" />
++  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
++  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++  <title>Sanding Monitoring Web App</title>
++  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
++</head>
++
++<body>
++  <div id="root"></div>
++  <script type="module" src="/src/index.tsx"></script>
++</body>
++
++</html>
+\ No newline at end of file
+diff --git a/src/App.css b/src/App.css
+index f734c23..f5ada72 100644
+--- a/src/App.css
++++ b/src/App.css
+@@ -13,54 +13,350 @@
+   margin: 0;
+ }
+ 
+-.string-list {
+-  max-width: 600px;
+-  margin: 0 auto;
++.run-data-section {
++  max-width: 800px;
++  margin: 0 auto 40px auto;
+   text-align: left;
+ }
+ 
+-.string-list h2 {
++.run-data-section h2,
++.run-data-section h3 {
+   color: #555;
+   margin-bottom: 20px;
+ }
+ 
+-.string-list ul {
+-  list-style-type: none;
+-  padding: 0;
++.run-summary {
++  background-color: #f8f9fa;
++  padding: 20px;
++  border-radius: 8px;
++  margin-bottom: 30px;
+ }
+ 
+-.grid {
+-  display: grid;
+-  grid-template-columns: 1fr 2fr;
+-  gap: 10px;
+-  margin-top: 20px;
++.status {
++  font-weight: bold;
++  font-size: 1.1em;
++  margin-bottom: 10px;
+ }
+ 
+-.grid-item {
+-  display: contents;
++.status.success {
++  color: #28a745;
+ }
+ 
+-.timestamp {
+-  padding: 10px 15px;
+-  background-color: #f5f5f5;
+-  border-radius: 5px;
+-  border-left: 4px solid #28a745;
++.status.error {
++  color: #dc3545;
++}
++
++.error-message {
++  color: #dc3545;
++  background-color: #f8d7da;
++  border: 1px solid #f5c6cb;
++  padding: 10px;
++  border-radius: 4px;
++  margin: 10px 0;
+   font-family: monospace;
+   font-size: 0.9em;
+ }
+ 
+-.filename {
+-  padding: 10px 15px;
+-  background-color: #f5f5f5;
+-  border-radius: 5px;
+-  border-left: 4px solid #007bff;
++.run-times {
++  margin-top: 20px;
++  display: flex;
++  align-items: flex-start;
++  gap: 40px;
++}
++
++.time-column {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 8px;
++  flex: 1;
++}
++
++.duration-center {
++  text-align: center;
++  flex: 1;
++  align-self: flex-start;
++  margin-top: 0;
++}
++
++.video-placeholder {
++  background: #f5f5f5;
++  border: 2px dashed #ccc;
++  padding: 20px;
++  border-radius: 8px;
++  color: #666;
++  font-size: 0.9em;
++  width: 100%;
++  min-height: 120px;
++  box-sizing: border-box;
++  min-width: 0;
++}
++
++.run-steps-container {
++  display: flex;
++  flex-direction: column;
++  gap: 15px;
++  margin-top: 20px;
++}
++
++.run-step-card {
++  border-radius: 8px;
++  background: white;
++  overflow: hidden;
++  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
++}
++
++.step-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  padding: 15px 20px;
++  background: #f8f9fa;
++  cursor: pointer;
++}
++
++.step-header:hover {
++  background: #e9ecef;
++}
++
++.step-info {
++  flex: 1;
++}
++
++.step-name {
++  font-weight: bold;
++  font-size: 1.1em;
++  color: #333;
++  margin-bottom: 5px;
+ }
+ 
+-.filename a {
++.step-timing {
++  font-family: monospace;
++  font-size: 0.9em;
++  color: #666;
++  margin-bottom: 3px;
++}
++
++.step-duration {
++  font-family: monospace;
++  font-weight: bold;
+   color: #007bff;
++  font-size: 0.9em;
++}
++
++.step-videos-summary {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++}
++
++.video-count {
++  font-size: 0.9rem;
++  color: #6c757d;
++}
++
++.expand-icon {
++  transition: transform 0.2s ease;
++  display: inline-block;
++  font-size: 0.8rem;
++  color: #6c757d;
++  cursor: pointer;
++}
++
++.expand-icon.expanded {
++  transform: rotate(180deg);
++}
++
++.step-videos-expanded {
++  padding: 20px;
++  border-top: 1px solid #eee;
++  background: #fafafa;
++}
++
++.videos-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
++  gap: 15px;
++}
++
++.video-card {
++  background: white;
++  border: 1px solid #ddd;
++  border-radius: 6px;
++  padding: 12px;
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  transition: box-shadow 0.2s;
++}
++
++.video-card:hover {
++  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
++}
++
++.video-info {
++  flex: 1;
++}
++
++.camera-name {
++  font-weight: bold;
++  color: #333;
++  font-size: 0.9em;
++  margin-bottom: 3px;
++}
++
++.video-time {
++  font-family: monospace;
++  font-size: 0.75em;
++  color: #999;
++}
++
++.video-actions {
++  margin-left: 10px;
++}
++
++.video-link-btn {
++  background: #007bff;
++  color: white;
++  padding: 6px 12px;
++  border-radius: 4px;
++  text-decoration: none;
++  font-size: 0.8em;
++  font-weight: bold;
++  transition: background-color 0.2s;
++  cursor: pointer;
++}
++
++.video-link-btn:hover {
++  background: #0056b3;
+   text-decoration: none;
++  color: white;
++}
++
++.no-videos-message {
++  text-align: left;
++  color: #666;
++  font-style: italic;
++  padding: 12px 20px;
++  background: #fafafa;
++  border-top: 1px solid #eee;
++  font-size: 0.9em;
++}
++
++.section-nav {
++  display: flex;
++  border-bottom: 1px solid #e9ecef;
++  margin-bottom: 24px;
++  gap: 0;
++}
++
++.section-nav-item {
++  background: none;
++  border: none;
++  padding: 16px 24px;
++  font-size: 1rem;
++  font-weight: 500;
++  color: #6c757d;
++  cursor: pointer;
++  border-bottom: 2px solid transparent;
++  transition: all 0.2s ease;
++  position: relative;
++}
++
++.section-nav-item:hover {
++  color: #495057;
++  background: #f8f9fa;
++}
++
++.section-nav-item.active {
++  color: #495057;
++  border-bottom-color: #495057;
++  background: transparent;
++}
++
++.section-content {
++  min-height: 200px;
++}
++
++.files-view {
++  padding: 20px 0;
++}
++
++.files-grid {
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++}
++
++.file-item {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  padding: 16px;
++  background: #f8f9fa;
++  border-radius: 8px;
++  border: 1px solid #e9ecef;
++}
++
++.file-info {
++  flex: 1;
++}
++
++.file-name {
++  font-weight: 500;
++  color: #495057;
++  margin-bottom: 4px;
++}
++
++.file-timestamp {
++  font-size: 0.9rem;
++  color: #6c757d;
++}
++
++.file-actions {
++  margin-left: 16px;
++}
++
++.file-link-btn {
++  background: #007bff;
++  color: white;
++  text-decoration: none;
++  padding: 8px 16px;
++  border-radius: 4px;
++  font-size: 0.9rem;
++  transition: background 0.2s ease;
++  cursor: pointer;
++}
++
++.file-link-btn:hover {
++  background: #0056b3;
++}
++
++.no-files {
++  text-align: center;
++  color: #6c757d;
++  padding: 40px 20px;
++  font-style: italic;
++}
++
++.sander-controls {
++  margin-bottom: 20px;
++  padding-bottom: 20px;
++  border-bottom: 1px solid #e9ecef;
++}
++
++.start-sanding-btn {
++  background: #28a745;
++  color: white;
++  border: none;
++  padding: 12px 24px;
++  border-radius: 6px;
++  font-size: 1rem;
++  font-weight: 500;
++  cursor: pointer;
++  transition: background 0.2s ease;
+ }
+ 
+-.filename a:hover {
+-  text-decoration: underline;
++.start-sanding-btn:hover {
++  background: #218838;
+ }
+diff --git a/src/App.tsx b/src/App.tsx
+index 53bf81c..a1cd1dd 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,88 +1,115 @@
+-import { useState, useEffect } from 'react';
+-import './App.css';
++import { useEffect, useState } from 'react';
+ import * as VIAM from "@viamrobotics/sdk";
++import AppInterface from './AppInterface';
+ import Cookies from "js-cookie";
++
+ /*
+ TODO:
+-- detect if there is a sanding resource 
++- detect if there is a sanding resource
+     - if so show a button to stat sanding
+     - if not, show a warning that there is no sanding resource
+ - detect if there is a video-store resource
+     - if so show request a video from the past 1 minute and show the video
+-- display runtime start and end and the length of each substep 
++- display runtime start and end and the length of each substep
+ - add pagination
+ 
+ */
+ 
+-function App() {
++interface ReadingStep {
++  name: string;
++  start: string;
++  end: string;
++  duration_ms?: number;
++}
++
++interface Readings {
++  start: string;
++  end: string;
++  steps: ReadingStep[];
++  success: boolean;
++  pass_id: string;
++  err_string?: string | null;
++}
+ 
+-  const [list, setList] = useState<VIAM.dataApi.BinaryData[]>([]);
+-  const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient| null>(null);
+-//   const command = new VIAM.Struct({"startSandingOption": true})
++interface RunData {
++  success: boolean;
++  err_string?: string | null;
++  start: string;
++  end: string;
++  duration_ms: number;
++  runs: ReadingStep[][];
++  readings?: Readings; // Keep for backward compatibility
++}
+ 
++function App() {
++  const [runData, setRunData] = useState<RunData | null>(null);
++  const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
++  const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
++  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
++  const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
+ 
+   useEffect(() => {
+     const fetchData = async () => {
+-    const machineInfo = window.location.pathname.split("/")[2];
+-    let apiKeyId: string;
+-    let apiKeySecret: string;
+-    let machineId: string;
+-    let hostname: string;
++      const machineInfo = window.location.pathname.split("/")[2];
++      let apiKeyId: string;
++      let apiKeySecret: string;
++      let machineId: string;
++      let hostname: string;
+ 
+-    ({
++      ({
+         apiKey: { id: apiKeyId, key: apiKeySecret },
+         machineId: machineId,
+         hostname: hostname,
+-    } = JSON.parse(Cookies.get(machineInfo)!));
+-    let filter = {
+-              robotId: machineId,
+-            } as VIAM.dataApi.Filter;
+-        const viamClient = await connect(apiKeyId, apiKeySecret);
+-        const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
+-        const resources = await robotClient.resourceNames();
+-        if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
+-            const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
+-            setSanderClient(sanderClient);
+-        }
+-        const binaryData = await viamClient.dataClient.binaryDataByFilter( 
+-            filter, 
+-            undefined,
+-            VIAM.dataApi.Order.DESCENDING,
+-            undefined,
+-            false,
+-            false,
+-            false,
+-          );
+-        const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
+-        setList(filenames);
++      } = JSON.parse(Cookies.get(machineInfo)!));
++      
++      let filter = {
++        robotId: machineId,
++      } as VIAM.dataApi.Filter;
++      
++      const viamClient = await connect(apiKeyId, apiKeySecret);
++      const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
++      setRobotClient(robotClient); // Store the robot client
++      const resources = await robotClient.resourceNames();
++      
++      if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
++        const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
++        setSanderClient(sanderClient);
++      }
++
++      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "generic-1"))) {
++        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "generic-1");
++        setVideoStoreClient(videoStoreClient);
++      }
++      
++      // debugger;
++      
++      const binaryData = await viamClient.dataClient.binaryDataByFilter( 
++        filter, 
++        undefined,
++        VIAM.dataApi.Order.DESCENDING,
++        undefined,
++        false,
++        false,
++        true,
++      );
++      const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
++      setVideoFiles(filenames);
++
++      // Remove example data - components will handle their own data
+     };
+     
+     fetchData();
+   }, []);
+ 
++  // Always show the AppInterface
+   return (
+-    <div className="App">
+-      <header className="App-header">
+-        <h1>Sanding Monitoring Web App</h1>
+-      </header>
+-      <main>
+-    <div className="string-list">
+-        <h2>List of Files</h2>
+-        <div className="grid">
+-            {sanderClient && <button onClick={() => 
+-            console.log("sanding")
+-                // sanderClient.doCommand(command)
+-                }>Start Sanding</button>}
+-            {list.map((item: VIAM.dataApi.BinaryData, index: number) => (
+-                <div key={index} className="grid-item">
+-                    <div className="timestamp">{item.metadata?.timeRequested?.toDate().toISOString()}</div>
+-                    <div className="filename"><a href={item.metadata?.uri} target="_blank" rel="noopener noreferrer">{item.metadata?.fileName}</a></div>
+-                </div>
+-            ))}
+-        </div>
+-    </div>
+-      </main>
+-    </div>
++    <AppInterface 
++      runData={runData}
++      videoFiles={videoFiles}
++      sanderClient={sanderClient!}
++      videoStoreClient={videoStoreClient}
++      robotClient={robotClient}
++    />
+   );
+ }
+ 
+@@ -98,4 +125,5 @@ async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.Via
+ 
+   return await VIAM.createViamClient(opts);
+ }
++
+ export default App;
+diff --git a/src/AppInterface.css b/src/AppInterface.css
+new file mode 100644
+index 0000000..ac3989d
+--- /dev/null
++++ b/src/AppInterface.css
+@@ -0,0 +1,1063 @@
++/* Reset and base styles */
++* {
++  box-sizing: border-box;
++}
++
++body {
++  margin: 0;
++  padding: 0;
++  height: 100vh;
++  overflow-x: hidden;
++}
++
++.appInterface {
++  font-family: "Public Sans", sans-serif;
++  height: 100vh; /* Changed from 100% to 100vh */
++  display: flex;
++  flex-direction: column;
++  overflow: hidden; /* Changed from overflow-x: hidden */
++}
++
++/* Add this new style for the header */
++header {
++  flex-shrink: 0; /* Prevent header from shrinking */
++  background-color: rgb(250 250 250); /* Ensure header has background */
++  z-index: 10; /* Ensure header stays on top */
++}
++
++/* Layout utilities */
++.flex {
++  display: flex;
++}
++
++.flex-row {
++  flex-direction: row;
++}
++
++.items-center {
++  align-items: center;
++}
++
++.justify-center {
++  justify-content: center;
++}
++
++.sticky {
++  position: sticky;
++  position: -webkit-sticky; /* For Safari support */
++}
++
++.top-0 {
++  top: 0;
++}
++
++.z-10 {
++  z-index: 10;
++}
++
++/* Spacing utilities */
++.moveleft {
++  margin-left: -0.25rem !important;
++}
++
++.mb-4 {
++  margin-bottom: 1rem;
++}
++
++.px-4 {
++  padding-left: 1rem;
++  padding-right: 1rem;
++}
++
++.px-2 {
++  padding-left: 0.5rem;
++  padding-right: 0.5rem;
++}
++
++.py-3 {
++  padding-top: 0.75rem;
++  padding-bottom: 0.75rem;
++}
++
++.py-1 {
++  padding-top: 0.25rem;
++  padding-bottom: 0.25rem;
++}
++
++.gap-2 {
++  gap: 0.5rem;
++}
++
++.moveleft span {
++  display: block;
++  margin-left: -0.25rem !important;
++  text-align: center;
++}
++
++/* Sizing utilities */
++.h-5 {
++  height: 1.25rem;
++}
++
++.h-9 {
++  height: 2.25rem;
++}
++
++@media (min-width: 640px) {
++  .sm\:h-10 {
++    height: 2.5rem;
++  }
++}
++
++.w-1\/3 {
++  width: 33.333333%;
++}
++
++/* Typography utilities */
++.font-semibold {
++  font-weight: 600;
++}
++
++.font-medium {
++  font-weight: 500;
++}
++
++.text-xs {
++  font-size: 0.75rem;
++  line-height: 1rem;
++}
++
++.text-sm {
++  font-size: 0.875rem;
++  line-height: 1.25rem;
++}
++
++.text-xl {
++  font-size: 1.25rem;
++  line-height: 1.75rem;
++}
++
++.text-zinc-900 {
++  color: rgb(24 24 27);
++}
++
++.text-zinc-700 {
++  color: rgb(63 63 70);
++}
++
++.text-white {
++  color: rgb(255 255 255);
++}
++
++.text-gray-700 {
++  color: rgb(55 65 81);
++}
++
++.text-green-800 {
++  color: rgb(22 101 52);
++}
++
++.text-red-800 {
++  color: rgb(153 27 27);
++}
++
++.text-red-600 {
++  color: rgb(220 38 38);
++}
++
++p,
++ul,
++ol {
++  color: rgb(55 65 81);
++}
++
++/* Background utilities */
++.bg-zinc-50 {
++  background-color: rgb(250 250 250);
++}
++
++.bg-blue-600 {
++  background-color: rgb(37 99 235);
++}
++
++.bg-gray-200 {
++  background-color: rgb(229 231 235);
++}
++
++.bg-green-100 {
++  background-color: rgb(220 252 231);
++}
++
++.bg-red-100 {
++  background-color: rgb(254 226 226);
++}
++
++.hover\:bg-gray-300:hover {
++  background-color: rgb(209 213 219);
++}
++
++/* Border utilities */
++.border-b {
++  border-bottom: 1px solid rgb(229 231 235);
++  margin-bottom: 0;
++}
++
++.rounded {
++  border-radius: 0.25rem;
++}
++
++.rounded-full {
++  border-radius: 9999px;
++}
++
++/* Display utilities */
++.inline-flex {
++  display: inline-flex;
++}
++
++/* Text utilities */
++.truncate {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.max-w-xs {
++  max-width: 20rem;
++}
++
++.font-mono {
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++/* Shadow utilities */
++.shadow-none {
++  box-shadow: none;
++}
++
++@media (min-width: 768px) {
++  .md\:shadow-xs {
++    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
++  }
++}
++
++/* Component styles */
++button {
++  border: none;
++  cursor: pointer;
++  transition: background-color 0.2s ease-in-out;
++  font-size: 0.875rem;
++  font-weight: 500;
++}
++
++button:focus {
++  outline: 2px solid transparent;
++  outline-offset: 2px;
++}
++
++.mainContent {
++  width: 100%;
++  margin-left: auto;
++  margin-right: auto;
++  padding: 2rem 0.5rem;
++  overflow-y: auto;
++  overflow-x: hidden;
++  min-width: 0;
++  flex: 1;
++}
++
++@media (min-width: 480px) {
++  .mainContent {
++    padding-left: 0.75rem;
++    padding-right: 0.75rem;
++  }
++}
++
++@media (min-width: 640px) {
++  .mainContent {
++    padding-left: 1rem;
++    padding-right: 1rem;
++  }
++}
++
++@media (min-width: 768px) {
++  .mainContent {
++    padding-left: 1.5rem;
++    padding-right: 1.5rem;
++  }
++}
++
++@media (min-width: 1024px) {
++  .mainContent {
++    max-width: 1024px;
++    padding-left: 2rem;
++    padding-right: 2rem;
++  }
++}
++
++@media (min-width: 1280px) {
++  .mainContent {
++    max-width: 1200px;
++  }
++}
++
++.test-controls {
++  margin: 1rem 0;
++  padding: 1rem;
++  border: 1px solid #ddd;
++  border-radius: 4px;
++}
++
++.test-video-store-btn {
++  background-color: #007bff;
++  color: white;
++  padding: 0.5rem 1rem;
++  border: none;
++  border-radius: 4px;
++  cursor: pointer;
++}
++
++/* Viam Table Styles */
++.viam-table-container {
++  border-radius: 8px;
++  border: 1px solid #e4e4e7;
++  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
++  overflow: hidden;
++  overflow-x: auto;
++  max-width: 100%;
++}
++
++.viam-table {
++  width: 100%;
++  border-collapse: collapse;
++  background-color: white;
++  min-width: 600px;
++}
++
++.viam-table thead {
++  background-color: #fafafa;
++  border-bottom: 1px solid #e4e4e7;
++}
++
++.viam-table th {
++  padding: 12px 16px;
++  text-align: left;
++  font-weight: 500;
++  font-size: 14px;
++  color: #18181b;
++  white-space: nowrap;
++}
++
++.viam-table td {
++  padding: 12px 16px;
++  font-size: 14px;
++  color: #3f3f46;
++  border-bottom: 1px solid #f4f4f5;
++}
++
++.viam-table tbody tr:last-child td {
++  border-bottom: none;
++}
++
++.viam-table tbody tr:hover {
++  background-color: #fafafa;
++}
++
++/* Status Badge Styles */
++.status-badge {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 70px;
++  padding: 4px 8px;
++  border-radius: 4px;
++  font-size: 0.75rem;
++  font-weight: 500;
++  text-align: center;
++}
++
++.status-success {
++  background-color: rgb(34 197 94);
++  color: white;
++}
++
++.status-failed {
++  background-color: rgb(239 68 68);
++  color: white;
++}
++
++/* Success status styles */
++.bg-green-100 {
++  background-color: rgb(220 252 231);
++}
++
++.text-green-800 {
++  color: rgb(22 101 52);
++}
++
++/* Failed status styles */
++.bg-red-100 {
++  background-color: rgb(254 226 226);
++}
++
++.text-red-800 {
++  color: rgb(153 27 27);
++}
++
++/* Additional color utilities for status rows */
++.text-zinc-700 {
++  color: rgb(63 63 70);
++}
++
++.text-zinc-400 {
++  color: rgb(161 161 170);
++}
++
++.text-red-600 {
++  color: rgb(220 38 38);
++}
++
++.text-gray-600 {
++  color: #ccc;
++}
++
++.text-sm {
++  font-size: 0.875rem;
++  line-height: 1.25rem;
++}
++
++.truncate {
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.max-w-xs {
++  max-width: 20rem;
++}
++
++/* Enhanced table row styling with status indicators */
++.viam-table tbody tr.status-success {
++  border-left: 4px solid rgb(34 197 94);
++}
++
++.viam-table tbody tr.status-failed {
++  border-left: 4px solid rgb(239 68 68);
++}
++
++.viam-table tbody tr.status-success:hover {
++  background-color: rgb(240 253 244);
++}
++
++.viam-table tbody tr.status-failed:hover {
++  background-color: rgb(254 242 242);
++}
++
++/* Status indicator dot */
++.status-dot {
++  width: 8px;
++  height: 8px;
++  border-radius: 50%;
++  margin-right: 8px;
++}
++
++.status-dot.success {
++  background-color: rgb(34 197 94);
++}
++
++.status-dot.failed {
++  background-color: rgb(239 68 68);
++}
++
++.status-badge-width {
++  width: 70px;
++}
++
++.error-text {
++  display: block;
++  white-space: normal;
++  word-wrap: break-word;
++  line-height: 1.4;
++}
++
++/* Expandable row styles */
++.expandable-row {
++  cursor: pointer;
++}
++
++.expand-button {
++  background: none;
++  border: none;
++  cursor: pointer;
++  padding: 4px;
++  color: #71717a;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++}
++
++.expand-icon {
++  font-size: 12px;
++  transition: transform 0.2s ease;
++  display: inline-block;
++}
++
++.expand-icon.expanded {
++  transform: rotate(90deg);
++}
++
++.expanded-content {
++  background-color: #fafafa;
++}
++
++.expanded-content td {
++  padding: 0;
++  border-bottom: 1px solid #e4e4e7;
++}
++
++.run-details {
++  padding: 8px;
++}
++
++.run-details-title {
++  font-size: 14px;
++  font-weight: 600;
++  color: #18181b;
++  margin: 0 0 0 0;
++}
++
++.passes-container {
++  display: flex;
++  flex-direction: column;
++  padding: 4px;
++}
++
++.pass-duration {
++  font-size: 14px;
++  color: #6b7280;
++  font-weight: 500;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++.steps-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
++  gap: 12px;
++}
++
++@media (max-width: 640px) {
++  .steps-grid {
++    grid-template-columns: 1fr;
++  }
++}
++
++@media (min-width: 641px) and (max-width: 768px) {
++  .steps-grid {
++    grid-template-columns: repeat(2, 1fr);
++  }
++}
++
++.step-card {
++  background: white;
++  border: 1px solid #e4e4e7;
++  border-radius: 8px;
++  padding: 16px;
++  display: flex;
++  flex-direction: column;
++  gap: 6px;
++}
++
++.step-name {
++  font-weight: 600;
++  color: #18181b;
++  font-size: 14px;
++  text-align: center;
++  margin-bottom: 8px;
++}
++
++.step-timeline {
++  display: flex;
++  align-items: center;
++  justify-content: space-between;
++  gap: 8px;
++}
++
++.step-time {
++  width: auto;
++  display: flex;
++  flex-direction: column;
++  gap: 4px;
++  white-space: nowrap;
++}
++
++.time-label {
++  font-size: 11px;
++  color: #9ca3af;
++  font-weight: 500;
++  white-space: nowrap;
++}
++
++.time-value {
++  font-size: 12px;
++  color: #374151;
++  font-weight: 500;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++  white-space: nowrap;
++}
++
++.timeline-arrow {
++  font-size: 16px;
++  color: #9ca3af;
++  font-weight: bold;
++  flex-shrink: 0;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  padding: 0 4px;
++}
++
++.step-duration {
++  font-size: 12px;
++  font-weight: 500;
++  color: #6b7280;
++  text-align: center;
++  padding: 4px 8px;
++  background: #f9fafb;
++  border-radius: 4px;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++.step-missing {
++  background-color: #fcfcfc;
++  border-style: dashed;
++  justify-content: center;
++  align-items: center;
++  min-height: 100px;
++}
++
++.step-missing-text {
++  color: #b0b0b0;
++  font-size: 12px;
++  font-weight: 500;
++  text-align: center;
++}
++
++.placeholder-image {
++  width: 40px;
++  height: 30px;
++  border-radius: 4px;
++}
++
++.placeholder-image.before {
++  background-color: #f3f4f6;
++  border: 2px dashed #d1d5db;
++}
++
++.placeholder-image.after {
++  background-color: #dbeafe;
++  border: 2px dashed #3b82f6;
++}
++
++.step-moment {
++  display: flex;
++  align-items: center;
++  gap: 8px;
++}
++
++.step-image-container {
++  display: flex;
++  align-items: center;
++  gap: 4px;
++}
++  color: #9ca3af;
++  font-weight: 500;
++}
++
++.time-value {
++  font-size: 12px;
++  color: #374151;
++  font-weight: 500;
++}
++
++.step-duration-inline {
++  font-size: 11px;
++  font-weight: 500;
++  color: #6b7280;
++  text-align: center;
++  padding: 2px 6px;
++  background: #f9fafb;
++  border-radius: 4px;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++.pass-section {
++  display: flex;
++  flex-direction: row;
++  align-items: flex-start;
++  gap: 20px;
++  width: 100%;
++}
++
++.pass-header {
++  display: flex;
++  flex-direction: column;
++  align-items: flex-start;
++  justify-content: center; /* Center vertically */
++  min-width: 3rem;
++  flex-shrink: 0;
++  height: 100%; /* Take full height of the row */
++}
++
++.pass-title {
++  margin: 0 0 4px 0;
++  font-weight: 600;
++  font-size: 14px;
++  color: #18181b;
++}
++
++.pass-duration {
++  font-size: 12px;
++  color: #6b7280;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++.steps-header-container {
++  display: flex;
++  align-items: center;
++  margin-bottom: 4px;
++}
++
++.pass-header-spacer {
++  flex-shrink: 0;
++}
++
++.steps-header {
++  display: flex;
++  gap: 16px;
++  flex: 1;
++  min-width: 0;
++  overflow-x: auto;
++}
++
++.step-header-label {
++  flex: 1;
++  text-align: center;
++  font-weight: 600;
++  font-size: 13px;
++  color: #374151;
++  padding: 4px 12px; /* Match step-inline padding */
++  min-width: 200px;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++}
++
++.step-spacer {
++  width: 3rem; /* Allow flex shrinking */
++}
++
++.step-missing {
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  background-color: #fcfcfc;
++  border-style: dashed;
++}
++
++/* Step videos grid styles */
++.step-videos-grid {
++  display: grid;
++  grid-template-columns: repeat(3, 1fr);
++  gap: 8px;
++  margin-top: 12px;
++}
++
++.step-video-item {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  gap: 4px;
++  cursor: pointer;
++  transition: transform 0.2s;
++}
++
++.step-video-item:hover {
++  transform: scale(1.05);
++}
++
++.video-thumbnail-container {
++  width: 100%;
++  height: 50px;
++  position: relative;
++  overflow: hidden;
++  border-radius: 4px;
++  background-color: #f3f4f6;
++  border: 1px solid #d1d5db;
++}
++
++.video-thumbnail {
++  width: 100%;
++  height: 100%;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  background-color: #1f2937;
++  transition: background-color 0.2s;
++}
++
++.step-video-item:hover .video-thumbnail {
++  background-color: #007bff;
++}
++
++.video-icon {
++  font-size: 20px;
++}
++
++.video-info {
++  text-align: left;
++  width: 100%;
++}
++
++.camera-name {
++  font-size: 11px;
++  color: #6b7280;
++  font-weight: 500;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++  width: 100%;
++  text-align: left;
++}
++
++.video-time {
++  font-size: 10px;
++  color: #9ca3af;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++  text-align: left;
++}
++
++/* Video Modal Styles */
++.video-modal-overlay {
++  position: fixed;
++  top: 0;
++  left: 0;
++  right: 0;
++  bottom: 0;
++  background-color: rgba(0, 0, 0, 0.75);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  z-index: 1000;
++}
++
++.video-modal {
++  background: white;
++  border-radius: 8px;
++  width: 90%;
++  max-width: 600px;
++  max-height: 90vh;
++  overflow: hidden;
++  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
++}
++
++.video-modal-header {
++  display: flex;
++  justify-content: space-between;
++  align-items: center;
++  padding: 20px;
++  border-bottom: 1px solid #e4e4e7;
++}
++
++.video-modal-header h3 {
++  margin: 0;
++  font-size: 18px;
++  font-weight: 600;
++  color: #18181b;
++}
++
++.video-modal-close {
++  background: none;
++  border: none;
++  font-size: 28px;
++  cursor: pointer;
++  color: #6b7280;
++  line-height: 1;
++  padding: 0;
++  width: 32px;
++  height: 32px;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  border-radius: 4px;
++  transition: background-color 0.2s;
++}
++
++.video-modal-close:hover {
++  background-color: #f3f4f6;
++}
++
++.video-modal-content {
++  padding: 20px;
++}
++
++.video-modal-player {
++  background-color: #1f2937;
++  border-radius: 8px;
++  height: 300px;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: center;
++  color: white;
++  margin-bottom: 20px;
++  position: relative;
++  overflow: hidden;
++}
++
++.video-modal-player video {
++  object-fit: contain;
++}
++
++.loading-spinner {
++  font-size: 48px;
++  animation: spin 1s linear infinite;
++  margin-bottom: 10px;
++}
++
++@keyframes spin {
++  from {
++    transform: rotate(0deg);
++  }
++  to {
++    transform: rotate(360deg);
++  }
++}
++
++.fetch-video-btn:hover {
++  background-color: #0056b3 !important;
++}
++
++/* Import formatTimestamp for modal */
++.formatTimestamp {
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++  font-size: 14px;
++  transition: background-color 0.2s;
++  display: inline-block;
++  text-align: center;
++}
++
++.video-modal-button.primary {
++  background-color: #007bff;
++  color: white;
++}
++
++.video-modal-button.primary:hover {
++  background-color: #0056b3;
++}
++
++.video-modal-button.secondary {
++  background-color: #6c757d;
++  color: white;
++}
++
++.video-modal-button.secondary:hover {
++  background-color: #5a6268;
++}
++
++/* Import formatTimestamp for modal */
++.formatTimestamp {
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++/* Files Grid Styles */
++.files-grid {
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
++  gap: 16px;
++  padding: 16px;
++  background-color: white;
++  border: 1px solid #e4e4e7;
++  border-radius: 8px;
++  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
++}
++
++@media (max-width: 640px) {
++  .files-grid {
++    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
++    gap: 12px;
++    padding: 12px;
++  }
++}
++
++.file-card {
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  padding: 12px;
++  background-color: #fafafa;
++  border: 1px solid #e4e4e7;
++  border-radius: 6px;
++  cursor: pointer;
++  transition: all 0.2s ease;
++}
++
++.file-card:hover {
++  background-color: #f4f4f5;
++  transform: translateY(-2px);
++  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
++}
++
++.file-thumbnail {
++  width: 60px;
++  height: 60px;
++  background-color: #1f2937;
++  border-radius: 6px;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  margin-bottom: 8px;
++}
++
++.file-icon {
++  font-size: 24px;
++}
++
++.file-info {
++  width: 100%;
++  text-align: center;
++}
++
++.file-name {
++  font-size: 12px;
++  font-weight: 500;
++  color: #18181b;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++  margin-bottom: 4px;
++}
++
++.file-time {
++  font-size: 10px;
++  color: #6b7280;
++  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
++    "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
++}
++
++.no-files-message {
++  grid-column: 1 / -1;
++  text-align: center;
++  padding: 32px;
++  color: #6b7280;
++  font-size: 14px;
++}
+diff --git a/src/AppInterface.tsx b/src/AppInterface.tsx
+new file mode 100644
+index 0000000..5fab70d
+--- /dev/null
++++ b/src/AppInterface.tsx
+@@ -0,0 +1,539 @@
++import React, { useState, useEffect } from 'react';
++import * as VIAM from "@viamrobotics/sdk";
++import './appInterface.css';
++import RobotOperator from './RobotOperator';
++import { 
++  formatShortTimestamp, 
++  formatDurationToMinutesSeconds,
++  extractCameraName,
++  formatTimestamp,
++  handleVideoStoreCommand
++} from './lib/videoUtils';
++
++interface AppViewProps {
++  runData: any;
++  videoFiles: VIAM.dataApi.BinaryData[];
++  videoStoreClient?: VIAM.GenericComponentClient | null;
++  sanderClient: VIAM.GenericComponentClient | null;
++  robotClient?: VIAM.RobotClient | null;
++}
++
++// Helper to generate dynamic sample data from video files
++const generateSampleRunsFromVideos = (videoFiles: VIAM.dataApi.BinaryData[]) => {
++  if (!videoFiles || videoFiles.length === 0) {
++    return [];
++  }
++
++  // Sort videos by time
++  const sortedVideos = [...videoFiles].sort((a, b) => {
++    const timeA = a.metadata?.timeRequested?.toDate().getTime() || 0;
++    const timeB = b.metadata?.timeRequested?.toDate().getTime() || 0;
++    return timeA - timeB;
++  });
++
++  const runs = [];
++  const videosPerRun = Math.max(1, Math.floor(sortedVideos.length / 4));
++
++  for (let i = 0; i < 4; i++) {
++    const runVideos = sortedVideos.slice(i * videosPerRun, (i + 1) * videosPerRun);
++    if (runVideos.length === 0) continue;
++
++    const firstVideoTime = runVideos[0].metadata!.timeRequested!.toDate();
++    const lastVideoTime = runVideos[runVideos.length - 1].metadata!.timeRequested!.toDate();
++    
++    const runStart = new Date(firstVideoTime.getTime() - 10000); // 10s before first video
++    const runEnd = new Date(lastVideoTime.getTime() + 10000); // 10s after last video
++
++    const success = i % 2 === 0;
++    const steps = [];
++    const stepCount = success ? 3 : 2;
++    const timePerStep = (runEnd.getTime() - runStart.getTime()) / stepCount;
++
++    const stepNames = ["Imaging", "GeneratingLobes", "Execution"];
++
++    for (let j = 0; j < stepCount; j++) {
++      const stepStart = new Date(runStart.getTime() + j * timePerStep);
++      const stepEnd = new Date(runStart.getTime() + (j + 1) * timePerStep);
++      steps.push({
++        name: stepNames[j],
++        start: stepStart.toISOString(),
++        end: stepEnd.toISOString(),
++      });
++    }
++
++    runs.push({
++      start: runStart.toISOString(),
++      end: runEnd.toISOString(),
++      steps: steps,
++      success: success,
++      pass_id: `generated-pass-${i}`,
++      err_string: success ? null : "Generated failure example",
++    });
++  }
++  return runs;
++};
++
++
++const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient, robotClient }) => {
++  const [activeRoute, setActiveRoute] = useState('live');
++  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
++  const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
++  const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
++  const [loadingModalVideo, setLoadingModalVideo] = useState(false);
++
++  const expectedSteps = ["Imaging", "GeneratingLobes", "Execution"];
++
++  const activeTabStyle = "bg-blue-600 text-white";
++  const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
++
++  const toggleRowExpansion = (index: number) => {
++    const newExpandedRows = new Set(expandedRows);
++    if (newExpandedRows.has(index)) {
++      newExpandedRows.delete(index);
++    } else {
++      newExpandedRows.add(index);
++    }
++    setExpandedRows(newExpandedRows);
++  };
++
++  const getStepVideos = (step: { start: string; end:string; }) => {
++    if (!videoFiles) return [];
++
++    const stepStart = new Date(step.start);
++    const stepEnd = new Date(step.end);
++
++    return videoFiles.filter(file => {
++      if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
++      const fileTime = file.metadata.timeRequested.toDate();
++      return fileTime >= stepStart && fileTime <= stepEnd;
++    }).sort((a, b) => {
++      const timeA = a.metadata!.timeRequested!.toDate().getTime();
++      const timeB = b.metadata!.timeRequested!.toDate().getTime();
++      return timeA - timeB;
++    });
++  };
++
++  const getStatusBadge = (success: boolean) => {
++    if (success) {
++      return (
++        <span className="moveleft inline-flex items-center justify-center py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 status-badge-width">
++          Success
++        </span>
++      );
++    } else {
++      return (
++        <span className="moveleft inline-flex items-center justify-center py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 status-badge-width">
++          Failed
++        </span>
++      );
++    }
++  };
++
++  const runsToDisplay = runData?.runs?.length > 0 
++    ? runData.runs 
++    : generateSampleRunsFromVideos(videoFiles);
++
++  const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
++    setSelectedVideo(video);
++    
++    // Try to fetch video from video store if available
++    if (videoStoreClient && video.metadata?.timeRequested) {
++      setLoadingModalVideo(true);
++      try {
++        // Create a time range around the video's timestamp
++        const videoTime = video.metadata.timeRequested.toDate();
++        const rangeStart = new Date(videoTime.getTime() - 30000); // 30 seconds before
++        const rangeEnd = new Date(videoTime.getTime() + 30000); // 30 seconds after
++        
++        const mockRunData = {
++          success: true,
++          start: rangeStart.toISOString(),
++          end: rangeEnd.toISOString(),
++          duration_ms: 60000,
++          runs: []
++        };
++        
++        const result = await handleVideoStoreCommand(videoStoreClient, mockRunData);
++        
++        if (result.videoUrl) {
++          setModalVideoUrl(result.videoUrl);
++        }
++      } catch (error) {
++        console.error("Error fetching video:", error);
++      } finally {
++        setLoadingModalVideo(false);
++      }
++    }
++  };
++
++  const closeVideoModal = () => {
++    // Clean up video URL if it exists
++    if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
++      URL.revokeObjectURL(modalVideoUrl);
++    }
++    setSelectedVideo(null);
++    setModalVideoUrl(null);
++  };
++
++  // Cleanup on unmount
++  useEffect(() => {
++    return () => {
++      if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
++        URL.revokeObjectURL(modalVideoUrl);
++      }
++    };
++  }, [modalVideoUrl]);
++
++  const runs = [
++    {
++      "start": "2023-10-01T10:00:00Z",
++      "end": "2023-10-01T10:15:00Z",
++      "steps": [
++        {
++          "name": "Imaging",
++          "start": "2023-10-01T10:00:00Z",
++          "end": "2023-10-01T10:05:00Z"
++        },
++        {
++          "name": "GeneratingLobes",
++          "start": "2023-10-01T10:05:00Z",
++          "end": "2023-10-01T10:10:00Z"
++        },
++        {
++          "name": "Execution",
++          "start": "2023-10-01T10:10:00Z",
++          "end": "2023-10-01T10:15:00Z"
++        }
++      ],
++      "success": true,
++      "pass_id": "1",
++      "err_string": null
++    },
++    {
++      "start": "2023-10-01T09:45:00Z",
++      "end": "2023-10-01T10:00:00Z",
++      "steps": [
++        {
++          "name": "Imaging",
++          "start": "2023-10-01T09:45:00Z",
++          "end": "2023-10-01T09:50:00Z"
++        },
++        {
++          "name": "GeneratingLobes",
++          "start": "2023-10-01T09:50:00Z",
++          "end": "2023-10-01T09:55:00Z"
++        },
++        {
++          "name": "Execution",
++          "start": "2023-10-01T09:55:00Z",
++          "end": "2023-10-01T10:00:00Z"
++        }
++      ],
++      "success": false,
++      "pass_id": "2",
++      "err_string": "Error in execution step"
++    }
++  ];
++
++  return (
++    <div className="appInterface">
++      <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
++        <div className="w-1/3 h-5 font-semibold text-zinc-900">Sanding Control Interface</div>
++        
++        <div className="w-1/3 flex justify-center">
++          <div className="flex flex-row items-center gap-2">
++            <button
++              onClick={() => setActiveRoute('live')}
++              className={`${activeRoute === 'live' ? activeTabStyle : inactiveTabStyle} h-9 sm:h-10 px-4 rounded`}
++            >
++              Run summary
++            </button>
++            <button
++              onClick={() => setActiveRoute('past')}
++              className={`${activeRoute === 'past' ? activeTabStyle : inactiveTabStyle} h-9 sm:h-10 px-4 rounded`}
++            >
++              Robot operator
++            </button>
++          </div>
++        </div>
++
++        <div className="w-1/3"></div>
++      </header>
++      
++      <main className="mainContent">
++        {activeRoute === 'live' ? (
++          <>
++            <section>
++              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes</h2>
++              
++              <div className="viam-table-container">
++                <table className="viam-table">
++                  <thead>
++                    <tr>
++                      <th style={{ width: '20px' }}></th>
++                      <th>Status</th>
++                      <th>Start Time</th>
++                      <th>End Time</th>
++                      <th>Duration</th>
++                      <th>Completed</th>
++                      <th>Error</th>
++                    </tr>
++                  </thead>
++                  <tbody>
++                    {runsToDisplay.map((run: any, index: number) => (
++                      <React.Fragment key={index}>
++                        <tr 
++                          className="expandable-row"
++                          onClick={() => toggleRowExpansion(index)}
++                          role="button"
++                          tabIndex={0}
++                          onKeyDown={(e) => {
++                            if (e.key === 'Enter' || e.key === ' ') {
++                              e.preventDefault();
++                              toggleRowExpansion(index);
++                            }
++                          }}
++                          aria-expanded={expandedRows.has(index)}
++                          aria-label={`${expandedRows.has(index) ? 'Collapse' : 'Expand'} details for run from ${formatShortTimestamp(run.start)}`}
++                        >
++                          <td>
++                            <span className={`expand-icon ${expandedRows.has(index) ? 'expanded' : ''}`} aria-hidden="true">
++                              ▶
++                            </span>
++                          </td>
++                          <td>{getStatusBadge(run.success)}</td>
++                          <td className="text-zinc-700">{formatShortTimestamp(run.start)}</td>
++                          <td className="text-zinc-700">{formatShortTimestamp(run.end)}</td>
++                          <td className="text-zinc-700">{formatDurationToMinutesSeconds(run.start, run.end)}</td>
++                          <td className="text-zinc-700">
++                            {run.success ? '1 / 1' : '0 / 1'}
++                          </td>
++                          <td className="text-zinc-700">
++                            {run.err_string ? (
++                              <span className="text-red-600 text-xs font-mono error-text" title={run.err_string}>
++                                {run.err_string}
++                              </span>
++                            ) : (
++                              <span className="text-gray-600">—</span>
++                            )}
++                          </td>
++                        </tr>
++                        {expandedRows.has(index) && (
++                          <tr className="expanded-content">
++                            <td colSpan={7}>
++                              <div className="run-details">
++                                <div className="passes-container">
++                                  <div className="steps-grid">
++                                    {expectedSteps.map((stepName) => {
++                                      const step = run.steps.find((s: any) => s.name === stepName);
++                                      if (step) {
++                                        const stepVideos = getStepVideos(step);
++
++                                        return (
++                                          <div key={stepName} className="step-card">
++                                            <div className="step-name">{stepName}</div>
++                                            <div className="step-timeline">
++                                              <div className="step-time">
++                                                <span className="time-label">Start</span>
++                                                <span className="time-value">{formatShortTimestamp(step.start)}</span>
++                                              </div>
++                                              <div className="timeline-arrow">→</div>
++                                              <div className="step-time">
++                                                <span className="time-label">End</span>
++                                                <span className="time-value">{formatShortTimestamp(step.end)}</span>
++                                              </div>
++                                            </div>
++                                            <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
++                                            
++                                            {stepVideos.length > 0 ? (
++                                              <div className="step-videos-grid">
++                                                {stepVideos.map((video, videoIndex) => (
++                                                  <div 
++                                                    key={videoIndex} 
++                                                    className="step-video-item"
++                                                    onClick={() => handleVideoClick(video)}
++                                                  >
++                                                    <div className="video-thumbnail-container">
++                                                      <div className="video-thumbnail">
++                                                        <span className="video-icon">🎬</span>
++                                                      </div>
++                                                    </div>
++                                                    <div className="video-info">
++                                                      <div className="camera-name" title={extractCameraName(video.metadata?.fileName || '')}>
++                                                        {extractCameraName(video.metadata?.fileName || '')}
++                                                      </div>
++                                                      <div className="video-time">
++                                                        {video.metadata?.timeRequested ?
++                                                          formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
++                                                          'Unknown'
++                                                        }
++                                                      </div>
++                                                    </div>
++                                                  </div>
++                                                ))}
++                                              </div>
++                                            ) : (
++                                              <div className="no-videos-message">No videos found</div>
++                                            )}
++                                          </div>
++                                        );
++                                      }
++                                      return (
++                                        <div key={stepName} className="step-card step-missing">
++                                          <div className="step-name">{stepName}</div>
++                                          <div className="step-missing-text">Step not executed</div>
++                                        </div>
++                                      );
++                                    })}
++                                  </div>
++                                </div>
++                              </div>
++                            </td>
++                          </tr>
++                        )}
++                      </React.Fragment>
++                    ))}
++                  </tbody>
++                </table>
++              </div>
++            </section>
++
++            {/* Files Grid Section */}
++            <section style={{ marginTop: '2rem' }}>
++              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Video Files</h2>
++              
++              <div className="files-grid">
++                {videoFiles && videoFiles.length > 0 ? (
++                  videoFiles.map((file, index) => (
++                    <div 
++                      key={index} 
++                      className="file-card"
++                      onClick={() => handleVideoClick(file)}
++                    >
++                      <div className="file-thumbnail">
++                        <span className="file-icon">🎬</span>
++                      </div>
++                      <div className="file-info">
++                        <div className="file-name" title={file.metadata?.fileName || 'Unknown'}>
++                          {extractCameraName(file.metadata?.fileName || 'Unknown')}
++                        </div>
++                        <div className="file-time">
++                          {file.metadata?.timeRequested ?
++                            formatShortTimestamp(file.metadata.timeRequested.toDate().toISOString()) :
++                            'Unknown'
++                          }
++                        </div>
++                      </div>
++                    </div>
++                  ))
++                ) : (
++                  <div className="no-files-message">No video files available</div>
++                )}
++              </div>
++            </section>
++          </>
++        ) : (
++          <section>
++            <RobotOperator sanderClient={sanderClient} robotClient={robotClient} />
++          </section>
++        )}
++      </main>
++
++      {/* Video Modal */}
++      {selectedVideo && (
++        <div className="video-modal-overlay" onClick={closeVideoModal}>
++          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
++            <div className="video-modal-header">
++              <h3>{extractCameraName(selectedVideo.metadata?.fileName || '')}</h3>
++              <button className="video-modal-close" onClick={closeVideoModal}>×</button>
++            </div>
++            <div className="video-modal-content">
++              <div className="video-modal-player">
++                {loadingModalVideo ? (
++                  <>
++                    <div className="loading-spinner">⏳</div>
++                    <p>Loading video...</p>
++                  </>
++                ) : modalVideoUrl ? (
++                  <video 
++                    controls 
++                    autoPlay
++                    src={modalVideoUrl}
++                    style={{ 
++                      width: '100%', 
++                      height: '100%',
++                      borderRadius: '8px'
++                    }}
++                    onError={(e) => {
++                      console.error("Video playback error:", e);
++                      alert("Error playing video");
++                    }}
++                  />
++                ) : (
++                  <>
++                    <span className="video-icon-large">🎬</span>
++                    <p>Video Preview</p>
++                    {videoStoreClient && (
++                      <button
++                        onClick={async (e) => {
++                          e.stopPropagation();
++                          if (selectedVideo) {
++                            await handleVideoClick(selectedVideo);
++                          }
++                        }}
++                        className="fetch-video-btn"
++                        style={{
++                          marginTop: '10px',
++                          padding: '8px 16px',
++                          backgroundColor: '#007bff',
++                          color: 'white',
++                          border: 'none',
++                          borderRadius: '4px',
++                          cursor: 'pointer',
++                          fontSize: '14px'
++                        }}
++                      >
++                        Load Video from Store
++                      </button>
++                    )}
++                  </>
++                )}
++              </div>
++              <div className="video-modal-info">
++                <p><strong>Time:</strong> {selectedVideo.metadata?.timeRequested ? 
++                  formatTimestamp(selectedVideo.metadata.timeRequested.toDate().toISOString()) : 
++                  'Unknown'
++                }</p>
++                <p><strong>File:</strong> {selectedVideo.metadata?.fileName || 'Unknown'}</p>
++                {modalVideoUrl && (
++                  <p style={{ fontSize: '12px', color: '#28a745', marginTop: '10px' }}>
++                    ✅ Video loaded from base64 data
++                  </p>
++                )}
++              </div>
++              <div className="video-modal-actions">
++                <a 
++                  href={selectedVideo.metadata?.uri} 
++                  target="_blank" 
++                  rel="noopener noreferrer"
++                  className="video-modal-button primary"
++                >
++                  Open in New Tab
++                </a>
++                <a 
++                  href={selectedVideo.metadata?.uri} 
++                  download={selectedVideo.metadata?.fileName || 'video.mp4'}
++                  className="video-modal-button secondary"
++                >
++                  Download
++                </a>
++              </div>
++            </div>
++          </div>
++        </div>
++      )}
++    </div>
++  );
++};
++
++export default AppInterface;
+\ No newline at end of file
+diff --git a/src/RobotOperator.css b/src/RobotOperator.css
+new file mode 100644
+index 0000000..f9c4ce4
+--- /dev/null
++++ b/src/RobotOperator.css
+@@ -0,0 +1,239 @@
++.robot-operator {
++  padding: 20px;
++  max-width: 1400px;
++  margin: 0 auto;
++}
++
++.operator-grid {
++  display: grid;
++  grid-template-columns: 1fr 1fr;
++  gap: 30px;
++  align-items: start;
++}
++
++@media (max-width: 1024px) {
++  .operator-grid {
++    grid-template-columns: 1fr;
++  }
++}
++
++/* Video Section */
++.video-section {
++  background: white;
++  border-radius: 12px;
++  padding: 24px;
++  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
++}
++
++.video-section h3 {
++  margin: 0 0 20px 0;
++  font-size: 20px;
++  font-weight: 600;
++  color: #18181b;
++}
++
++.video-container {
++  background: #1f2937;
++  border-radius: 8px;
++  overflow: hidden;
++  position: relative;
++  aspect-ratio: 16 / 9;
++  margin-bottom: 16px;
++}
++
++.live-video {
++  width: 100%;
++  height: 100%;
++  object-fit: contain;
++}
++
++.video-placeholder {
++  width: 100%;
++  height: 100%;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: center;
++  color: #9ca3af;
++}
++
++.camera-icon {
++  font-size: 48px;
++  margin-bottom: 12px;
++}
++
++.stream-error {
++  position: absolute;
++  bottom: 16px;
++  left: 16px;
++  right: 16px;
++  background: rgba(239, 68, 68, 0.9);
++  color: white;
++  padding: 12px;
++  border-radius: 6px;
++  font-size: 14px;
++  text-align: center;
++}
++
++.video-controls {
++  display: flex;
++  justify-content: center;
++  gap: 12px;
++}
++
++/* Controls Section */
++.controls-section {
++  background: white;
++  border-radius: 12px;
++  padding: 24px;
++  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
++}
++
++.controls-section h3 {
++  margin: 0 0 20px 0;
++  font-size: 20px;
++  font-weight: 600;
++  color: #18181b;
++}
++
++.control-panel {
++  display: flex;
++  flex-direction: column;
++  gap: 24px;
++}
++
++.control-group {
++  border: 1px solid #e4e4e7;
++  border-radius: 8px;
++  padding: 20px;
++}
++
++.control-group h4 {
++  margin: 0 0 16px 0;
++  font-size: 16px;
++  font-weight: 600;
++  color: #3f3f46;
++}
++
++.control-buttons {
++  display: flex;
++  gap: 12px;
++  flex-wrap: wrap;
++}
++
++/* Button Styles */
++.control-btn {
++  padding: 10px 20px;
++  border: none;
++  border-radius: 6px;
++  font-size: 14px;
++  font-weight: 500;
++  cursor: pointer;
++  transition: all 0.2s;
++  background: #e4e4e7;
++  color: #3f3f46;
++}
++
++.control-btn:hover {
++  background: #d4d4d8;
++  transform: translateY(-1px);
++}
++
++.control-btn:active {
++  transform: translateY(0);
++}
++
++.control-btn:disabled {
++  opacity: 0.5;
++  cursor: not-allowed;
++}
++
++.control-btn.primary {
++  background: #007bff;
++  color: white;
++}
++
++.control-btn.primary:hover {
++  background: #0056b3;
++}
++
++.control-btn.secondary {
++  background: #6c757d;
++  color: white;
++}
++
++.control-btn.secondary:hover {
++  background: #5a6268;
++}
++
++.control-btn.success {
++  background: #22c55e;
++  color: white;
++}
++
++.control-btn.success:hover {
++  background: #16a34a;
++}
++
++.control-btn.danger {
++  background: #ef4444;
++  color: white;
++}
++
++.control-btn.danger:hover {
++  background: #dc2626;
++}
++
++/* Status Indicators */
++.status-indicators {
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++}
++
++.status-item {
++  display: flex;
++  align-items: center;
++  gap: 12px;
++}
++
++.status-label {
++  font-size: 14px;
++  color: #6b7280;
++  min-width: 120px;
++}
++
++.status-value {
++  font-size: 14px;
++  font-weight: 500;
++  padding: 4px 12px;
++  border-radius: 4px;
++}
++
++.status-value.connected,
++.status-value.active {
++  background: #dcfce7;
++  color: #166534;
++}
++
++.status-value.disconnected,
++.status-value.inactive {
++  background: #fee2e2;
++  color: #991b1b;
++}
++
++/* Quick Actions */
++.quick-actions {
++  display: grid;
++  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
++  gap: 12px;
++}
++
++.implementation-note {
++  margin-top: 12px;
++  margin-bottom: 0;
++  font-size: 13px;
++  color: #9ca3af;
++  font-style: italic;
++  text-align: center;
++}
+diff --git a/src/RobotOperator.tsx b/src/RobotOperator.tsx
+new file mode 100644
+index 0000000..3fc794f
+--- /dev/null
++++ b/src/RobotOperator.tsx
+@@ -0,0 +1,237 @@
++import React, { useState, useEffect, useRef } from 'react';
++import * as VIAM from "@viamrobotics/sdk";
++import './RobotOperator.css';
++
++interface RobotOperatorProps {
++  sanderClient: VIAM.GenericComponentClient | null;
++  robotClient?: VIAM.RobotClient | null;
++}
++
++const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient }) => {
++  const [isStreaming, setIsStreaming] = useState(false);
++  const [cameraClient, setCameraClient] = useState<VIAM.CameraClient | null>(null);
++  const [streamError, setStreamError] = useState<string | null>(null);
++  const [imageUrl, setImageUrl] = useState<string | null>(null);
++  const intervalRef = useRef<number | null>(null);
++
++  useEffect(() => {
++    // Initialize camera client when robot client is available
++    if (robotClient) {
++      try {
++        const camera = new VIAM.CameraClient(robotClient, "camera-1");
++        setCameraClient(camera);
++      } catch (error) {
++        console.error("Failed to initialize camera client:", error);
++        setStreamError("Failed to connect to camera");
++      }
++    }
++
++    // Cleanup function
++    return () => {
++      if (intervalRef.current) {
++        clearInterval(intervalRef.current);
++      }
++      if (imageUrl) {
++        URL.revokeObjectURL(imageUrl);
++      }
++    };
++  }, [robotClient]);
++
++  const startVideoStream = async () => {
++    if (!cameraClient) {
++      setStreamError("Camera not available");
++      return;
++    }
++
++    try {
++      setIsStreaming(true);
++      setStreamError(null);
++
++      // Function to get and display camera image
++      const updateImage = async () => {
++        try {
++          // Get image from camera
++          const image = await cameraClient.getImage();
++          
++          // Convert Uint8Array to blob and create URL
++          // Create a new ArrayBuffer and copy the data
++          const buffer = new ArrayBuffer(image.length);
++          const view = new Uint8Array(buffer);
++          view.set(image);
++          
++          const blob = new Blob([buffer], { type: 'image/jpeg' });
++          const url = URL.createObjectURL(blob);
++          
++          // Revoke previous URL to prevent memory leak
++          if (imageUrl) {
++            URL.revokeObjectURL(imageUrl);
++          }
++          
++          setImageUrl(url);
++        } catch (error) {
++          console.error("Failed to get camera image:", error);
++          setStreamError("Failed to get camera image");
++        }
++      };
++
++      // Get initial image
++      await updateImage();
++
++      // Set up interval to update image (10 fps)
++      intervalRef.current = window.setInterval(updateImage, 100);
++      
++    } catch (error) {
++      console.error("Failed to start video stream:", error);
++      setStreamError("Failed to start video stream");
++      setIsStreaming(false);
++    }
++  };
++
++  const stopVideoStream = () => {
++    if (intervalRef.current) {
++      clearInterval(intervalRef.current);
++      intervalRef.current = null;
++    }
++    
++    if (imageUrl) {
++      URL.revokeObjectURL(imageUrl);
++      setImageUrl(null);
++    }
++    
++    setIsStreaming(false);
++  };
++
++  const handleStartSanding = async () => {
++    if (!sanderClient) {
++      alert("Sander module not available");
++      return;
++    }
++
++    try {
++      const command = VIAM.Struct.fromJson({
++        "command": "start_sanding"
++      });
++      
++      const response = await sanderClient.doCommand(command);
++      console.log("Sanding started:", response);
++      alert("Sanding operation started successfully");
++    } catch (error) {
++      console.error("Failed to start sanding:", error);
++      alert("Failed to start sanding operation");
++    }
++  };
++
++  const handleStopSanding = async () => {
++    if (!sanderClient) {
++      alert("Sander module not available");
++      return;
++    }
++
++    try {
++      const command = VIAM.Struct.fromJson({
++        "command": "stop_sanding"
++      });
++      
++      const response = await sanderClient.doCommand(command);
++      console.log("Sanding stopped:", response);
++      alert("Sanding operation stopped");
++    } catch (error) {
++      console.error("Failed to stop sanding:", error);
++      alert("Failed to stop sanding operation");
++    }
++  };
++
++  return (
++    <div className="robot-operator">
++      <div className="operator-grid">
++        {/* Live Video Feed Section */}
++        <div className="video-section">
++          <h3>Live Camera Feed</h3>
++          <div className="video-container">
++            {isStreaming && imageUrl ? (
++              <img
++                src={imageUrl}
++                alt="Live camera feed"
++                className="live-video"
++              />
++            ) : (
++              <div className="video-placeholder">
++                <span className="camera-icon">📹</span>
++                <p>Camera feed not active</p>
++              </div>
++            )}
++            {streamError && (
++              <div className="stream-error">
++                {streamError}
++              </div>
++            )}
++          </div>
++          <div className="video-controls">
++            {!isStreaming ? (
++              <button 
++                onClick={startVideoStream} 
++                className="control-btn primary"
++                disabled={!cameraClient}
++              >
++                Start Video Feed
++              </button>
++            ) : (
++              <button 
++                onClick={stopVideoStream} 
++                className="control-btn secondary"
++              >
++                Stop Video Feed
++              </button>
++            )}
++          </div>
++        </div>
++
++        {/* Robot Controls Section */}
++        <div className="controls-section">
++          <h3>Robot Controls</h3>
++          <div className="control-panel">
++            <div className="control-group">
++              <h4>Sanding Operations</h4>
++              <div className="control-buttons">
++                <button 
++                  onClick={handleStartSanding}
++                  className="control-btn success"
++                  disabled={!sanderClient}
++                >
++                  Start Sanding
++                </button>
++                <button 
++                  onClick={handleStopSanding}
++                  className="control-btn danger"
++                  disabled={!sanderClient}
++                >
++                  Stop Sanding
++                </button>
++              </div>
++            </div>
++
++            <div className="control-group">
++              <h4>System Status</h4>
++              <div className="status-indicators">
++                <div className="status-item">
++                  <span className="status-label">Camera:</span>
++                  <span className={`status-value ${cameraClient ? 'connected' : 'disconnected'}`}>
++                    {cameraClient ? 'Connected' : 'Disconnected'}
++                  </span>
++                </div>
++                <div className="status-item">
++                  <span className="status-label">Sander Module:</span>
++                  <span className={`status-value ${sanderClient ? 'connected' : 'disconnected'}`}>
++                    {sanderClient ? 'Connected' : 'Disconnected'}
++                  </span>
++                </div>
++              </div>
++            </div>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++};
++
++export default RobotOperator;
+diff --git a/src/RunsTable.tsx b/src/RunsTable.tsx
+new file mode 100644
+index 0000000..6a4db5a
+--- /dev/null
++++ b/src/RunsTable.tsx
+@@ -0,0 +1,89 @@
++import React from 'react';
++import { AgGridReact } from 'ag-grid-react';
++import { ColDef } from 'ag-grid-community';
++import 'ag-grid-community/styles/ag-grid.css';
++import 'ag-grid-community/styles/ag-theme-alpine.css';
++
++interface RunStep {
++  name: string;
++  start: string;
++  end: string;
++  duration_ms: number;
++}
++
++interface RunData {
++  success: boolean;
++  err_string?: string;
++  start: string;
++  end: string;
++  duration_ms: number;
++  runs: RunStep[][];
++}
++
++interface RunsTableProps {
++  runData: RunData;
++}
++
++const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
++  // Flatten the runs data for the grid
++  const rowData = runData.runs.flat().map((step, index) => ({
++    id: index,
++    name: step.name,
++    start: new Date(step.start).toLocaleString(),
++    end: new Date(step.end).toLocaleString(),
++    duration: `${(step.duration_ms / 1000).toFixed(2)}s`,
++    duration_ms: step.duration_ms
++  }));
++
++  const columnDefs: ColDef[] = [
++    { field: 'name', headerName: 'Step Name', flex: 1 },
++    { field: 'start', headerName: 'Start Time', flex: 1 },
++    { field: 'end', headerName: 'End Time', flex: 1 },
++    { field: 'duration', headerName: 'Duration', flex: 1 }
++  ];
++
++  const formatDate = (dateString: string) => {
++    return new Date(dateString).toLocaleString();
++  };
++
++  const formatDuration = (ms: number) => {
++    return `${(ms / 1000).toFixed(2)}s`;
++  };
++
++  return (
++    <div className="runs-table-container">
++      <h2>Run Details</h2>
++      
++      {/* Summary Information */}
++      <div className="run-summary">
++        <div className={`status ${runData.success ? 'success' : 'error'}`}>
++          <strong>Status:</strong> {runData.success ? 'Success' : 'Failed'}
++        </div>
++        {runData.err_string && (
++          <div className="error-message">
++            <strong>Error:</strong> {runData.err_string}
++          </div>
++        )}
++        <div className="timing-info">
++          <span><strong>Start:</strong> {formatDate(runData.start)}</span>
++          <span><strong>End:</strong> {formatDate(runData.end)}</span>
++          <span><strong>Total Duration:</strong> {formatDuration(runData.duration_ms)}</span>
++        </div>
++      </div>
++
++      {/* Steps Table */}
++      <div className="ag-theme-alpine" style={{ height: 400, width: '100%' }}>
++        <AgGridReact
++          rowData={rowData}
++          columnDefs={columnDefs}
++          defaultColDef={{
++            sortable: true,
++            resizable: true,
++          }}
++        />
++      </div>
++    </div>
++  );
++};
++
++export default RunsTable;
+\ No newline at end of file
+diff --git a/src/lib/utils.ts b/src/lib/utils.ts
+new file mode 100644
+index 0000000..92b57be
+--- /dev/null
++++ b/src/lib/utils.ts
+@@ -0,0 +1,209 @@
++import * as VIAM from "@viamrobotics/sdk";
++
++interface RunData {
++  success: boolean;
++  err_string?: string;
++  start: string;
++  end: string;
++  duration_ms: number;
++  runs: any[][];
++  readings?: any;
++}
++
++export const handleVideoStoreCommand = async (
++  videoStoreClient: VIAM.GenericComponentClient,
++  runData?: RunData | null
++) => {
++  console.log("handleVideoStoreCommand called");
++
++  if (!videoStoreClient) {
++    console.log("No videoStoreClient available, returning early");
++    return;
++  }
++
++  try {
++    console.log("Creating storage state command...");
++    // First get storage state
++    const storageStateCommand = VIAM.Struct.fromJson({
++      "command": "get-storage-state"
++    });
++    console.log("Storage state command created:", storageStateCommand);
++
++    console.log("Executing storage state command...");
++    const storageResponse = await videoStoreClient.doCommand(storageStateCommand);
++    console.log("Storage state response:", storageResponse);
++
++    // Helper function to convert custom time format to Date
++    const parseCustomTimeFormat = (timeStr: string): Date => {
++      // Convert "2025-08-15_11-31-26Z" to "2025-08-15T11:31:26Z"
++      const isoString = timeStr.replace('_', 'T').replace(/-(\d{2})-(\d{2})Z$/, ':$1:$2Z');
++      return new Date(isoString);
++    };
++
++    // Helper function to convert Date back to custom format
++    const formatToCustomTime = (date: Date): string => {
++      return date.toISOString().replace('T', '_').replace(/:/g, '-').replace(/\.\d{3}Z$/, 'Z');
++    };
++
++    // Extract available time ranges from storage response
++    const storageData = storageResponse as any;
++    let fromTime: string;
++    let toTime: string;
++
++    // Check if storage response has stored_video array with time ranges
++    if (storageData && storageData.stored_video && storageData.stored_video.length > 0) {
++      const firstVideo = storageData.stored_video[0];
++
++      // Try different possible property names for time ranges
++      if (firstVideo.start && firstVideo.end) {
++        fromTime = firstVideo.start;
++        toTime = firstVideo.end;
++      } else if (firstVideo.from && firstVideo.to) {
++        fromTime = firstVideo.from;
++        toTime = firstVideo.to;
++      } else if (firstVideo.time_range) {
++        fromTime = firstVideo.time_range.start || firstVideo.time_range.from;
++        toTime = firstVideo.time_range.end || firstVideo.time_range.to;
++      } else {
++        throw new Error("No valid time range found in stored_video");
++      }
++
++      console.log("Full time range from stored_video:", fromTime, "to", toTime);
++
++      // For testing, use a much smaller time range (just 5 minutes from the start)
++      const startTime = parseCustomTimeFormat(fromTime);
++      const endTime = new Date(startTime.getTime() + 5 * 60 * 1000); // Add 5 minutes
++
++      // Ensure we don't go beyond the available range
++      const maxEndTime = parseCustomTimeFormat(toTime);
++      if (endTime > maxEndTime) {
++        // Use original end time if 5 minutes exceeds available range
++        toTime = toTime;
++      } else {
++        toTime = formatToCustomTime(endTime);
++      }
++
++      console.log("Using shortened time range for testing:", fromTime, "to", toTime);
++    } else if (storageData && storageData.ranges && storageData.ranges.length > 0) {
++      // Fallback to ranges array if available
++      const firstRange = storageData.ranges[0];
++      fromTime = firstRange.start || firstRange.from;
++      toTime = firstRange.end || firstRange.to;
++      console.log("Using time range from ranges:", fromTime, "to", toTime);
++    } else {
++      // If we have runData, try to use its time range
++      if (runData && runData.start && runData.end) {
++        fromTime = runData.start;
++        toTime = runData.end;
++        console.log("Using time range from runData:", fromTime, "to", toTime);
++      } else {
++        throw new Error("No valid time ranges found in storage response and no runData available");
++      }
++    }
++
++    console.log("Creating fetch command...");
++    const fetchCommand = VIAM.Struct.fromJson({
++      "command": "fetch",
++      "from": fromTime,
++      "to": toTime
++    });
++    console.log("Fetch command created:", fetchCommand);
++
++    console.log("Executing fetch command with 30 second timeout...");
++
++    // Add timeout to prevent hanging
++    const fetchPromise = videoStoreClient.doCommand(fetchCommand);
++    const timeoutPromise = new Promise((_, reject) => {
++      setTimeout(() => reject(new Error('Fetch command timed out after 30 seconds')), 30000);
++    });
++
++    const fetchResponse = await Promise.race([fetchPromise, timeoutPromise]);
++    console.log("Fetch command response:", fetchResponse);
++
++    // Convert base64 video data to downloadable MP4
++    // Type cast the response to access the video property
++    const responseObj = fetchResponse as { video?: string };
++    if (responseObj && responseObj.video) {
++      convertBase64ToMp4(responseObj.video, 'fetched_video.mp4');
++    } else {
++      console.log("No video data in response");
++    }
++
++    console.log("handleVideoStoreCommand completed successfully");
++  } catch (error) {
++    console.error("Error executing video store commands:", error);
++    console.log("Error details:", {
++      message: error instanceof Error ? error.message : 'Unknown error',
++      stack: error instanceof Error ? error.stack : undefined
++    });
++  }
++};
++
++export const convertBase64ToMp4 = (base64Data: string, filename: string) => {
++  try {
++    console.log("Converting base64 to MP4...");
++
++    // Remove data URL prefix if present (e.g., "data:video/mp4;base64,")
++    const base64String = base64Data.includes(',')
++      ? base64Data.split(',')[1]
++      : base64Data;
++
++    // Convert base64 to binary
++    const binaryString = atob(base64String);
++    const bytes = new Uint8Array(binaryString.length);
++
++    for (let i = 0; i < binaryString.length; i++) {
++      bytes[i] = binaryString.charCodeAt(i);
++    }
++
++    // Create blob with MP4 MIME type
++    const blob = new Blob([bytes], { type: 'video/mp4' });
++
++    // Create download link
++    const url = URL.createObjectURL(blob);
++    const link = document.createElement('a');
++    link.href = url;
++    link.download = filename;
++
++    // Trigger download
++    document.body.appendChild(link);
++    link.click();
++
++    // Cleanup
++    document.body.removeChild(link);
++    URL.revokeObjectURL(url);
++
++    console.log(`MP4 file "${filename}" downloaded successfully`);
++  } catch (error) {
++    console.error("Error converting base64 to MP4:", error);
++  }
++};
++
++export const formatDuration = (durationMs?: number, start?: string, end?: string): string => {
++  let ms = durationMs;
++
++  // If no duration_ms provided, calculate from start/end times
++  if (!ms && start && end) {
++    ms = new Date(end).getTime() - new Date(start).getTime();
++  }
++
++  if (!ms) return '0:00';
++
++  const seconds = Math.floor(ms / 1000);
++  const minutes = Math.floor(seconds / 60);
++  const remainingSeconds = seconds % 60;
++  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
++};
++
++export const formatTimestamp = (timestamp: string): string => {
++  return new Date(timestamp).toLocaleString();
++};
++
++export const formatShortTimestamp = (timestamp: string): string => {
++  return new Date(timestamp).toLocaleTimeString();
++};
++
++export const extractCameraName = (filename: string): string => {
++  const match = filename.match(/video_([^/]+)/);
++  return match ? `${match[1]}` : 'Unknown Camera';
++};
+diff --git a/src/lib/videoUtils.ts b/src/lib/videoUtils.ts
+new file mode 100644
+index 0000000..5188bc3
+--- /dev/null
++++ b/src/lib/videoUtils.ts
+@@ -0,0 +1,231 @@
++import * as VIAM from "@viamrobotics/sdk";
++
++interface RunData {
++  success: boolean;
++  err_string?: string;
++  start: string;
++  end: string;
++  duration_ms: number;
++  runs: any[][];
++  readings?: any;
++}
++
++export const handleVideoStoreCommand = async (
++  videoStoreClient: VIAM.GenericComponentClient,
++  runData?: RunData | null
++): Promise<{ videoUrl?: string; error?: string }> => {
++  console.log("handleVideoStoreCommand called");
++
++  if (!videoStoreClient) {
++    console.log("No videoStoreClient available, returning early");
++    return { error: "No video store client available" };
++  }
++
++  try {
++    console.log("Creating storage state command...");
++    const storageStateCommand = VIAM.Struct.fromJson({
++      "command": "get-storage-state"
++    });
++    console.log("Storage state command created:", storageStateCommand);
++
++    console.log("Executing storage state command...");
++    const storageResponse = await videoStoreClient.doCommand(storageStateCommand);
++    console.log("Storage state response:", storageResponse);
++
++    const parseCustomTimeFormat = (timeStr: string): Date => {
++      const isoString = timeStr.replace('_', 'T').replace(/-(\d{2})-(\d{2})Z$/, ':$1:$2Z');
++      return new Date(isoString);
++    };
++
++    const formatToCustomTime = (date: Date): string => {
++      return date.toISOString().replace('T', '_').replace(/:/g, '-').replace(/\.\d{3}Z$/, 'Z');
++    };
++
++    const storageData = storageResponse as any;
++    let fromTime: string;
++    let toTime: string;
++
++    if (storageData && storageData.stored_video && storageData.stored_video.length > 0) {
++      const firstVideo = storageData.stored_video[0];
++
++      if (firstVideo.start && firstVideo.end) {
++        fromTime = firstVideo.start;
++        toTime = firstVideo.end;
++      } else if (firstVideo.from && firstVideo.to) {
++        fromTime = firstVideo.from;
++        toTime = firstVideo.to;
++      } else if (firstVideo.time_range) {
++        fromTime = firstVideo.time_range.start || firstVideo.time_range.from;
++        toTime = firstVideo.time_range.end || firstVideo.time_range.to;
++      } else {
++        throw new Error("No valid time range found in stored_video");
++      }
++
++      console.log("Full time range from stored_video:", fromTime, "to", toTime);
++
++      const startTime = parseCustomTimeFormat(fromTime);
++      const endTime = new Date(startTime.getTime() + 5 * 60 * 1000);
++
++      const maxEndTime = parseCustomTimeFormat(toTime);
++      if (endTime > maxEndTime) {
++        toTime = formatToCustomTime(maxEndTime);
++      } else {
++        toTime = formatToCustomTime(endTime);
++      }
++
++      console.log("Using shortened time range for testing:", fromTime, "to", toTime);
++    } else if (storageData && storageData.ranges && storageData.ranges.length > 0) {
++      const firstRange = storageData.ranges[0];
++      fromTime = firstRange.start || firstRange.from;
++      toTime = firstRange.end || firstRange.to;
++      console.log("Using time range from ranges:", fromTime, "to", toTime);
++    } else {
++      if (runData && runData.start && runData.end) {
++        fromTime = runData.start;
++        toTime = runData.end;
++        console.log("Using time range from runData:", fromTime, "to", toTime);
++      } else {
++        throw new Error("No valid time ranges found in storage response and no runData available");
++      }
++    }
++
++    console.log("Creating fetch command...");
++    const fetchCommand = VIAM.Struct.fromJson({
++      "command": "fetch",
++      "from": fromTime,
++      "to": toTime
++    });
++    console.log("Fetch command created:", fetchCommand);
++
++    console.log("Executing fetch command with 30 second timeout...");
++
++    const fetchPromise = videoStoreClient.doCommand(fetchCommand);
++    const timeoutPromise = new Promise((_, reject) => {
++      setTimeout(() => reject(new Error('Fetch command timed out after 30 seconds')), 30000);
++    });
++
++    const fetchResponse = await Promise.race([fetchPromise, timeoutPromise]);
++    console.log("Fetch command response:", fetchResponse);
++
++    const responseObj = fetchResponse as { video?: string };
++    if (responseObj && responseObj.video) {
++      // Create video stream URL for playback
++      const videoUrl = createVideoStreamFromBase64(responseObj.video);
++
++      if (videoUrl) {
++        return { videoUrl };
++      } else {
++        return { error: "Failed to create video stream" };
++      }
++    } else {
++      console.log("No video data in response");
++      return { error: "No video data in response" };
++    }
++  } catch (error) {
++    console.error("Error executing video store commands:", error);
++    return {
++      error: error instanceof Error ? error.message : 'Unknown error'
++    };
++  }
++};
++
++export const convertBase64ToMp4 = (base64Data: string, filename: string): string | null => {
++  try {
++    console.log("Converting base64 to MP4...");
++
++    const base64String = base64Data.includes(',')
++      ? base64Data.split(',')[1]
++      : base64Data;
++
++    const binaryString = atob(base64String);
++    const bytes = new Uint8Array(binaryString.length);
++
++    for (let i = 0; i < binaryString.length; i++) {
++      bytes[i] = binaryString.charCodeAt(i);
++    }
++
++    const blob = new Blob([bytes], { type: 'video/mp4' });
++    const url = URL.createObjectURL(blob);
++
++    // Create download link
++    const link = document.createElement('a');
++    link.href = url;
++    link.download = filename;
++
++    document.body.appendChild(link);
++    link.click();
++    document.body.removeChild(link);
++
++    console.log(`MP4 file "${filename}" downloaded successfully`);
++
++    // Return the blob URL for streaming (don't revoke it immediately)
++    return url;
++  } catch (error) {
++    console.error("Error converting base64 to MP4:", error);
++    return null;
++  }
++};
++
++export const createVideoStreamFromBase64 = (base64Data: string): string | null => {
++  try {
++    console.log("Creating video stream from base64...");
++
++    const base64String = base64Data.includes(',')
++      ? base64Data.split(',')[1]
++      : base64Data;
++
++    const binaryString = atob(base64String);
++    const bytes = new Uint8Array(binaryString.length);
++
++    for (let i = 0; i < binaryString.length; i++) {
++      bytes[i] = binaryString.charCodeAt(i);
++    }
++
++    const blob = new Blob([bytes], { type: 'video/mp4' });
++    const url = URL.createObjectURL(blob);
++
++    console.log("Video stream URL created successfully");
++    return url;
++  } catch (error) {
++    console.error("Error creating video stream:", error);
++    return null;
++  }
++};
++
++export const formatDuration = (durationMs?: number, start?: string, end?: string): string => {
++  let ms = durationMs;
++
++  if (!ms && start && end) {
++    ms = new Date(end).getTime() - new Date(start).getTime();
++  }
++
++  if (!ms) return '0:00';
++
++  const seconds = Math.floor(ms / 1000);
++  const minutes = Math.floor(seconds / 60);
++  const remainingSeconds = seconds % 60;
++  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
++};
++
++export const formatDurationToMinutesSeconds = (startTime: string, endTime: string): string => {
++  const start = new Date(startTime);
++  const end = new Date(endTime);
++  const ms = end.getTime() - start.getTime();
++  if (isNaN(ms) || ms < 0) return '0m 0s';
++  const minutes = Math.floor(ms / 60000);
++  const seconds = Math.floor((ms % 60000) / 1000);
++  return `${minutes}m ${seconds}s`;
++};
++
++export const formatTimestamp = (timestamp: string): string => {
++  return new Date(timestamp).toLocaleString();
++};
++
++export const formatShortTimestamp = (timestamp: string): string => {
++  return new Date(timestamp).toLocaleTimeString();
++};
++
++export const extractCameraName = (filename: string): string => {
++  const match = filename.match(/video_([^/]+)/);
++  return match ? `${match[1]}` : 'Unknown Camera';
++};
+\ No newline at end of file
+diff --git a/src/types/css-modules.d.ts b/src/types/css-modules.d.ts
+new file mode 100644
+index 0000000..1336d3b
+--- /dev/null
++++ b/src/types/css-modules.d.ts
+@@ -0,0 +1,4 @@
++declare module '*.module.css' {
++  const classes: { [key: string]: string };
++  export default classes;
++}
+\ No newline at end of file
