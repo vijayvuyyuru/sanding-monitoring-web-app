@@ -397,6 +397,40 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                 </table>
               </div>
             </section>
+
+            {/* Files Grid Section */}
+            <section style={{ marginTop: '2rem' }}>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Video Files</h2>
+              
+              <div className="files-grid">
+                {videoFiles && videoFiles.length > 0 ? (
+                  videoFiles.map((file, index) => (
+                    <div 
+                      key={index} 
+                      className="file-card"
+                      onClick={() => handleVideoClick(file)}
+                    >
+                      <div className="file-thumbnail">
+                        <span className="file-icon">🎬</span>
+                      </div>
+                      <div className="file-info">
+                        <div className="file-name" title={file.metadata?.fileName || 'Unknown'}>
+                          {extractCameraName(file.metadata?.fileName || 'Unknown')}
+                        </div>
+                        <div className="file-time">
+                          {file.metadata?.timeRequested ?
+                            formatShortTimestamp(file.metadata.timeRequested.toDate().toISOString()) :
+                            'Unknown'
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-files-message">No video files available</div>
+                )}
+              </div>
+            </section>
           </>
         ) : (
           <section>
