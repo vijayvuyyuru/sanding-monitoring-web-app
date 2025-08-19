@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
+import { JsonValue } from '@viamrobotics/sdk';
 
 /*
 TODO:
@@ -56,7 +57,7 @@ function App() {
       let machineId: string;
       let hostname: string;
 
-      ({
+      const foo = ({
         apiKey: { id: apiKeyId, key: apiKeySecret },
         machineId: machineId,
         hostname: hostname,
@@ -70,7 +71,9 @@ function App() {
       const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
       setRobotClient(robotClient); // Store the robot client
       const resources = await robotClient.resourceNames();
-      
+
+      // debugger;
+
       // Check for sander module resource
       if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
         const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
@@ -103,11 +106,31 @@ function App() {
       const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
       setVideoFiles(filenames);
 
-      // TODO: Fetch and display runtime start/end and substep durations
-      // TODO: Implement pagination for large datasets
-    };
-    
-    fetchData();
+      const organizations = await viamClient.appClient.listOrganizations();
+      console.log("Organizations:", organizations);
+
+      const mqlQuery: Record<string, JsonValue>[] = [
+        {
+          $match: {
+            component_name: "sanding-summary",
+          },
+        },
+        {
+          $sort: {
+            time_received: -1,
+          },
+        }
+      ];
+
+        const tabluarData = await viamClient.dataClient.tabularDataByMQL(organizations[0].id, mqlQuery);
+
+        console.log("Tabular Data:", tabluarData);
+
+        // TODO: Fetch and display runtime start/end and substep durations
+        // TODO: Implement pagination for large datasets
+      };
+      
+      fetchData();
   }, []);
 
   return (
