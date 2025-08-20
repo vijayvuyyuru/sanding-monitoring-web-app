@@ -12,6 +12,7 @@ import {
 
 interface AppViewProps {
   runData: any;
+  passSummaries?: any[]; // Add passSummaries prop
   videoFiles: VIAM.dataApi.BinaryData[];
   videoStoreClient?: VIAM.GenericComponentClient | null;
   sanderClient: VIAM.GenericComponentClient | null;
@@ -74,14 +75,27 @@ const generateSampleRunsFromVideos = (videoFiles: VIAM.dataApi.BinaryData[]) => 
 };
 
 
-const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClient, videoStoreClient, robotClient }) => {
+const AppInterface: React.FC<AppViewProps> = ({ 
+  runData, 
+  passSummaries = [], // Default to empty array
+  videoFiles, 
+  sanderClient, 
+  videoStoreClient, 
+  robotClient 
+}) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
 
-  const expectedSteps = ["Imaging", "GeneratingLobes", "Execution"];
+  // Update the expectedSteps to match your actual step names
+  const expectedSteps = [
+    "Imaging",
+    "GeneratingLobes", 
+    "GeneratingWaypoints",
+    "Executing"  // Changed from "Execution" to "Executing" to match your data
+  ];
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -96,16 +110,33 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
     setExpandedRows(newExpandedRows);
   };
 
-  const getStepVideos = (step: { start: string; end:string; }) => {
+  const getStepVideos = (step: { start: string; end:string; name?: string }) => {
     if (!videoFiles) return [];
 
     const stepStart = new Date(step.start);
     const stepEnd = new Date(step.end);
 
+    // Debug logging
+    console.log(`Looking for videos in step ${step.name || 'unknown'}:`, {
+      stepStart: stepStart.toISOString(),
+      stepEnd: stepEnd.toISOString(),
+      availableVideos: videoFiles.map(f => ({
+        time: f.metadata?.timeRequested?.toDate().toISOString(),
+        fileName: f.metadata?.fileName
+      }))
+    });
+
     return videoFiles.filter(file => {
       if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
       const fileTime = file.metadata.timeRequested.toDate();
-      return fileTime >= stepStart && fileTime <= stepEnd;
+      const isInRange = fileTime >= stepStart && fileTime <= stepEnd;
+      
+      // Debug log for each video check
+      if (step.name) {
+        console.log(`Video ${file.metadata.fileName} at ${fileTime.toISOString()} is ${isInRange ? 'IN' : 'OUT OF'} range for step ${step.name}`);
+      }
+      
+      return isInRange;
     }).sort((a, b) => {
       const timeA = a.metadata!.timeRequested!.toDate().getTime();
       const timeB = b.metadata!.timeRequested!.toDate().getTime();
@@ -129,9 +160,12 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
     }
   };
 
-  const runsToDisplay = runData?.runs?.length > 0 
-    ? runData.runs 
-    : generateSampleRunsFromVideos(videoFiles);
+  // Use real pass summaries if available, otherwise fall back to generated data
+  const runsToDisplay = passSummaries.length > 0 
+    ? passSummaries 
+    : (runData?.runs?.length > 0 
+        ? runData.runs 
+        : generateSampleRunsFromVideos(videoFiles));
 
   const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
@@ -184,57 +218,6 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
     };
   }, [modalVideoUrl]);
 
-  const runs = [
-    {
-      "start": "2023-10-01T10:00:00Z",
-      "end": "2023-10-01T10:15:00Z",
-      "steps": [
-        {
-          "name": "Imaging",
-          "start": "2023-10-01T10:00:00Z",
-          "end": "2023-10-01T10:05:00Z"
-        },
-        {
-          "name": "GeneratingLobes",
-          "start": "2023-10-01T10:05:00Z",
-          "end": "2023-10-01T10:10:00Z"
-        },
-        {
-          "name": "Execution",
-          "start": "2023-10-01T10:10:00Z",
-          "end": "2023-10-01T10:15:00Z"
-        }
-      ],
-      "success": true,
-      "pass_id": "1",
-      "err_string": null
-    },
-    {
-      "start": "2023-10-01T09:45:00Z",
-      "end": "2023-10-01T10:00:00Z",
-      "steps": [
-        {
-          "name": "Imaging",
-          "start": "2023-10-01T09:45:00Z",
-          "end": "2023-10-01T09:50:00Z"
-        },
-        {
-          "name": "GeneratingLobes",
-          "start": "2023-10-01T09:50:00Z",
-          "end": "2023-10-01T09:55:00Z"
-        },
-        {
-          "name": "Execution",
-          "start": "2023-10-01T09:55:00Z",
-          "end": "2023-10-01T10:00:00Z"
-        }
-      ],
-      "success": false,
-      "pass_id": "2",
-      "err_string": "Error in execution step"
-    }
-  ];
-
   return (
     <div className="appInterface">
       <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
@@ -271,17 +254,18 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                   <thead>
                     <tr>
                       <th style={{ width: '20px' }}></th>
+                      <th>Pass ID</th>
                       <th>Status</th>
                       <th>Start Time</th>
                       <th>End Time</th>
                       <th>Duration</th>
-                      <th>Completed</th>
+                      <th>Steps</th>
                       <th>Error</th>
                     </tr>
                   </thead>
                   <tbody>
                     {runsToDisplay.map((run: any, index: number) => (
-                      <React.Fragment key={index}>
+                      <React.Fragment key={run.pass_id || index}>
                         <tr 
                           className="expandable-row"
                           onClick={() => toggleRowExpansion(index)}
@@ -301,16 +285,19 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                               ▶
                             </span>
                           </td>
+                          <td className="text-zinc-700 text-xs">
+                            {run.pass_id ? run.pass_id.substring(0, 8) : '—'}
+                          </td>
                           <td>{getStatusBadge(run.success)}</td>
                           <td className="text-zinc-700">{formatShortTimestamp(run.start)}</td>
                           <td className="text-zinc-700">{formatShortTimestamp(run.end)}</td>
                           <td className="text-zinc-700">{formatDurationToMinutesSeconds(run.start, run.end)}</td>
                           <td className="text-zinc-700">
-                            {run.success ? '1 / 1' : '0 / 1'}
+                            {run.steps ? `${run.steps.length} steps` : '—'}
                           </td>
                           <td className="text-zinc-700">
                             {run.err_string ? (
-                              <span className="text-red-600 text-xs font-mono error-text" title={run.err_string}>
+                              <span className="text-red-600 text-xxs font-mono error-text" title={run.err_string}>
                                 {run.err_string}
                               </span>
                             ) : (
@@ -320,12 +307,13 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                         </tr>
                         {expandedRows.has(index) && (
                           <tr className="expanded-content">
-                            <td colSpan={7}>
+                            <td colSpan={8}>
                               <div className="run-details">
                                 <div className="passes-container">
                                   <div className="steps-grid">
                                     {expectedSteps.map((stepName) => {
-                                      const step = run.steps.find((s: any) => s.name === stepName);
+                                      console.log('Looking for step:', stepName, 'in steps:', run.steps);
+                                      const step = run.steps?.find((s: any) => s.name === stepName);
                                       if (step) {
                                         const stepVideos = getStepVideos(step);
 
@@ -386,6 +374,118 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                                       );
                                     })}
                                   </div>
+                                
+                                  {/* New section for all files in pass time range */}
+                                  {(() => {
+                                    const passStart = new Date(run.start);
+                                    const passEnd = new Date(run.end);
+                                    
+                                    const passFiles = videoFiles.filter(file => {
+                                      if (!file.metadata?.timeRequested) return false;
+                                      const fileTime = file.metadata.timeRequested.toDate();
+                                      return fileTime >= passStart && fileTime <= passEnd;
+                                    }).sort((a, b) => {
+                                      const timeA = a.metadata!.timeRequested!.toDate().getTime();
+                                      const timeB = b.metadata!.timeRequested!.toDate().getTime();
+                                      return timeA - timeB;
+                                    });
+                                    
+                                    // Only render the section if there are files
+                                    if (passFiles.length === 0) {
+                                      return null;
+                                    }
+                                    
+                                    return (
+                                      <div className="pass-files-section">
+                                        <h4>
+                                          Files captured during this pass
+                                        </h4>
+                                        
+                                        <div style={{ 
+                                          display: 'grid',
+                                          gridTemplateColumns: 'repeat(2, 1fr)',
+                                          gap: '8px' 
+                                        }}>
+                                          {passFiles.map((file, fileIndex) => {
+                                            const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
+                                            
+                                            return (
+                                              <div 
+                                                key={fileIndex}
+                                                style={{
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'space-between',
+                                                  padding: '8px 12px',
+                                                  backgroundColor: '#f9fafb',
+                                                  border: '1px solid #e5e7eb',
+                                                  borderRadius: '6px',
+                                                  fontSize: '13px',
+                                                  cursor: 'pointer',
+                                                  transition: 'all 0.2s ease'
+                                                }}
+                                                onClick={() => {
+                                                  if (file.metadata?.uri) {
+                                                    window.open(file.metadata.uri, '_blank');
+                                                  }
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                  e.currentTarget.style.backgroundColor = '#e5e7eb';
+                                                  e.currentTarget.style.transform = 'translateY(-1px)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                                                  e.currentTarget.style.transform = 'translateY(0)';
+                                                }}
+                                              >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                                  <span style={{ 
+                                                    color: '#374151',
+                                                    wordBreak: 'break-all',
+                                                    flex: 1
+                                                  }}>
+                                                    {fileName}
+                                                  </span>
+                                                  <span style={{ 
+                                                    color: '#9ca3af', 
+                                                    fontSize: '12px',
+                                                    whiteSpace: 'nowrap',
+                                                    flexShrink: 0
+                                                  }}>
+                                                    {formatShortTimestamp(file.metadata?.timeRequested?.toDate().toISOString() || '')}
+                                                  </span>
+                                                </div>
+                                                <a 
+                                                  href={file.metadata?.uri}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  style={{
+                                                    marginLeft: '12px',
+                                                    padding: '4px 12px',
+                                                    backgroundColor: '#3b82f6',
+                                                    color: 'white',
+                                                    borderRadius: '4px',
+                                                    textDecoration: 'none',
+                                                    fontSize: '12px',
+                                                    whiteSpace: 'nowrap',
+                                                    transition: 'background-color 0.2s',
+                                                    flexShrink: 0
+                                                  }}
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                  }}
+                                                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                                                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+                                                >
+                                                  Open
+                                                </a>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </td>
@@ -399,7 +499,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
             </section>
 
             {/* Files Grid Section */}
-            <section style={{ marginTop: '2rem' }}>
+            {/* <section style={{ marginTop: '2rem' }}>
               <h2 className="text-xl font-semibold text-zinc-900 mb-4">Video Files</h2>
               
               <div className="files-grid">
@@ -430,7 +530,7 @@ const AppInterface: React.FC<AppViewProps> = ({ runData, videoFiles, sanderClien
                   <div className="no-files-message">No video files available</div>
                 )}
               </div>
-            </section>
+            </section> */}
           </>
         ) : (
           <section>

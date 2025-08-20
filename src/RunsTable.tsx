@@ -1,8 +1,4 @@
 import React from 'react';
-import { AgGridReact } from 'ag-grid-react';
-import { ColDef } from 'ag-grid-community';
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 interface RunStep {
   name: string;
@@ -25,8 +21,8 @@ interface RunsTableProps {
 }
 
 const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
-  // Flatten the runs data for the grid
-  const rowData = runData.runs.flat().map((step, index) => ({
+  // Flatten the runs data for the table
+  const tableData = runData.runs.flat().map((step, index) => ({
     id: index,
     name: step.name,
     start: new Date(step.start).toLocaleString(),
@@ -34,13 +30,6 @@ const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
     duration: `${(step.duration_ms / 1000).toFixed(2)}s`,
     duration_ms: step.duration_ms
   }));
-
-  const columnDefs: ColDef[] = [
-    { field: 'name', headerName: 'Step Name', flex: 1 },
-    { field: 'start', headerName: 'Start Time', flex: 1 },
-    { field: 'end', headerName: 'End Time', flex: 1 },
-    { field: 'duration', headerName: 'Duration', flex: 1 }
-  ];
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
@@ -72,15 +61,34 @@ const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
       </div>
 
       {/* Steps Table */}
-      <div className="ag-theme-alpine" style={{ height: 400, width: '100%' }}>
-        <AgGridReact
-          rowData={rowData}
-          columnDefs={columnDefs}
-          defaultColDef={{
-            sortable: true,
-            resizable: true,
-          }}
-        />
+      <div className="table-container" style={{ marginTop: '20px', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#f0f0f0' }}>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Step Name</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Start Time</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>End Time</th>
+              <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #ddd' }}>Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableData.map((row) => (
+              <tr key={row.id} style={{ borderBottom: '1px solid #eee' }}>
+                <td style={{ padding: '10px' }}>{row.name}</td>
+                <td style={{ padding: '10px' }}>{row.start}</td>
+                <td style={{ padding: '10px' }}>{row.end}</td>
+                <td style={{ padding: '10px' }}>{row.duration}</td>
+              </tr>
+            ))}
+            {tableData.length === 0 && (
+              <tr>
+                <td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                  No data available
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
