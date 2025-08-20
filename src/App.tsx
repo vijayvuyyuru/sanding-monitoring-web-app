@@ -81,8 +81,8 @@ function App() {
       }
 
       // Check for video-store resource
-      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "generic-1"))) {
-        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "generic-1");
+      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "video-store-1"))) {
+        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "video-store-1");
         setVideoStoreClient(videoStoreClient);
         // TODO: Request a video from the past 1 minute and show the video
       } else {
