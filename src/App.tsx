@@ -11,7 +11,6 @@ TODO:
     - if not, show a warning that there is no sanding resource
 - detect if there is a video-store resource
     - if so show request a video from the past 1 minute and show the video
-- display runtime start and end and the length of each substep
 - add pagination
 
 */
@@ -43,12 +42,13 @@ interface RunData {
 }
 
 function App() {
-  const [runData, setRunData] = useState<RunData | null>(null);
-  const [passSummaries, setPassSummaries] = useState<Readings[]>([]); // Add state for pass summaries
+  const [runData, setRunData] = useState<RunData | null>(null); // Fix: Add runData
+  const [passSummaries, setPassSummaries] = useState<Readings[]>([]);
   const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
   const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
+  const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,15 +69,14 @@ function App() {
       setRobotClient(robotClient); // Store the robot client
       const resources = await robotClient.resourceNames();
 
-      // debugger;
-
       // Check for sander module resource
       if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
         const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
         setSanderClient(sanderClient);
+        setSanderWarning(null);
         // TODO: Add visual indication that sander resource is available
       } else {
-        // TODO: Show warning that there is no sanding resource
+        setSanderWarning("No sanding module found on this robot");
         console.warn("No sander-module resource found");
       }
 
@@ -164,7 +163,7 @@ function App() {
         setRunData(runDataFromPasses);
       }
 
-      // Fetch binary data (video files)
+      // Fetch binary data
       let allFiles = [];
       let last = undefined;
       const earliestPassTime = new Date(Math.min(...processedPasses.map(p => new Date(p.start).getTime())));
@@ -199,12 +198,12 @@ function App() {
 
   return (
     <AppInterface 
-      runData={runData}
       passSummaries={passSummaries} // Pass the actual summaries
       videoFiles={videoFiles}
       sanderClient={sanderClient!}
       videoStoreClient={videoStoreClient}
       robotClient={robotClient}
+      sanderWarning={sanderWarning} // Pass the sanding warning
     />
   );
 }

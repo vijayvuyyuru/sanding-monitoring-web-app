@@ -16,6 +16,7 @@ interface AppViewProps {
   videoStoreClient?: VIAM.GenericComponentClient | null;
   sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
+  sanderWarning?: string | null;
 }
 
 const AppInterface: React.FC<AppViewProps> = ({ 
@@ -23,7 +24,8 @@ const AppInterface: React.FC<AppViewProps> = ({
   videoFiles, 
   sanderClient, 
   videoStoreClient, 
-  robotClient 
+  robotClient,
+  sanderWarning
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -420,43 +422,25 @@ const AppInterface: React.FC<AppViewProps> = ({
                 </table>
               </div>
             </section>
-
-            {/* Files Grid Section */}
-            {/* <section style={{ marginTop: '2rem' }}>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Video Files</h2>
-              
-              <div className="files-grid">
-                {videoFiles && videoFiles.length > 0 ? (
-                  videoFiles.map((file, index) => (
-                    <div 
-                      key={index} 
-                      className="file-card"
-                      onClick={() => handleVideoClick(file)}
-                    >
-                      <div className="file-thumbnail">
-                        <span className="file-icon">🎬</span>
-                      </div>
-                      <div className="file-info">
-                        <div className="file-name" title={file.metadata?.fileName || 'Unknown'}>
-                          {extractCameraName(file.metadata?.fileName || 'Unknown')}
-                        </div>
-                        <div className="file-time">
-                          {file.metadata?.timeRequested ?
-                            formatShortTimestamp(file.metadata.timeRequested.toDate().toISOString()) :
-                            'Unknown'
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="no-files-message">No video files available</div>
-                )}
-              </div>
-            </section> */}
           </>
         ) : (
           <section>
+            {/* Add warning banner here, only in Robot Operator tab */}
+            {sanderWarning && (
+              <div className="warning-banner" style={{
+                backgroundColor: '#FEF3C7',
+                color: '#92400E',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '16px'
+              }}>
+                <span>⚠️</span>
+                <span>{sanderWarning}</span>
+              </div>
+            )}
             <RobotOperator sanderClient={sanderClient} robotClient={robotClient} />
           </section>
         )}
