@@ -129,43 +129,6 @@ export const handleVideoStoreCommand = async (
   }
 };
 
-export const convertBase64ToMp4 = (base64Data: string, filename: string): string | null => {
-  try {
-    console.log("Converting base64 to MP4...");
-
-    const base64String = base64Data.includes(',')
-      ? base64Data.split(',')[1]
-      : base64Data;
-
-    const binaryString = atob(base64String);
-    const bytes = new Uint8Array(binaryString.length);
-
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const blob = new Blob([bytes], { type: 'video/mp4' });
-    const url = URL.createObjectURL(blob);
-
-    // Create download link
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    console.log(`MP4 file "${filename}" downloaded successfully`);
-
-    // Return the blob URL for streaming (don't revoke it immediately)
-    return url;
-  } catch (error) {
-    console.error("Error converting base64 to MP4:", error);
-    return null;
-  }
-};
-
 export const createVideoStreamFromBase64 = (base64Data: string): string | null => {
   try {
     console.log("Creating video stream from base64...");

@@ -1,83 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
-import './appInterface.css';
+import './AppInterface.css';
 import RobotOperator from './RobotOperator';
 import { 
   formatShortTimestamp, 
   formatDurationToMinutesSeconds,
-  extractCameraName,
   formatTimestamp,
-  handleVideoStoreCommand
+  extractCameraName,
+  handleVideoStoreCommand 
 } from './lib/videoUtils';
 
 interface AppViewProps {
-  runData: any;
-  passSummaries?: any[]; // Add passSummaries prop
+  passSummaries?: any[];
   videoFiles: VIAM.dataApi.BinaryData[];
   videoStoreClient?: VIAM.GenericComponentClient | null;
   sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
 }
 
-// Helper to generate dynamic sample data from video files
-const generateSampleRunsFromVideos = (videoFiles: VIAM.dataApi.BinaryData[]) => {
-  if (!videoFiles || videoFiles.length === 0) {
-    return [];
-  }
-
-  // Sort videos by time
-  const sortedVideos = [...videoFiles].sort((a, b) => {
-    const timeA = a.metadata?.timeRequested?.toDate().getTime() || 0;
-    const timeB = b.metadata?.timeRequested?.toDate().getTime() || 0;
-    return timeA - timeB;
-  });
-
-  const runs = [];
-  const videosPerRun = Math.max(1, Math.floor(sortedVideos.length / 4));
-
-  for (let i = 0; i < 4; i++) {
-    const runVideos = sortedVideos.slice(i * videosPerRun, (i + 1) * videosPerRun);
-    if (runVideos.length === 0) continue;
-
-    const firstVideoTime = runVideos[0].metadata!.timeRequested!.toDate();
-    const lastVideoTime = runVideos[runVideos.length - 1].metadata!.timeRequested!.toDate();
-    
-    const runStart = new Date(firstVideoTime.getTime() - 10000); // 10s before first video
-    const runEnd = new Date(lastVideoTime.getTime() + 10000); // 10s after last video
-
-    const success = i % 2 === 0;
-    const steps = [];
-    const stepCount = success ? 3 : 2;
-    const timePerStep = (runEnd.getTime() - runStart.getTime()) / stepCount;
-
-    const stepNames = ["Imaging", "GeneratingLobes", "Execution"];
-
-    for (let j = 0; j < stepCount; j++) {
-      const stepStart = new Date(runStart.getTime() + j * timePerStep);
-      const stepEnd = new Date(runStart.getTime() + (j + 1) * timePerStep);
-      steps.push({
-        name: stepNames[j],
-        start: stepStart.toISOString(),
-        end: stepEnd.toISOString(),
-      });
-    }
-
-    runs.push({
-      start: runStart.toISOString(),
-      end: runEnd.toISOString(),
-      steps: steps,
-      success: success,
-      pass_id: `generated-pass-${i}`,
-      err_string: success ? null : "Generated failure example",
-    });
-  }
-  return runs;
-};
-
-
 const AppInterface: React.FC<AppViewProps> = ({ 
-  runData, 
-  passSummaries = [], // Default to empty array
+  passSummaries = [],
   videoFiles, 
   sanderClient, 
   videoStoreClient, 
@@ -89,12 +31,11 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
 
-  // Update the expectedSteps to match your actual step names
   const expectedSteps = [
     "Imaging",
     "GeneratingLobes", 
     "GeneratingWaypoints",
-    "Executing"  // Changed from "Execution" to "Executing" to match your data
+    "Executing"
   ];
 
   const activeTabStyle = "bg-blue-600 text-white";
@@ -160,34 +101,16 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  // Use real pass summaries if available, otherwise fall back to generated data
-  const runsToDisplay = passSummaries.length > 0 
-    ? passSummaries 
-    : (runData?.runs?.length > 0 
-        ? runData.runs 
-        : generateSampleRunsFromVideos(videoFiles));
+  const runsToDisplay = passSummaries;
 
   const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
     
-    // Try to fetch video from video store if available
     if (videoStoreClient && video.metadata?.timeRequested) {
       setLoadingModalVideo(true);
       try {
-        // Create a time range around the video's timestamp
-        const videoTime = video.metadata.timeRequested.toDate();
-        const rangeStart = new Date(videoTime.getTime() - 30000); // 30 seconds before
-        const rangeEnd = new Date(videoTime.getTime() + 30000); // 30 seconds after
-        
-        const mockRunData = {
-          success: true,
-          start: rangeStart.toISOString(),
-          end: rangeEnd.toISOString(),
-          duration_ms: 60000,
-          runs: []
-        };
-        
-        const result = await handleVideoStoreCommand(videoStoreClient, mockRunData);
+        // Pass null as runData and let handleVideoStoreCommand use the time range from storage
+        const result = await handleVideoStoreCommand(videoStoreClient, null);
         
         if (result.videoUrl) {
           setModalVideoUrl(result.videoUrl);
@@ -477,7 +400,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
                                                   onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
                                                 >
-                                                  Open
+                                                  Download
                                                 </a>
                                               </div>
                                             );
