@@ -8,28 +8,29 @@ interface RobotOperatorProps {
 }
 
 const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient }) => {
-  const [isStreaming, setIsStreaming] = useState(false);
   const [cameraClient, setCameraClient] = useState<VIAM.CameraClient | null>(null);
-  const [streamError, setStreamError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const intervalRef = useRef<number | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const intervalIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Initialize camera client when robot client is available
     if (robotClient) {
       try {
-        const camera = new VIAM.CameraClient(robotClient, "camera-1");
+        const camera = new VIAM.CameraClient(robotClient, 'sensing-camera');
         setCameraClient(camera);
+        setStreamError(null);
       } catch (error) {
-        console.error("Failed to initialize camera client:", error);
-        setStreamError("Failed to connect to camera");
+        console.error("Failed to initialize camera:", error);
+        setStreamError("Failed to connect to sensing camera");
       }
     }
 
     // Cleanup function
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
       }
       if (imageUrl) {
         URL.revokeObjectURL(imageUrl);
@@ -44,17 +45,12 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
     }
 
     try {
-      setIsStreaming(true);
-      setStreamError(null);
-
       // Function to get and display camera image
       const updateImage = async () => {
         try {
-          // Get image from camera
           const image = await cameraClient.getImage();
           
           // Convert Uint8Array to blob and create URL
-          // Create a new ArrayBuffer and copy the data
           const buffer = new ArrayBuffer(image.length);
           const view = new Uint8Array(buffer);
           view.set(image);
@@ -68,6 +64,7 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
           }
           
           setImageUrl(url);
+          setStreamError(null);
         } catch (error) {
           console.error("Failed to get camera image:", error);
           setStreamError("Failed to get camera image");
@@ -78,7 +75,9 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       await updateImage();
 
       // Set up interval to update image (10 fps)
-      intervalRef.current = window.setInterval(updateImage, 100);
+      intervalIdRef.current = window.setInterval(updateImage, 100);
+      setIsStreaming(true);
+      setStreamError(null);
       
     } catch (error) {
       console.error("Failed to start video stream:", error);
@@ -88,9 +87,9 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
   };
 
   const stopVideoStream = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+    if (intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+      intervalIdRef.current = null;
     }
     
     if (imageUrl) {
@@ -108,7 +107,6 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
     }
 
     try {
-      // Create command with startSandingOption as per original implementation
       const command = VIAM.Struct.fromJson({
         "startSandingOption": true
       });
@@ -129,7 +127,6 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
     }
 
     try {
-      // Create command to stop sanding (not sure on command)
       const command = VIAM.Struct.fromJson({
         "stopSandingOption": true
       });
@@ -148,12 +145,13 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       <div className="operator-grid">
         {/* Live Video Feed Section */}
         <div className="video-section">
-          <h3>Live Camera Feed</h3>
+          <h3>Live Camera Feed - Sensing Camera</h3>
+          
           <div className="video-container">
             {isStreaming && imageUrl ? (
               <img
                 src={imageUrl}
-                alt="Live camera feed"
+                alt="Live feed from sensing camera"
                 className="live-video"
               />
             ) : (
@@ -215,8 +213,9 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
             <div className="control-group">
               <h4>System Status</h4>
               <div className="status-indicators">
+                {/* Camera Status for each camera */}
                 <div className="status-item">
-                  <span className="status-label">Camera:</span>
+                  <span className="status-label">Sensing Camera:</span>
                   <span className={`status-value ${cameraClient ? 'connected' : 'disconnected'}`}>
                     {cameraClient ? 'Connected' : 'Disconnected'}
                   </span>
