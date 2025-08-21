@@ -3,25 +3,40 @@ import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import RobotOperator from './RobotOperator';
 import { 
-  formatShortTimestamp, 
   formatDurationToMinutesSeconds,
-  formatTimestamp,
   extractCameraName,
   handleVideoStoreCommand 
 } from './lib/videoUtils';
 
 interface AppViewProps {
   passSummaries?: any[];
-  videoFiles: VIAM.dataApi.BinaryData[];
+  files: VIAM.dataApi.BinaryData[];
   videoStoreClient?: VIAM.GenericComponentClient | null;
   sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   sanderWarning?: string | null;
 }
+export interface Step {
+  name: string;
+  start: Date;
+  end: Date;
+  // duration_ms?: number;
+}
+
+export interface Pass {
+  start: Date;
+  end: Date;
+  steps: Step[];
+  success: boolean;
+  pass_id: string;
+  err_string?: string | null;
+}
+
+
 
 const AppInterface: React.FC<AppViewProps> = ({ 
   passSummaries = [],
-  videoFiles, 
+  files: files, 
   sanderClient, 
   videoStoreClient, 
   robotClient,
@@ -33,12 +48,12 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
 
-  const expectedSteps = [
-    "Imaging",
-    "GeneratingLobes", 
-    "GeneratingWaypoints",
-    "Executing"
-  ];
+  // const expectedSteps = [
+  //   "Imaging",
+  //   "GeneratingLobes", 
+  //   "GeneratingWaypoints",
+  //   "Executing"
+  // ];
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -54,7 +69,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   };
 
   const getStepVideos = (step: { start: string; end:string; name?: string }) => {
-    if (!videoFiles) return [];
+    if (!files) return [];
 
     const stepStart = new Date(step.start);
     const stepEnd = new Date(step.end);
@@ -63,13 +78,13 @@ const AppInterface: React.FC<AppViewProps> = ({
     console.log(`Looking for videos in step ${step.name || 'unknown'}:`, {
       stepStart: stepStart.toISOString(),
       stepEnd: stepEnd.toISOString(),
-      availableVideos: videoFiles.map(f => ({
+      availableVideos: files.map(f => ({
         time: f.metadata?.timeRequested?.toDate().toISOString(),
         fileName: f.metadata?.fileName
       }))
     });
 
-    return videoFiles.filter(file => {
+    return files.filter(file => {
       if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
       const fileTime = file.metadata.timeRequested.toDate();
       const isInRange = fileTime >= stepStart && fileTime <= stepEnd;
@@ -103,7 +118,6 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  const runsToDisplay = passSummaries;
 
   const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
@@ -111,7 +125,7 @@ const AppInterface: React.FC<AppViewProps> = ({
     if (videoStoreClient && video.metadata?.timeRequested) {
       setLoadingModalVideo(true);
       try {
-        // Pass null as runData and let handleVideoStoreCommand use the time range from storage
+        // Pass null as pass and let handleVideoStoreCommand use the time range from storage
         const result = await handleVideoStoreCommand(videoStoreClient, null);
         
         if (result.videoUrl) {
@@ -154,14 +168,14 @@ const AppInterface: React.FC<AppViewProps> = ({
               onClick={() => setActiveRoute('live')}
               className={`${activeRoute === 'live' ? activeTabStyle : inactiveTabStyle} h-9 sm:h-10 px-4 rounded`}
             >
-              Run summary
+              Pass summary
             </button>
-            <button
+            {/* <button
               onClick={() => setActiveRoute('past')}
               className={`${activeRoute === 'past' ? activeTabStyle : inactiveTabStyle} h-9 sm:h-10 px-4 rounded`}
             >
               Robot operator
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -179,6 +193,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                   <thead>
                     <tr>
                       <th style={{ width: '20px' }}></th>
+                      <th>Day</th>
                       <th>Pass ID</th>
                       <th>Status</th>
                       <th>Start Time</th>
@@ -189,8 +204,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {runsToDisplay.map((run: any, index: number) => (
-                      <React.Fragment key={run.pass_id || index}>
+                    {passSummaries.map((pass: Pass, index: number) => (
+                      <React.Fragment key={pass.pass_id || index}>
                         <tr 
                           className="expandable-row"
                           onClick={() => toggleRowExpansion(index)}
@@ -203,27 +218,28 @@ const AppInterface: React.FC<AppViewProps> = ({
                             }
                           }}
                           aria-expanded={expandedRows.has(index)}
-                          aria-label={`${expandedRows.has(index) ? 'Collapse' : 'Expand'} details for run from ${formatShortTimestamp(run.start)}`}
+                          aria-label={`${expandedRows.has(index) ? 'Collapse' : 'Expand'} details for pass from ${pass.start.toLocaleTimeString()}`}
                         >
                           <td>
                             <span className={`expand-icon ${expandedRows.has(index) ? 'expanded' : ''}`} aria-hidden="true">
                               ▶
                             </span>
                           </td>
+                          <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
-                            {run.pass_id ? run.pass_id.substring(0, 8) : '—'}
+                            {pass.pass_id ? pass.pass_id.substring(0, 8) : '—'}
                           </td>
-                          <td>{getStatusBadge(run.success)}</td>
-                          <td className="text-zinc-700">{formatShortTimestamp(run.start)}</td>
-                          <td className="text-zinc-700">{formatShortTimestamp(run.end)}</td>
-                          <td className="text-zinc-700">{formatDurationToMinutesSeconds(run.start, run.end)}</td>
+                          <td>{getStatusBadge(pass.success)}</td>
+                          <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
+                          <td className="text-zinc-700">{pass.end.toLocaleTimeString()}</td>
+                          <td className="text-zinc-700">{formatDurationToMinutesSeconds(pass.start, pass.end)}</td>
                           <td className="text-zinc-700">
-                            {run.steps ? `${run.steps.length} steps` : '—'}
+                            {pass.steps ? `${pass.steps.length} steps` : '—'}
                           </td>
                           <td className="text-zinc-700">
-                            {run.err_string ? (
-                              <span className="text-red-600 text-xxs font-mono error-text" title={run.err_string}>
-                                {run.err_string}
+                            {pass.err_string ? (
+                              <span className="text-red-600 text-xxs font-mono error-text" title={pass.err_string}>
+                                {pass.err_string}
                               </span>
                             ) : (
                               <span className="text-gray-600">—</span>
@@ -233,32 +249,29 @@ const AppInterface: React.FC<AppViewProps> = ({
                         {expandedRows.has(index) && (
                           <tr className="expanded-content">
                             <td colSpan={8}>
-                              <div className="run-details">
+                              <div className="pass-details">
                                 <div className="passes-container">
                                   <div className="steps-grid">
-                                    {expectedSteps.map((stepName) => {
-                                      console.log('Looking for step:', stepName, 'in steps:', run.steps);
-                                      const step = run.steps?.find((s: any) => s.name === stepName);
-                                      if (step) {
-                                        const stepVideos = getStepVideos(step);
+                                    {pass.steps.map((step: Step) => {
+                                        // const stepVideos = getStepVideos(step);
 
                                         return (
-                                          <div key={stepName} className="step-card">
-                                            <div className="step-name">{stepName}</div>
+                                          <div key={step.name} className="step-card">
+                                            <div className="step-name">{step.name}</div>
                                             <div className="step-timeline">
                                               <div className="step-time">
                                                 <span className="time-label">Start</span>
-                                                <span className="time-value">{formatShortTimestamp(step.start)}</span>
+                                                <span className="time-value">{step.start.toLocaleTimeString()}</span>
                                               </div>
                                               <div className="timeline-arrow">→</div>
                                               <div className="step-time">
                                                 <span className="time-label">End</span>
-                                                <span className="time-value">{formatShortTimestamp(step.end)}</span>
+                                                <span className="time-value">{step.end.toLocaleTimeString()}</span>
                                               </div>
                                             </div>
                                             <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
                                             
-                                            {stepVideos.length > 0 ? (
+                                            {/* {stepVideos.length > 0 ? (
                                               <div className="step-videos-grid">
                                                 {stepVideos.map((video, videoIndex) => (
                                                   <div 
@@ -287,25 +300,18 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               </div>
                                             ) : (
                                               <div className="no-videos-message">No videos found</div>
-                                            )}
+                                            )} */}
                                           </div>
                                         );
-                                      }
-                                      return (
-                                        <div key={stepName} className="step-card step-missing">
-                                          <div className="step-name">{stepName}</div>
-                                          <div className="step-missing-text">Step not executed</div>
-                                        </div>
-                                      );
                                     })}
                                   </div>
                                 
                                   {/* New section for all files in pass time range */}
                                   {(() => {
-                                    const passStart = new Date(run.start);
-                                    const passEnd = new Date(run.end);
+                                    const passStart = new Date(pass.start);
+                                    const passEnd = new Date(pass.end);
                                     
-                                    const passFiles = videoFiles.filter(file => {
+                                    const passFiles = files.filter(file => {
                                       if (!file.metadata?.timeRequested) return false;
                                       const fileTime = file.metadata.timeRequested.toDate();
                                       return fileTime >= passStart && fileTime <= passEnd;
@@ -315,6 +321,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       return timeA - timeB;
                                     });
                                     
+                                    // debugger;
                                     // Only render the section if there are files
                                     if (passFiles.length === 0) {
                                       return null;
@@ -377,7 +384,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                     whiteSpace: 'nowrap',
                                                     flexShrink: 0
                                                   }}>
-                                                    {formatShortTimestamp(file.metadata?.timeRequested?.toDate().toISOString() || '')}
+                                                    {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
                                                   </span>
                                                 </div>
                                                 <a 
@@ -424,25 +431,26 @@ const AppInterface: React.FC<AppViewProps> = ({
             </section>
           </>
         ) : (
-          <section>
-            {/* Add warning banner here, only in Robot Operator tab */}
-            {sanderWarning && (
-              <div className="warning-banner" style={{
-                backgroundColor: '#FEF3C7',
-                color: '#92400E',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                marginBottom: '16px'
-              }}>
-                <span>⚠️</span>
-                <span>{sanderWarning}</span>
-              </div>
-            )}
-            <RobotOperator sanderClient={sanderClient} robotClient={robotClient} />
-          </section>
+          null
+          // <section>
+          //   {/* Add warning banner here, only in Robot Operator tab */}
+          //   {sanderWarning && (
+          //     <div className="warning-banner" style={{
+          //       backgroundColor: '#FEF3C7',
+          //       color: '#92400E',
+          //       padding: '12px 16px',
+          //       borderRadius: '8px',
+          //       display: 'flex',
+          //       alignItems: 'center',
+          //       gap: '8px',
+          //       marginBottom: '16px'
+          //     }}>
+          //       <span>⚠️</span>
+          //       <span>{sanderWarning}</span>
+          //     </div>
+          //   )}
+          //   <RobotOperator sanderClient={sanderClient} robotClient={robotClient} />
+          // </section>
         )}
       </main>
 
@@ -508,7 +516,7 @@ const AppInterface: React.FC<AppViewProps> = ({
               </div>
               <div className="video-modal-info">
                 <p><strong>Time:</strong> {selectedVideo.metadata?.timeRequested ? 
-                  formatTimestamp(selectedVideo.metadata.timeRequested.toDate().toISOString()) : 
+                  selectedVideo.metadata.timeRequested.toDate().toLocaleString() : 
                   'Unknown'
                 }</p>
                 <p><strong>File:</strong> {selectedVideo.metadata?.fileName || 'Unknown'}</p>

@@ -3,6 +3,7 @@ import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
+import { Pass } from './AppInterface';
 
 /*
 TODO:
@@ -15,43 +16,25 @@ TODO:
 
 */
 
-interface ReadingStep {
-  name: string;
-  start: string;
-  end: string;
-  duration_ms?: number;
-}
+const videoStoreName = "video-store-1";
+const sanderName = "sander-module";
+const sandingSummaryName = "sanding-summary";
 
-interface Readings {
-  start: string;
-  end: string;
-  steps: ReadingStep[];
-  success: boolean;
-  pass_id: string;
-  err_string?: string | null;
-}
-
-interface RunData {
-  success: boolean;
-  err_string?: string | null;
-  start: string;
-  end: string;
-  duration_ms: number;
-  runs: ReadingStep[][];
-  readings?: Readings; 
-}
+// function duration(start: string, end: string): number {
+//   return new Date(end).getTime() - new Date(start).getTime()
+// }
 
 function App() {
-  const [runData, setRunData] = useState<RunData | null>(null); // Fix: Add runData
-  const [passSummaries, setPassSummaries] = useState<Readings[]>([]);
-  const [videoFiles, setVideoFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
-  const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
+  const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
-  const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
+  // const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log("Fetching data start");
       const machineInfo = window.location.pathname.split("/")[2];
       
       const {
@@ -65,37 +48,45 @@ function App() {
       } as VIAM.dataApi.Filter;
       
       const viamClient = await connect(apiKeyId, apiKeySecret);
-      const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
-      setRobotClient(robotClient); // Store the robot client
-      const resources = await robotClient.resourceNames();
+      // const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
+      // setRobotClient(robotClient); // Store the robot client
+      // const resources = await robotClient.resourceNames();
+
+      // console.log("Resources:", resources);
 
       // Check for sander module resource
-      if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
-        const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
-        setSanderClient(sanderClient);
-        setSanderWarning(null);
+      // if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == sanderName))) {
+        // const sanderClient = new VIAM.GenericComponentClient(robotClient, sanderName);
+        // setSanderClient(sanderClient);
         // TODO: Add visual indication that sander resource is available
-      } else {
-        setSanderWarning("No sanding module found on this robot");
-        console.warn("No sander-module resource found");
-      }
+      // } else {
+      //   setSanderWarning("No sanding module found on this robot");
+      //   console.warn("No sander-module resource found");
+      // }
 
       // Check for video-store resource
-      if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == "video-store-1"))) {
-        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, "video-store-1");
-        setVideoStoreClient(videoStoreClient);
+      // if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == videoStoreName))) {
+      //   const videoStoreClient = new VIAM.GenericComponentClient(robotClient, videoStoreName);
+      //   setVideoStoreClient(videoStoreClient);
         // TODO: Request a video from the past 1 minute and show the video
-      } else {
-        console.warn("No video-store resource found");
-      }
+      // } else {
+      //   console.warn("No video-store resource found");
+      // }
       
       const organizations = await viamClient.appClient.listOrganizations();
       console.log("Organizations:", organizations);
+      if (organizations.length != 1) {
+        console.warn("expected 1 organization, got " + organizations.length);
+        return;
+      }
+      const orgID = organizations[0].id;
 
+      console.log("machineId:", machineId);
+      console.log("orgID:", orgID);
       const mqlQuery: Record<string, JsonValue>[] = [
         {
           $match: {
-            component_name: "sanding-summary",
+            component_name: sandingSummaryName,
             robot_id: machineId // Filter by current robot
           },
         },
@@ -105,70 +96,44 @@ function App() {
           },
         },
         {
-          $limit: 50 // Get last 50 passes
+          $limit: 100 // Get last 100 passes
         }
       ];
 
-      const tabularData = await viamClient.dataClient.tabularDataByMQL(organizations[0].id, mqlQuery);
+      const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
 
       // Process tabular data into pass summaries
-      const processedPasses: Readings[] = tabularData.map((item: any) => {
+      const processedPasses: Pass[] = tabularData.map((item: any) => {
         // The actual data is nested in data.readings
-        const readings = item.data?.readings || item.readings || item;
+        const pass = item.data!.readings!;
         
-        // Parse steps if they're stored as JSON string or array
-        let steps: ReadingStep[] = [];
-        if (readings.steps) {
-          if (typeof readings.steps === 'string') {
-            try {
-              steps = JSON.parse(readings.steps);
-            } catch (e) {
-              console.error("Failed to parse steps:", e);
-              steps = [];
-            }
-          } else if (Array.isArray(readings.steps)) {
-            steps = readings.steps;
-          }
-        }
 
         return {
-          start: readings.start || item.time_received,
-          end: readings.end || item.time_received,
-          steps: steps,
-          success: readings.success ?? true,
-          pass_id: readings.pass_id || `pass-${item.id || Math.random()}`,
-          err_string: readings.err_string || readings.error || null
+          start: new Date(pass.start),
+          end: new Date(pass.end),
+          steps: pass.steps.map((x: any) => ({
+            name: x.name!,
+            start: new Date(x.start),
+            end: new Date(x.end),
+            // duration_ms: duration(x.start, x.end),
+          })),
+          success: pass.success ?? true,
+          pass_id: pass.pass_id || "N/A",
+          // duration_ms: duration(pass.start, pass.end),
+          err_string: pass.err_string  || null
         };
       });
 
       setPassSummaries(processedPasses);
 
-      // Create RunData from pass summaries for compatibility
-      if (processedPasses.length > 0) {
-        const runs = processedPasses.map(pass => pass.steps || []);
-        const firstPass = processedPasses[0];
-        const lastPass = processedPasses[processedPasses.length - 1];
-        
-        const runDataFromPasses: RunData = {
-          success: processedPasses.every(p => p.success),
-          err_string: processedPasses.find(p => !p.success)?.err_string || null,
-          start: lastPass.start, // Oldest
-          end: firstPass.end, // Newest
-          duration_ms: new Date(firstPass.end).getTime() - new Date(lastPass.start).getTime(),
-          runs: runs,
-          readings: firstPass // Use the most recent pass as the main reading
-        };
-        
-        setRunData(runDataFromPasses);
-      }
-
-      // Fetch binary data
       let allFiles = [];
       let last = undefined;
-      const earliestPassTime = new Date(Math.min(...processedPasses.map(p => new Date(p.start).getTime())));
+      const earliestPassTime = new Date(Math.min(...processedPasses.map(p => p.start.getTime())));
 
+      var i = 0
       while (true) {
+        console.log("Fetching files files", i);
         const binaryData = await viamClient.dataClient.binaryDataByFilter(
           filter,
           50, // limit
@@ -189,8 +154,9 @@ function App() {
         last = binaryData.last;
       }
       
-      setVideoFiles(allFiles);
+      setFiles(allFiles);
       // console.log("Fetched video files:", binaryData.data);
+      console.log("Fetching data end");
     };
 
     fetchData();
@@ -199,10 +165,11 @@ function App() {
   return (
     <AppInterface 
       passSummaries={passSummaries} // Pass the actual summaries
-      videoFiles={videoFiles}
-      sanderClient={sanderClient!}
+      // videoFiles={videoFiles}
+      files={files}
+      sanderClient={null}
       videoStoreClient={videoStoreClient}
-      robotClient={robotClient}
+      robotClient={null}
       sanderWarning={sanderWarning} // Pass the sanding warning
     />
   );
