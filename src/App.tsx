@@ -1,88 +1,177 @@
-import { useState, useEffect } from 'react';
-import './App.css';
+import { useEffect, useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
+import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
+import { JsonValue } from '@viamrobotics/sdk';
+import { Pass } from './AppInterface';
+
 /*
 TODO:
-- detect if there is a sanding resource 
-    - if so show a button to stat sanding
+- detect if there is a sanding resource
+    - if so show a button to start sanding
     - if not, show a warning that there is no sanding resource
 - detect if there is a video-store resource
     - if so show request a video from the past 1 minute and show the video
-- display runtime start and end and the length of each substep 
 - add pagination
 
 */
 
+const videoStoreName = "video-store-1";
+const sanderName = "sander-module";
+const sandingSummaryName = "sanding-summary";
+
+// function duration(start: string, end: string): number {
+//   return new Date(end).getTime() - new Date(start).getTime()
+// }
+
 function App() {
-
-  const [list, setList] = useState<VIAM.dataApi.BinaryData[]>([]);
-  const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient| null>(null);
-//   const command = new VIAM.Struct({"startSandingOption": true})
-
+  const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
+  const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+  // const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
+  const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
 
   useEffect(() => {
     const fetchData = async () => {
-    const machineInfo = window.location.pathname.split("/")[2];
-    let apiKeyId: string;
-    let apiKeySecret: string;
-    let machineId: string;
-    let hostname: string;
-
-    ({
+      console.log("Fetching data start");
+      const machineInfo = window.location.pathname.split("/")[2];
+      
+      const {
         apiKey: { id: apiKeyId, key: apiKeySecret },
-        machineId: machineId,
-        hostname: hostname,
-    } = JSON.parse(Cookies.get(machineInfo)!));
-    let filter = {
-              robotId: machineId,
-            } as VIAM.dataApi.Filter;
-        const viamClient = await connect(apiKeyId, apiKeySecret);
-        const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
-        const resources = await robotClient.resourceNames();
-        if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == "sander-module"))) {
-            const sanderClient = new VIAM.GenericComponentClient(robotClient, "sander-module");
-            setSanderClient(sanderClient);
+        machineId,
+        hostname,
+      } = JSON.parse(Cookies.get(machineInfo)!);
+
+      let filter = {
+        robotId: machineId,
+      } as VIAM.dataApi.Filter;
+      
+      const viamClient = await connect(apiKeyId, apiKeySecret);
+      // const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
+      // setRobotClient(robotClient); // Store the robot client
+      // const resources = await robotClient.resourceNames();
+
+      // console.log("Resources:", resources);
+
+      // Check for sander module resource
+      // if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == sanderName))) {
+        // const sanderClient = new VIAM.GenericComponentClient(robotClient, sanderName);
+        // setSanderClient(sanderClient);
+        // TODO: Add visual indication that sander resource is available
+      // } else {
+      //   setSanderWarning("No sanding module found on this robot");
+      //   console.warn("No sander-module resource found");
+      // }
+
+      // Check for video-store resource
+      // if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == videoStoreName))) {
+      //   const videoStoreClient = new VIAM.GenericComponentClient(robotClient, videoStoreName);
+      //   setVideoStoreClient(videoStoreClient);
+        // TODO: Request a video from the past 1 minute and show the video
+      // } else {
+      //   console.warn("No video-store resource found");
+      // }
+      
+      const organizations = await viamClient.appClient.listOrganizations();
+      console.log("Organizations:", organizations);
+      if (organizations.length != 1) {
+        console.warn("expected 1 organization, got " + organizations.length);
+        return;
+      }
+      const orgID = organizations[0].id;
+
+      console.log("machineId:", machineId);
+      console.log("orgID:", orgID);
+      const mqlQuery: Record<string, JsonValue>[] = [
+        {
+          $match: {
+            component_name: sandingSummaryName,
+            robot_id: machineId // Filter by current robot
+          },
+        },
+        {
+          $sort: {
+            time_received: -1,
+          },
+        },
+        {
+          $limit: 100 // Get last 100 passes
         }
-        const binaryData = await viamClient.dataClient.binaryDataByFilter( 
-            filter, 
-            undefined,
-            VIAM.dataApi.Order.DESCENDING,
-            undefined,
-            false,
-            false,
-            false,
-          );
-        const filenames = binaryData.data.map((x: VIAM.dataApi.BinaryData) => x);
-        setList(filenames);
+      ];
+
+      const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
+      console.log("Tabular Data:", tabularData);
+
+      // Process tabular data into pass summaries
+      const processedPasses: Pass[] = tabularData.map((item: any) => {
+        // The actual data is nested in data.readings
+        const pass = item.data!.readings!;
+        
+
+        return {
+          start: new Date(pass.start),
+          end: new Date(pass.end),
+          steps: pass.steps.map((x: any) => ({
+            name: x.name!,
+            start: new Date(x.start),
+            end: new Date(x.end),
+            // duration_ms: duration(x.start, x.end),
+          })),
+          success: pass.success ?? true,
+          pass_id: pass.pass_id || "N/A",
+          // duration_ms: duration(pass.start, pass.end),
+          err_string: pass.err_string  || null
+        };
+      });
+
+      setPassSummaries(processedPasses);
+
+      let allFiles = [];
+      let last = undefined;
+      const earliestPassTime = new Date(Math.min(...processedPasses.map(p => p.start.getTime())));
+
+      var i = 0
+      while (true) {
+        console.log("Fetching files files", i);
+        const binaryData = await viamClient.dataClient.binaryDataByFilter(
+          filter,
+          50, // limit
+          VIAM.dataApi.Order.DESCENDING,
+          last, // pagination token
+          false,
+          false,
+          true
+        );
+        
+        allFiles.push(...binaryData.data);
+        
+        // Check if we've reached the earliest pass time or no more data
+        const oldestFileTime = binaryData.data[binaryData.data.length - 1]?.metadata?.timeRequested?.toDate();
+        if (!binaryData.last || !oldestFileTime || oldestFileTime < earliestPassTime) {
+          break;
+        }
+        last = binaryData.last;
+      }
+      
+      setFiles(allFiles);
+      // console.log("Fetched video files:", binaryData.data);
+      console.log("Fetching data end");
     };
-    
+
     fetchData();
   }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Sanding Monitoring Web App</h1>
-      </header>
-      <main>
-    <div className="string-list">
-        <h2>List of Files</h2>
-        <div className="grid">
-            {sanderClient && <button onClick={() => 
-            console.log("sanding")
-                // sanderClient.doCommand(command)
-                }>Start Sanding</button>}
-            {list.map((item: VIAM.dataApi.BinaryData, index: number) => (
-                <div key={index} className="grid-item">
-                    <div className="timestamp">{item.metadata?.timeRequested?.toDate().toISOString()}</div>
-                    <div className="filename"><a href={item.metadata?.uri} target="_blank" rel="noopener noreferrer">{item.metadata?.fileName}</a></div>
-                </div>
-            ))}
-        </div>
-    </div>
-      </main>
-    </div>
+    <AppInterface 
+      passSummaries={passSummaries} // Pass the actual summaries
+      // videoFiles={videoFiles}
+      files={files}
+      sanderClient={null}
+      videoStoreClient={videoStoreClient}
+      robotClient={null}
+      sanderWarning={sanderWarning} // Pass the sanding warning
+    />
   );
 }
 
@@ -98,4 +187,5 @@ async function connect(apiKeyId: string, apiKeySecret: string): Promise<VIAM.Via
 
   return await VIAM.createViamClient(opts);
 }
+
 export default App;
