@@ -167,10 +167,10 @@ function App() {
       passSummaries={passSummaries} // Pass the actual summaries
       // videoFiles={videoFiles}
       files={files}
-      sanderClient={null}
+      // sanderClient={null}
       videoStoreClient={videoStoreClient}
-      robotClient={null}
-      sanderWarning={sanderWarning} // Pass the sanding warning
+      // robotClient={null}
+      // sanderWarning={sanderWarning} // Pass the sanding warning
     />
   );
 }

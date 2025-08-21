@@ -12,9 +12,9 @@ interface AppViewProps {
   passSummaries?: any[];
   files: VIAM.dataApi.BinaryData[];
   videoStoreClient?: VIAM.GenericComponentClient | null;
-  sanderClient: VIAM.GenericComponentClient | null;
+  // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
-  sanderWarning?: string | null;
+  // sanderWarning?: string | null;
 }
 export interface Step {
   name: string;
@@ -37,7 +37,7 @@ export interface Pass {
 const AppInterface: React.FC<AppViewProps> = ({ 
   passSummaries = [],
   files: files, 
-  sanderClient, 
+  // sanderClient, 
   videoStoreClient, 
   robotClient,
   sanderWarning
@@ -47,6 +47,10 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
+  const filesByID = files.reduce((acc: any, file: VIAM.dataApi.BinaryData) => {
+    acc[file.metadata!.binaryDataId] = file;
+    return acc;
+  }, {});
 
   // const expectedSteps = [
   //   "Imaging",
@@ -311,20 +315,30 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     const passStart = new Date(pass.start);
                                     const passEnd = new Date(pass.end);
                                     
-                                    const passFiles = files.filter(file => {
+                                    const passTimeRangeFileIDS = files.filter((file: VIAM.dataApi.BinaryData) => {
                                       if (!file.metadata?.timeRequested) return false;
                                       const fileTime = file.metadata.timeRequested.toDate();
                                       return fileTime >= passStart && fileTime <= passEnd;
-                                    }).sort((a, b) => {
+                                    }).map((x)=> x.metadata!.binaryDataId);
+                                    
+                                    const passFileIDs =  files.filter((x)=> x.metadata?.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId);
+                                    const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
+                                    const passFiles  = files.filter((x)=> ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
                                       const timeA = a.metadata!.timeRequested!.toDate().getTime();
                                       const timeB = b.metadata!.timeRequested!.toDate().getTime();
                                       return timeA - timeB;
-                                    });
-                                    
-                                    // debugger;
+                                    })
+
                                     // Only render the section if there are files
                                     if (passFiles.length === 0) {
-                                      return null;
+                                      return <div className="pass-files-section">
+                                        <h4>
+                                          Files captured during this pass
+                                        </h4>
+                                        <p>
+                                          No files found
+                                        </p>
+                                        </div>
                                     }
                                     
                                     return (
