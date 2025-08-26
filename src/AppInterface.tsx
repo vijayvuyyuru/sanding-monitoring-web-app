@@ -167,9 +167,10 @@ const AppInterface: React.FC<AppViewProps> = ({
       const binaryData = await viamClient.dataClient.binaryDataByIds([fileId]);
       if (binaryData.length > 0) {
         const fileData = binaryData[0];
+
+        const fileName = fileData.metadata?.fileName ?? "unknown";
         
-        // Create a File object with the desired filename
-        const fileObj = new File([fileData.binary], fileData.metadata?.fileName!, { 
+        const fileObj = new File([fileData.binary], fileName, { 
           type: fileData.metadata?.fileExt || 'application/octet-stream' 
         });
         
@@ -177,7 +178,7 @@ const AppInterface: React.FC<AppViewProps> = ({
         const url = URL.createObjectURL(fileObj);
         const a = document.createElement('a');
         a.href = url;
-        a.download = fileData.metadata?.fileName!;
+        a.download = fileName;
         a.style.display = 'none';
         document.body.appendChild(a);
         a.click();
