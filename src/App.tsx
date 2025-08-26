@@ -27,6 +27,7 @@ const sandingSummaryName = "sanding-summary";
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
   const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   // const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
@@ -48,6 +49,7 @@ function App() {
       } as VIAM.dataApi.Filter;
       
       const viamClient = await connect(apiKeyId, apiKeySecret);
+      setViamClient(viamClient);
       // const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
       // setRobotClient(robotClient); // Store the robot client
       // const resources = await robotClient.resourceNames();
@@ -112,14 +114,14 @@ function App() {
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
-          steps: pass.steps.map((x: any) => ({
+          steps: pass.steps ? pass.steps.map((x: any) => ({
             name: x.name!,
             start: new Date(x.start),
             end: new Date(x.end),
             // duration_ms: duration(x.start, x.end),
-          })),
+          })): [],
           success: pass.success ?? true,
-          pass_id: pass.pass_id || "N/A",
+          pass_id: pass.pass_id,
           // duration_ms: duration(pass.start, pass.end),
           err_string: pass.err_string  || null
         };
@@ -164,6 +166,7 @@ function App() {
 
   return (
     <AppInterface 
+      viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       // videoFiles={videoFiles}
       files={files}
