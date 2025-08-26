@@ -112,18 +112,19 @@ function App() {
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
-          steps: pass.steps.map((x: any) => ({
+          steps: pass.steps ? pass.steps.map((x: any) => ({
             name: x.name!,
             start: new Date(x.start),
             end: new Date(x.end),
             // duration_ms: duration(x.start, x.end),
-          })),
+          })): [],
           success: pass.success ?? true,
-          pass_id: pass.pass_id || "N/A",
+          pass_id: pass.pass_id,
           // duration_ms: duration(pass.start, pass.end),
           err_string: pass.err_string  || null
         };
       });
+
 
       setPassSummaries(processedPasses);
 
