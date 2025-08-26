@@ -104,26 +104,24 @@ function App() {
       console.log("Tabular Data:", tabularData);
 
       // Process tabular data into pass summaries
-      const processedPasses: Pass[] = tabularData.map((item: any) => {
-        // The actual data is nested in data.readings
-        const pass = item.data!.readings!;
-        
-
-        return {
-          start: new Date(pass.start),
-          end: new Date(pass.end),
-          steps: pass.steps.map((x: any) => ({
-            name: x.name!,
-            start: new Date(x.start),
-            end: new Date(x.end),
-            // duration_ms: duration(x.start, x.end),
-          })),
-          success: pass.success ?? true,
-          pass_id: pass.pass_id || "N/A",
-          // duration_ms: duration(pass.start, pass.end),
-          err_string: pass.err_string  || null
-        };
-      });
+      const processedPasses: Pass[] = tabularData.reduce((acc: Pass[], item: any) => {
+        if (item.data?.readings?.steps) {
+          acc.push({
+            start: new Date(item.data.readings.start),
+            end: new Date(item.data.readings.end),
+            steps: item.data.readings.steps.map((x: any) => ({
+              name: x.name!,
+              start: new Date(x.start),
+              end: new Date(x.end),
+              // duration_ms: duration(x.start, x.end),
+            })),
+            success: item.data.readings.success ?? true,
+            pass_id: item.data.readings.pass_id || "N/A",
+            err_string: item.data.readings.err_string || null
+          });
+        }
+        return acc;
+      }, []);
 
       setPassSummaries(processedPasses);
 
