@@ -27,6 +27,7 @@ const sandingSummaryName = "sanding-summary";
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
   const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   // const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
@@ -48,6 +49,7 @@ function App() {
       } as VIAM.dataApi.Filter;
       
       const viamClient = await connect(apiKeyId, apiKeySecret);
+      setViamClient(viamClient);
       // const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
       // setRobotClient(robotClient); // Store the robot client
       // const resources = await robotClient.resourceNames();
@@ -165,6 +167,7 @@ function App() {
 
   return (
     <AppInterface 
+      viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       // videoFiles={videoFiles}
       files={files}
