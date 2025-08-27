@@ -19,6 +19,9 @@ TODO:
 const videoStoreName = "video-store-1";
 const sanderName = "sander-module";
 const sandingSummaryName = "sanding-summary";
+const sandingSummaryComponentType = "rdk:component:sensor";
+const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
+
 
 // function duration(start: string, end: string): number {
 //   return new Date(end).getTime() - new Date(start).getTime()
@@ -29,7 +32,7 @@ function App() {
   const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
   // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
-  // const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
+  const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
 
   useEffect(() => {
@@ -46,10 +49,30 @@ function App() {
       let filter = {
         robotId: machineId,
       } as VIAM.dataApi.Filter;
-      
+
+      let locationId = "";
+
+      const locationIdMatch = window.location.href.match(locationIdRegex);
+      if (locationIdMatch && locationIdMatch.length > 1) {
+        locationId = locationIdMatch[1];
+      }
+
       const viamClient = await connect(apiKeyId, apiKeySecret);
-      // const robotClient = await viamClient.connectToMachine({host: hostname, id: machineId});
-      // setRobotClient(robotClient); // Store the robot client
+
+      try {
+        const robotClient = await viamClient.connectToMachine({
+          host: hostname, 
+          id: machineId,
+        });
+        setRobotClient(robotClient); // Store the robot client
+        
+        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, videoStoreName);
+        setVideoStoreClient(videoStoreClient);
+      } catch (error) {
+        console.error('Failed to create robot client or video store client:', error);
+        setRobotClient(null);
+        setVideoStoreClient(null);
+      }
       // const resources = await robotClient.resourceNames();
 
       // console.log("Resources:", resources);
@@ -63,15 +86,6 @@ function App() {
       //   setSanderWarning("No sanding module found on this robot");
       //   console.warn("No sander-module resource found");
       // }
-
-      // Check for video-store resource
-      // if (resources.find((x) => (x.type == "component" && x.subtype == "generic" && x.name == videoStoreName))) {
-      //   const videoStoreClient = new VIAM.GenericComponentClient(robotClient, videoStoreName);
-      //   setVideoStoreClient(videoStoreClient);
-        // TODO: Request a video from the past 1 minute and show the video
-      // } else {
-      //   console.warn("No video-store resource found");
-      // }
       
       const organizations = await viamClient.appClient.listOrganizations();
       console.log("Organizations:", organizations);
@@ -83,11 +97,15 @@ function App() {
 
       console.log("machineId:", machineId);
       console.log("orgID:", orgID);
+
       const mqlQuery: Record<string, JsonValue>[] = [
         {
           $match: {
+            organization_id: orgID,
+            location_id: locationId,
             component_name: sandingSummaryName,
-            robot_id: machineId // Filter by current robot
+            robot_id: machineId, // Filter by current robot
+            component_type: sandingSummaryComponentType
           },
         },
         {
@@ -116,6 +134,7 @@ function App() {
             name: x.name!,
             start: new Date(x.start),
             end: new Date(x.end),
+            pass_id: pass.pass_id,
             // duration_ms: duration(x.start, x.end),
           })): [],
           success: pass.success ?? true,
@@ -142,7 +161,7 @@ function App() {
           last, // pagination token
           false,
           false,
-          true
+          false
         );
         
         allFiles.push(...binaryData.data);
@@ -154,6 +173,8 @@ function App() {
         }
         last = binaryData.last;
       }
+
+      // need to associate files to what they are, right now is a giant list. What hsould it be instead?
       
       setFiles(allFiles);
       // console.log("Fetched video files:", binaryData.data);

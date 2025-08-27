@@ -20,6 +20,7 @@ export interface Step {
   name: string;
   start: Date;
   end: Date;
+  pass_id: string;
   // duration_ms?: number;
 }
 
@@ -47,6 +48,11 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
+  // Filter files to only include video files (.mp4)
+  const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
+    file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+  );
+
   const filesByID = files.reduce((acc: any, file: VIAM.dataApi.BinaryData) => {
     acc[file.metadata!.binaryDataId] = file;
     return acc;
@@ -72,37 +78,35 @@ const AppInterface: React.FC<AppViewProps> = ({
     setExpandedRows(newExpandedRows);
   };
 
-  const getStepVideos = (step: { start: string; end:string; name?: string }) => {
-    if (!files) return [];
+  const getStepVideos = (step: Step) => {
+    if (!videoFiles) return [];
+    console.log(`videoFiles: ${videoFiles}`)
 
-    const stepStart = new Date(step.start);
-    const stepEnd = new Date(step.end);
-
-    // Debug logging
-    console.log(`Looking for videos in step ${step.name || 'unknown'}:`, {
-      stepStart: stepStart.toISOString(),
-      stepEnd: stepEnd.toISOString(),
-      availableVideos: files.map(f => ({
-        time: f.metadata?.timeRequested?.toDate().toISOString(),
-        fileName: f.metadata?.fileName
-      }))
-    });
-
-    return files.filter(file => {
-      if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
-      const fileTime = file.metadata.timeRequested.toDate();
-      const isInRange = fileTime >= stepStart && fileTime <= stepEnd;
-      
+    return videoFiles.filter(file => {
+      if (!file.metadata || !file.metadata.fileName) return false;
+      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && file.metadata.fileName.includes(step.name)
+      console.log(`${file.metadata.fileName}, isMatchingStep: ${isMatchingStep}`)
+      return isMatchingStep
       // Debug log for each video check
-      if (step.name) {
-        console.log(`Video ${file.metadata.fileName} at ${fileTime.toISOString()} is ${isInRange ? 'IN' : 'OUT OF'} range for step ${step.name}`);
-      }
+      // if (step.name) {
+      //   console.log(`Video ${file.metadata.fileName} at ${fileTime.toISOString()} is ${isInRange ? 'IN' : 'OUT OF'} range for step ${step.name}`);
+      // }
+      console.log()
       
-      return isInRange;
     }).sort((a, b) => {
       const timeA = a.metadata!.timeRequested!.toDate().getTime();
       const timeB = b.metadata!.timeRequested!.toDate().getTime();
       return timeA - timeB;
+    });
+  };
+
+  const formatShortTimestamp = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: false 
     });
   };
 
@@ -231,7 +235,10 @@ const AppInterface: React.FC<AppViewProps> = ({
                           </td>
                           <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
-                            {pass.pass_id ? pass.pass_id.substring(0, 8) : '—'}
+                            {
+                            /* pass.pass_id ? pass.pass_id.substring(0, 8) : '—' */
+                            pass.pass_id ? pass.pass_id : '—'
+                            }
                           </td>
                           <td>{getStatusBadge(pass.success)}</td>
                           <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
@@ -257,7 +264,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 <div className="passes-container">
                                   <div className="steps-grid">
                                     {pass.steps.map((step: Step) => {
-                                        // const stepVideos = getStepVideos(step);
+                                        const stepVideos = getStepVideos(step);
 
                                         return (
                                           <div key={step.name} className="step-card">
@@ -275,7 +282,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             </div>
                                             <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
                                             
-                                            {/* {stepVideos.length > 0 ? (
+                                            {stepVideos.length > 0 ? (
                                               <div className="step-videos-grid">
                                                 {stepVideos.map((video, videoIndex) => (
                                                   <div 
@@ -304,7 +311,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               </div>
                                             ) : (
                                               <div className="no-videos-message">No videos found</div>
-                                            )} */}
+                                            )}
                                           </div>
                                         );
                                     })}
@@ -315,13 +322,18 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     const passStart = new Date(pass.start);
                                     const passEnd = new Date(pass.end);
                                     
+                                    // Always include files that fall within the pass time range (this includes .pcd files)
                                     const passTimeRangeFileIDS = files.filter((file: VIAM.dataApi.BinaryData) => {
                                       if (!file.metadata?.timeRequested) return false;
                                       const fileTime = file.metadata.timeRequested.toDate();
                                       return fileTime >= passStart && fileTime <= passEnd;
                                     }).map((x)=> x.metadata!.binaryDataId);
                                     
-                                    const passFileIDs =  files.filter((x)=> x.metadata?.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId);
+                                    // Additionally include pass-specific files if pass_id is not blank
+                                    const passFileIDs: string[] = pass.pass_id && pass.pass_id.trim() !== '' 
+                                      ? files.filter((x)=> x.metadata?.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
+                                      : [];
+                                    
                                     const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
                                     const passFiles  = files.filter((x)=> ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
                                       const timeA = a.metadata!.timeRequested!.toDate().getTime();
