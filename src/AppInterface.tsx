@@ -14,7 +14,7 @@ interface AppViewProps {
   videoStoreClient?: VIAM.GenericComponentClient | null;
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
-  sanderWarning?: string | null;
+  // sanderWarning?: string | null;
 }
 export interface Step {
   name: string;
@@ -41,7 +41,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   files: files, 
   // sanderClient, 
   videoStoreClient, 
-  robotClient
+  robotClient,
   // sanderWarning
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
@@ -87,8 +87,6 @@ const AppInterface: React.FC<AppViewProps> = ({
       return isMatchingStep
     });
   };
-
-
 
   const getStatusBadge = (success: boolean) => {
     if (success) {
@@ -227,9 +225,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                           </td>
                           <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
-                            {
-                              pass.pass_id ? pass.pass_id.substring(0, 8) : '—'
-                            }
+                            {pass.pass_id ? pass.pass_id.substring(0, 8) : '—'}
                           </td>
                           <td>{getStatusBadge(pass.success)}</td>
                           <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>

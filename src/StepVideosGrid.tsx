@@ -42,8 +42,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     }
 
     setShowNotification(true);
-    const result = await generateVideo(videoStoreClient, step);
-    console.log("generateVideo result", result);
+    await generateVideo(videoStoreClient, step);
   };
 
   if (stepVideos.length === 0) {
