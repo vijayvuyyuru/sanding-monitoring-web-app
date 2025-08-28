@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import RobotOperator from './RobotOperator';
+import StepVideosGrid from './StepVideosGrid';
 import { 
   formatDurationToMinutesSeconds,
-  extractCameraName,
-  handleVideoStoreCommand 
 } from './lib/videoUtils';
 
 interface AppViewProps {
@@ -40,14 +39,12 @@ const AppInterface: React.FC<AppViewProps> = ({
   files: files, 
   // sanderClient, 
   videoStoreClient, 
-  robotClient,
-  sanderWarning
+  robotClient
+  // sanderWarning
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
-  const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
-  const [loadingModalVideo, setLoadingModalVideo] = useState(false);
+
   // Filter files to only include video files (.mp4)
   const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
     file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
@@ -80,18 +77,12 @@ const AppInterface: React.FC<AppViewProps> = ({
 
   const getStepVideos = (step: Step) => {
     if (!videoFiles) return [];
-    console.log(`videoFiles: ${videoFiles}`)
 
     return videoFiles.filter(file => {
       if (!file.metadata || !file.metadata.fileName) return false;
       const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && file.metadata.fileName.includes(step.name)
-      console.log(`${file.metadata.fileName}, isMatchingStep: ${isMatchingStep}`)
+      console.log(`${file.metadata.fileName}, isMatchingStep: ${isMatchingStep}, step ${step}`)
       return isMatchingStep
-      // Debug log for each video check
-      // if (step.name) {
-      //   console.log(`Video ${file.metadata.fileName} at ${fileTime.toISOString()} is ${isInRange ? 'IN' : 'OUT OF'} range for step ${step.name}`);
-      // }
-      console.log()
       
     }).sort((a, b) => {
       const timeA = a.metadata!.timeRequested!.toDate().getTime();
@@ -100,15 +91,7 @@ const AppInterface: React.FC<AppViewProps> = ({
     });
   };
 
-  const formatShortTimestamp = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit',
-      hour12: false 
-    });
-  };
+
 
   const getStatusBadge = (success: boolean) => {
     if (success) {
@@ -127,43 +110,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   };
 
 
-  const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
-    setSelectedVideo(video);
-    
-    if (videoStoreClient && video.metadata?.timeRequested) {
-      setLoadingModalVideo(true);
-      try {
-        // Pass null as pass and let handleVideoStoreCommand use the time range from storage
-        const result = await handleVideoStoreCommand(videoStoreClient, null);
-        
-        if (result.videoUrl) {
-          setModalVideoUrl(result.videoUrl);
-        }
-      } catch (error) {
-        console.error("Error fetching video:", error);
-      } finally {
-        setLoadingModalVideo(false);
-      }
-    }
-  };
 
-  const closeVideoModal = () => {
-    // Clean up video URL if it exists
-    if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(modalVideoUrl);
-    }
-    setSelectedVideo(null);
-    setModalVideoUrl(null);
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(modalVideoUrl);
-      }
-    };
-  }, [modalVideoUrl]);
 
   return (
     <div className="appInterface">
@@ -282,36 +229,10 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             </div>
                                             <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
                                             
-                                            {stepVideos.length > 0 ? (
-                                              <div className="step-videos-grid">
-                                                {stepVideos.map((video, videoIndex) => (
-                                                  <div 
-                                                    key={videoIndex} 
-                                                    className="step-video-item"
-                                                    onClick={() => handleVideoClick(video)}
-                                                  >
-                                                    <div className="video-thumbnail-container">
-                                                      <div className="video-thumbnail">
-                                                        <span className="video-icon">🎬</span>
-                                                      </div>
-                                                    </div>
-                                                    <div className="video-info">
-                                                      <div className="camera-name" title={extractCameraName(video.metadata?.fileName || '')}>
-                                                        {extractCameraName(video.metadata?.fileName || '')}
-                                                      </div>
-                                                      <div className="video-time">
-                                                        {video.metadata?.timeRequested ?
-                                                          formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
-                                                          'Unknown'
-                                                        }
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            ) : (
-                                              <div className="no-videos-message">No videos found</div>
-                                            )}
+                                            <StepVideosGrid
+                                              stepVideos={stepVideos}
+                                              videoStoreClient={videoStoreClient}
+                                            />
                                           </div>
                                         );
                                     })}
@@ -479,100 +400,7 @@ const AppInterface: React.FC<AppViewProps> = ({
           // </section>
         )}
       </main>
-
-      {/* Video Modal */}
-      {selectedVideo && (
-        <div className="video-modal-overlay" onClick={closeVideoModal}>
-          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="video-modal-header">
-              <h3>{extractCameraName(selectedVideo.metadata?.fileName || '')}</h3>
-              <button className="video-modal-close" onClick={closeVideoModal}>×</button>
-            </div>
-            <div className="video-modal-content">
-              <div className="video-modal-player">
-                {loadingModalVideo ? (
-                  <>
-                    <div className="loading-spinner">⏳</div>
-                    <p>Loading video...</p>
-                  </>
-                ) : modalVideoUrl ? (
-                  <video 
-                    controls 
-                    autoPlay
-                    src={modalVideoUrl}
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      borderRadius: '8px'
-                    }}
-                    onError={(e) => {
-                      console.error("Video playback error:", e);
-                      alert("Error playing video");
-                    }}
-                  />
-                ) : (
-                  <>
-                    <span className="video-icon-large">🎬</span>
-                    <p>Video Preview</p>
-                    {videoStoreClient && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (selectedVideo) {
-                            await handleVideoClick(selectedVideo);
-                          }
-                        }}
-                        className="fetch-video-btn"
-                        style={{
-                          marginTop: '10px',
-                          padding: '8px 16px',
-                          backgroundColor: '#007bff',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}
-                      >
-                        Load Video from Store
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              <div className="video-modal-info">
-                <p><strong>Time:</strong> {selectedVideo.metadata?.timeRequested ? 
-                  selectedVideo.metadata.timeRequested.toDate().toLocaleString() : 
-                  'Unknown'
-                }</p>
-                <p><strong>File:</strong> {selectedVideo.metadata?.fileName || 'Unknown'}</p>
-                {modalVideoUrl && (
-                  <p style={{ fontSize: '12px', color: '#28a745', marginTop: '10px' }}>
-                    ✅ Video loaded from base64 data
-                  </p>
-                )}
-              </div>
-              <div className="video-modal-actions">
-                <a 
-                  href={selectedVideo.metadata?.uri} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="video-modal-button primary"
-                >
-                  Open in New Tab
-                </a>
-                <a 
-                  href={selectedVideo.metadata?.uri} 
-                  download={selectedVideo.metadata?.fileName || 'video.mp4'}
-                  className="video-modal-button secondary"
-                >
-                  Download
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };
