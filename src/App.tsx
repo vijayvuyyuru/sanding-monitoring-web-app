@@ -185,7 +185,7 @@ function App() {
           err_string: pass.err_string  || null
         };
       });
- 
+
 
       setPassSummaries(processedPasses);
 
