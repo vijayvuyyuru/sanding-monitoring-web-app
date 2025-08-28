@@ -30,6 +30,7 @@ const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
   const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
@@ -59,6 +60,7 @@ function App() {
 
       const viamClient = await connect(apiKeyId, apiKeySecret);
 
+      setViamClient(viamClient);
       try {
         const robotClient = await viamClient.connectToMachine({
           host: hostname, 
@@ -186,6 +188,7 @@ function App() {
 
   return (
     <AppInterface 
+      viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       // videoFiles={videoFiles}
       files={files}
