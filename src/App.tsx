@@ -44,7 +44,7 @@ function App() {
     hostname,
   } = JSON.parse(Cookies.get(machineInfo)!);
 
-  // Lightweight function that only fetches binary data for video polling
+  // Only fetch videos for polling
   const fetchVideos = useCallback(async () => {
     if (!viamClient) return;
     
@@ -86,7 +86,6 @@ function App() {
     const fetchData = async () => {
       console.log("Fetching data start");
       
-  
       let filter = {
         robotId: machineId,
       } as VIAM.dataApi.Filter;
@@ -220,6 +219,7 @@ function App() {
       // console.log("Fetched video files:", binaryData.data);
       console.log("Fetching data end");
     };
+    
     fetchData();
   }, []);
 
