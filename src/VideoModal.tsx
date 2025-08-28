@@ -56,7 +56,6 @@ const VideoModal: React.FC<VideoModalProps> = ({
     <div className="video-modal-overlay" onClick={closeVideoModal}>
       <div className="video-modal" onClick={(e) => e.stopPropagation()}>
         <div className="video-modal-header">
-          <h3>{extractCameraName(selectedVideo.metadata?.fileName || '')}</h3>
           <button className="video-modal-close" onClick={closeVideoModal}>×</button>
         </div>
         <div className="video-modal-content">

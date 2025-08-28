@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
-import { extractCameraName } from './lib/videoUtils';
 import VideoModal from './VideoModal';
 
 interface StepVideosGridProps {
@@ -27,15 +26,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     setSelectedVideo(null);
     setModalVideoUrl(null);
   };
-  const formatShortTimestamp = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit',
-      hour12: false 
-    });
-  };
+  
   if (stepVideos.length === 0) {
     return <div className="no-videos-message">No videos found</div>;
   }
@@ -52,17 +43,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
             <div className="video-thumbnail-container">
               <div className="video-thumbnail">
                 <span className="video-icon">🎬</span>
-              </div>
-            </div>
-            <div className="video-info">
-              <div className="camera-name" title={extractCameraName(video.metadata?.fileName || '')}>
-                {extractCameraName(video.metadata?.fileName || '')}
-              </div>
-              <div className="video-time">
-                {video.metadata?.timeRequested ?
-                  formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
-                  'Unknown'
-                }
               </div>
             </div>
           </div>
