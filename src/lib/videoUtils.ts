@@ -1,4 +1,5 @@
 import * as VIAM from "@viamrobotics/sdk";
+import { Step } from "../AppInterface";
 
 interface RunData {
   success: boolean;
@@ -110,7 +111,8 @@ export const handleVideoStoreCommand = async (
     const responseObj = fetchResponse as { video?: string };
     if (responseObj && responseObj.video) {
       // Create video stream URL for playback
-      const videoUrl = createVideoStreamFromBase64(responseObj.video);
+      // const videoUrl = createVideoStreamFromBase64(responseObj.video);
+      const videoUrl = ""
 
       if (videoUrl) {
         return { videoUrl };
@@ -129,22 +131,11 @@ export const handleVideoStoreCommand = async (
   }
 };
 
-export const createVideoStreamFromBase64 = (base64Data: string): string | null => {
+export const createVideoStreamFromBase64 = (base64Data: Uint8Array): string | null => {
   try {
     console.log("Creating video stream from base64...");
 
-    const base64String = base64Data.includes(',')
-      ? base64Data.split(',')[1]
-      : base64Data;
-
-    const binaryString = atob(base64String);
-    const bytes = new Uint8Array(binaryString.length);
-
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const blob = new Blob([bytes], { type: 'video/mp4' });
+    const blob = new Blob([base64Data], { type: 'video/mp4' });
     const url = URL.createObjectURL(blob);
 
     console.log("Video stream URL created successfully");
@@ -190,3 +181,31 @@ export const extractCameraName = (filename: string): string => {
   const match = filename.match(/video_([^/]+)/);
   return match ? `${match[1]}` : 'Unknown Camera';
 };
+
+const formatDateToVideoStoreFormat = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+};
+
+export const generateVideo = async (
+  videoStoreClient: VIAM.GenericComponentClient, 
+  step: Step) => {
+    console.log("generateVideo called for step", step);
+    console.log("formatDateToVideoStoreFormat(step.end)", formatDateToVideoStoreFormat(step.end));
+    console.log("formatDateToVideoStoreFormat(step.start)", formatDateToVideoStoreFormat(step.start));
+    const command = VIAM.Struct.fromJson({
+      "command": "save",
+      "to": formatDateToVideoStoreFormat(step.end),
+      "from": formatDateToVideoStoreFormat(step.start),
+      "metadata": `${step.pass_id}${step.name}`,
+      "async": true
+    });
+
+    return await videoStoreClient.doCommand(command);
+  };

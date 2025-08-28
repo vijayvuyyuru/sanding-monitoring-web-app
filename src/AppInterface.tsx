@@ -281,8 +281,10 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
                                             
                                             <StepVideosGrid
+                                              step={step}
                                               stepVideos={stepVideos}
                                               videoStoreClient={videoStoreClient}
+                                              viamClient={viamClient}
                                             />
                                           </div>
                                         );

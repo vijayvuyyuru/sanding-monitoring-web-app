@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import { extractCameraName } from './lib/videoUtils';
+import { createVideoStreamFromBase64 } from './lib/videoUtils';
 
 interface VideoModalProps {
   selectedVideo: VIAM.dataApi.BinaryData | null;
   onClose: () => void;
-  onVideoClick: (video: VIAM.dataApi.BinaryData) => Promise<void>;
+  viamClient: VIAM.ViamClient;
 }
 
 const VideoModal: React.FC<VideoModalProps> = ({ 
   selectedVideo, 
   onClose, 
-  onVideoClick 
+  viamClient
 }) => {
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
   const [loadingModalVideo, setLoadingModalVideo] = useState(false);
@@ -25,28 +26,77 @@ const VideoModal: React.FC<VideoModalProps> = ({
     onClose();
   };
 
-  const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
-    setLoadingModalVideo(true);
+  const handleDownload = async () => {
+    if (!selectedVideo || !modalVideoUrl) return;
+    
     try {
-      await onVideoClick(video);
-      // The parent component should handle setting the video URL
-      // This is a bit of a workaround - ideally we'd pass the URL back
-      // For now, we'll keep the existing logic in the parent
+      // Fetch the blob data from the modalVideoUrl
+      const response = await fetch(modalVideoUrl);
+      const blob = await response.blob();
+      
+      // Create a download link
+      const fileName = selectedVideo.metadata?.fileName || 'video.mp4';
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.style.display = 'none';
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error fetching video:", error);
-    } finally {
-      setLoadingModalVideo(false);
+      console.error('Download failed:', error);
+      alert('Download failed. Please try again.');
     }
   };
 
-  // Cleanup on unmount
+  // Handle escape key to close modal
   useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeVideoModal();
+      }
+    };
+
+    if (selectedVideo) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [selectedVideo]);
+
+  // Fetch video when selectedVideo changes
+  useEffect(() => {
+    if (selectedVideo) {
+      const fetchVideo = async () => {
+        setLoadingModalVideo(true);
+        try {
+          const binaryData = await viamClient.dataClient.binaryDataByIds([selectedVideo.metadata!.binaryDataId]);
+          if (binaryData.length > 0) {
+            setModalVideoUrl(createVideoStreamFromBase64(binaryData[0].binary));
+          }
+        } catch (error) {
+          console.error("Error fetching video:", error);
+        } finally {
+          setLoadingModalVideo(false);
+        }
+      };
+      fetchVideo();
+    }
+
     return () => {
       if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
         URL.revokeObjectURL(modalVideoUrl);
       }
     };
-  }, [modalVideoUrl]);
+  }, [selectedVideo, viamClient]);
 
   if (!selectedVideo) {
     return null;
@@ -82,60 +132,42 @@ const VideoModal: React.FC<VideoModalProps> = ({
               />
             ) : (
               <>
-                <span className="video-icon-large">🎬</span>
-                <p>Video Preview</p>
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      if (selectedVideo) {
-                        await handleVideoClick(selectedVideo);
-                      }
-                    }}
-                    className="fetch-video-btn"
-                    style={{
-                      marginTop: '10px',
-                      padding: '8px 16px',
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '14px'
-                    }}
-                  >
-                    Load Video from Store
-                  </button>
+                <div className="loading-spinner">⏳</div>
+                <p>Loading video...</p>
               </>
             )}
           </div>
           <div className="video-modal-info">
-            <p><strong>Time:</strong> {selectedVideo.metadata?.timeRequested ? 
-              selectedVideo.metadata.timeRequested.toDate().toLocaleString() : 
-              'Unknown'
-            }</p>
             <p><strong>File:</strong> {selectedVideo.metadata?.fileName || 'Unknown'}</p>
-            {modalVideoUrl && (
-              <p style={{ fontSize: '12px', color: '#28a745', marginTop: '10px' }}>
-                ✅ Video loaded from base64 data
-              </p>
-            )}
           </div>
           <div className="video-modal-actions">
-            <a 
-              href={selectedVideo.metadata?.uri} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="video-modal-button primary"
-            >
-              Open in New Tab
-            </a>
-            <a 
-              href={selectedVideo.metadata?.uri} 
-              download={selectedVideo.metadata?.fileName || 'video.mp4'}
+            <button 
+              onClick={handleDownload}
+              disabled={!modalVideoUrl}
               className="video-modal-button secondary"
+              style={{
+                padding: '8px 16px',
+                backgroundColor: modalVideoUrl ? '#3b82f6' : '#9ca3af',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: modalVideoUrl ? 'pointer' : 'not-allowed',
+                fontSize: '14px',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (modalVideoUrl) {
+                  e.currentTarget.style.backgroundColor = '#2563eb';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (modalVideoUrl) {
+                  e.currentTarget.style.backgroundColor = '#3b82f6';
+                }
+              }}
             >
               Download
-            </a>
+            </button>
           </div>
         </div>
       </div>
