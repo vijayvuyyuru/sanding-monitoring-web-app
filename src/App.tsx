@@ -43,7 +43,6 @@ function App() {
   const locationIdMatch = window.location.pathname.match(locationIdRegex);
   const locationId = locationIdMatch ? locationIdMatch[1] : null;
 
-<<<<<<< HEAD
   const machineInfo = window.location.pathname.split("/")[2];
     
   const {
