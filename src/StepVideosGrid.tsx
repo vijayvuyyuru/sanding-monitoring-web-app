@@ -44,12 +44,8 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     };
   }, []);
 
-  // Set up the fetchVideosOnly function in the polling manager for efficient polling
-  useEffect(() => {
-    pollingManager.setFetchData(fetchVideos);
-  }, [fetchVideos]);
-
   // Update current videos in the polling manager and check for completed requests
+  pollingManager.setFetchData(fetchVideos);
   pollingManager.updateCurrentVideos(stepVideos);
   pollingManager.forceVideoCheck();
 
