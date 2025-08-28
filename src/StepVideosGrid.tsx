@@ -159,10 +159,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
                   textAlign: 'center'
                 }}
               >
-                This can take up to a minute
-                {pollingManager.getActiveRequestCount() > 1 && (
-                  <> • {pollingManager.getActiveRequestCount()} active requests</>
-                )}
+                This can take up to a minute.
               </div>
             )}
         </div>

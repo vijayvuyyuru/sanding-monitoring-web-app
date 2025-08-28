@@ -221,7 +221,7 @@ function App() {
       console.log("Fetching data end");
     };
     fetchData();
-  }, [viamClient, machineId, apiKeyId, apiKeySecret, hostname]);
+  }, []);
 
   return (
     <AppInterface 
