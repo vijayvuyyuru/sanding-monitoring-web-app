@@ -16,6 +16,7 @@ interface AppViewProps {
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
   fetchVideos: () => Promise<void>;
+  machineName: string | null;
 }
 export interface Step {
   name: string;
@@ -37,6 +38,7 @@ export interface Pass {
 
 
 const AppInterface: React.FC<AppViewProps> = ({ 
+  machineName,
   viamClient,
   passSummaries = [],
   files: files, 
@@ -186,7 +188,9 @@ const AppInterface: React.FC<AppViewProps> = ({
         {activeRoute === 'live' ? (
           <>
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes</h2>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes
+                {machineName ? ` for ${machineName}` : ''}
+              </h2>
               
               <div className="viam-table-container">
                 <table className="viam-table">

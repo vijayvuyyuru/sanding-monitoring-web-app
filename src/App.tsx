@@ -21,6 +21,7 @@ const sanderName = "sander-module";
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
 const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
+const machineNameRegex = /\/machine\/(.+?)-main\./;
 
 
 // function duration(start: string, end: string): number {
@@ -36,6 +37,13 @@ function App() {
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
 
+  const machineNameMatch = window.location.pathname.match(machineNameRegex);
+  const machineName = machineNameMatch ? machineNameMatch[1] : null;
+
+  const locationIdMatch = window.location.pathname.match(locationIdRegex);
+  const locationId = locationIdMatch ? locationIdMatch[1] : null;
+
+<<<<<<< HEAD
   const machineInfo = window.location.pathname.split("/")[2];
     
   const {
@@ -82,7 +90,7 @@ function App() {
     });
   }, [viamClient]);
 
-  useEffect(() => { 
+  useEffect(() => {
     const fetchData = async () => {
       console.log("Fetching data start");
       
@@ -90,12 +98,7 @@ function App() {
         robotId: machineId,
       } as VIAM.dataApi.Filter;
 
-      let locationId = "";
-
-      const locationIdMatch = window.location.href.match(locationIdRegex);
-      if (locationIdMatch && locationIdMatch.length > 1) {
-        locationId = locationIdMatch[1];
-      }
+      
 
       const viamClient = await connect(apiKeyId, apiKeySecret);
 
@@ -225,6 +228,7 @@ function App() {
 
   return (
     <AppInterface 
+      machineName={machineName}
       viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       // videoFiles={videoFiles}
