@@ -46,13 +46,13 @@ const AppInterface: React.FC<AppViewProps> = ({
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
 
   // Filter files to only include video files (.mp4)
   const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
     file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
   );
 
-  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const filesByID = files.reduce((acc: any, file: VIAM.dataApi.BinaryData) => {
     acc[file.metadata!.binaryDataId] = file;
     return acc;
@@ -112,7 +112,47 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
+  const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
+    if (!file.metadata?.binaryDataId) return;
+    
+    const fileId = file.metadata.binaryDataId;
+    
+    // Set loading state
+    setDownloadingFiles(prev => new Set(prev).add(fileId));
+    
+    try {
+      const binaryData = await viamClient.dataClient.binaryDataByIds([fileId]);
+      if (binaryData.length > 0) {
+        const fileData = binaryData[0];
 
+        const fileName = fileData.metadata?.fileName ?? "unknown";
+        
+        const fileObj = new File([fileData.binary], fileName, { 
+          type: fileData.metadata?.fileExt || 'application/octet-stream' 
+        });
+        
+        // Create object URL from the File
+        const url = URL.createObjectURL(fileObj);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      // Clear loading state
+      setDownloadingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileId);
+        return newSet;
+      });
+    }
+  }
 
 
   return (
@@ -263,7 +303,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     
                                     // Additionally include pass-specific files if pass_id is not blank
                                     const passFileIDs: string[] = pass.pass_id && pass.pass_id.trim() !== '' 
-                                      ? files.filter((x)=> x.metadata?.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
+                                      ? files.filter((x)=> x.metadata!.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
                                       : [];
                                     
                                     const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);

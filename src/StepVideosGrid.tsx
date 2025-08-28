@@ -73,7 +73,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       <VideoModal
         selectedVideo={selectedVideo}
         onClose={closeVideoModal}
-        videoStoreClient={videoStoreClient}
         onVideoClick={handleVideoClick}
       />
     </>

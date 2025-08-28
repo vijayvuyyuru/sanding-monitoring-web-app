@@ -5,14 +5,12 @@ import { extractCameraName } from './lib/videoUtils';
 interface VideoModalProps {
   selectedVideo: VIAM.dataApi.BinaryData | null;
   onClose: () => void;
-  videoStoreClient?: VIAM.GenericComponentClient | null;
   onVideoClick: (video: VIAM.dataApi.BinaryData) => Promise<void>;
 }
 
 const VideoModal: React.FC<VideoModalProps> = ({ 
   selectedVideo, 
   onClose, 
-  videoStoreClient,
   onVideoClick 
 }) => {
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
@@ -28,18 +26,16 @@ const VideoModal: React.FC<VideoModalProps> = ({
   };
 
   const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
-    if (videoStoreClient && video.metadata?.timeRequested) {
-      setLoadingModalVideo(true);
-      try {
-        await onVideoClick(video);
-        // The parent component should handle setting the video URL
-        // This is a bit of a workaround - ideally we'd pass the URL back
-        // For now, we'll keep the existing logic in the parent
-      } catch (error) {
-        console.error("Error fetching video:", error);
-      } finally {
-        setLoadingModalVideo(false);
-      }
+    setLoadingModalVideo(true);
+    try {
+      await onVideoClick(video);
+      // The parent component should handle setting the video URL
+      // This is a bit of a workaround - ideally we'd pass the URL back
+      // For now, we'll keep the existing logic in the parent
+    } catch (error) {
+      console.error("Error fetching video:", error);
+    } finally {
+      setLoadingModalVideo(false);
     }
   };
 
@@ -89,7 +85,6 @@ const VideoModal: React.FC<VideoModalProps> = ({
               <>
                 <span className="video-icon-large">🎬</span>
                 <p>Video Preview</p>
-                {videoStoreClient && (
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
@@ -111,7 +106,6 @@ const VideoModal: React.FC<VideoModalProps> = ({
                   >
                     Load Video from Store
                   </button>
-                )}
               </>
             )}
           </div>
