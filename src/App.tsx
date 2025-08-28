@@ -90,16 +90,16 @@ function App() {
       let filter = {
         robotId: machineId,
       } as VIAM.dataApi.Filter;
-  
+
       let locationId = "";
-  
+
       const locationIdMatch = window.location.href.match(locationIdRegex);
       if (locationIdMatch && locationIdMatch.length > 1) {
         locationId = locationIdMatch[1];
       }
-  
+
       const viamClient = await connect(apiKeyId, apiKeySecret);
-  
+
       setViamClient(viamClient);
       try {
         const robotClient = await viamClient.connectToMachine({
@@ -116,14 +116,14 @@ function App() {
         setVideoStoreClient(null);
       }
       // const resources = await robotClient.resourceNames();
-  
+
       // console.log("Resources:", resources);
-  
+
       // Check for sander module resource
       // if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == sanderName))) {
         // const sanderClient = new VIAM.GenericComponentClient(robotClient, sanderName);
         // setSanderClient(sanderClient);
-        // TODO: Add visual indication that sanding resource is available
+        // TODO: Add visual indication that sander resource is available
       // } else {
       //   setSanderWarning("No sanding module found on this robot");
       //   console.warn("No sander-module resource found");
@@ -136,10 +136,10 @@ function App() {
         return;
       }
       const orgID = organizations[0].id;
-  
+
       console.log("machineId:", machineId);
       console.log("orgID:", orgID);
-  
+
       const mqlQuery: Record<string, JsonValue>[] = [
         {
           $match: {
@@ -159,7 +159,7 @@ function App() {
           $limit: 100 // Get last 100 passes
         }
       ];
-  
+
       const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
   
