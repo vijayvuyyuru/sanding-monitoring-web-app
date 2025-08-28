@@ -162,13 +162,13 @@ function App() {
 
       const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
-  
+
       // Process tabular data into pass summaries
       const processedPasses: Pass[] = tabularData.map((item: any) => {
         // The actual data is nested in data.readings
         const pass = item.data!.readings!;
         
-  
+
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
@@ -185,14 +185,14 @@ function App() {
           err_string: pass.err_string  || null
         };
       });
-  
-  
+ 
+
       setPassSummaries(processedPasses);
-  
+
       let allFiles = [];
       let last = undefined;
       const earliestPassTime = new Date(Math.min(...processedPasses.map(p => p.start.getTime())));
-  
+
       var i = 0
       while (true) {
         console.log("Fetching files files", i);
