@@ -15,6 +15,7 @@ interface AppViewProps {
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
+  fetchVideos: () => Promise<void>;
 }
 export interface Step {
   name: string;
@@ -43,6 +44,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   videoStoreClient, 
   robotClient,
   // sanderWarning
+  fetchVideos,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -274,6 +276,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               stepVideos={stepVideos}
                                               videoStoreClient={videoStoreClient}
                                               viamClient={viamClient}
+                                              fetchVideos={fetchVideos}
                                             />
                                           </div>
                                         );
