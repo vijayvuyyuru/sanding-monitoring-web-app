@@ -234,8 +234,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                           <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
                             {
-                            /* pass.pass_id ? pass.pass_id.substring(0, 8) : '—' */
-                            pass.pass_id ? pass.pass_id : '—'
+                              pass.pass_id ? pass.pass_id.substring(0, 8) : '—'
                             }
                           </td>
                           <td>{getStatusBadge(pass.success)}</td>
