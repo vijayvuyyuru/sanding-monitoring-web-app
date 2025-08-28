@@ -231,7 +231,17 @@ const AppInterface: React.FC<AppViewProps> = ({
                           </td>
                           <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
-                            {pass.pass_id ? pass.pass_id.substring(0, 8) : '—'}
+                            {pass.pass_id ? (
+                              <button
+                                onClick={() => navigator.clipboard.writeText(pass.pass_id)}
+                                className="hover:bg-blue-100 hover:text-blue-700 px-1 py-0.5 rounded cursor-pointer transition-colors"
+                                title={`Click to copy full pass ID: ${pass.pass_id}`}
+                              >
+                                {pass.pass_id.substring(0, 8)}
+                              </button>
+                            ) : (
+                              '—'
+                            )}
                           </td>
                           <td>{getStatusBadge(pass.success)}</td>
                           <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
