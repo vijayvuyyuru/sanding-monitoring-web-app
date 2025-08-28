@@ -20,6 +20,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   const [selectedVideo, setSelectedVideo] =
     useState<VIAM.dataApi.BinaryData | null>(null);
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
+  const [showNotification, setShowNotification] = useState<boolean>(false);
 
   const handleVideoClick = (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
@@ -40,6 +41,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
         return;
     }
 
+    setShowNotification(true);
     const result = await generateVideo(videoStoreClient, step);
     console.log("generateVideo result", result);
   };
@@ -75,6 +77,22 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
           >
             Generate Video
           </button>
+          {showNotification && (
+            <div 
+              style={{
+                marginTop: '12px',
+                padding: '12px',
+                backgroundColor: '#fef3c7',
+                border: '1px solid #f59e0b',
+                borderRadius: '6px',
+                color: '#92400e',
+                fontSize: '14px',
+                maxWidth: '400px'
+              }}
+            >
+              ⏳ Video generation has started. You will need to refresh the page and wait some time before videos appear here.
+            </div>
+          )}
         </div>
       </>
     );
