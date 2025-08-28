@@ -14,7 +14,7 @@ interface AppViewProps {
   videoStoreClient?: VIAM.GenericComponentClient | null;
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
-  // sanderWarning?: string | null;
+  sanderWarning?: string | null;
 }
 export interface Step {
   name: string;
@@ -84,13 +84,7 @@ const AppInterface: React.FC<AppViewProps> = ({
     return videoFiles.filter(file => {
       if (!file.metadata || !file.metadata.fileName) return false;
       const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && file.metadata.fileName.includes(step.name)
-      console.log(`${file.metadata.fileName}, isMatchingStep: ${isMatchingStep}, step ${step}`)
       return isMatchingStep
-      
-    }).sort((a, b) => {
-      const timeA = a.metadata!.timeRequested!.toDate().getTime();
-      const timeB = b.metadata!.timeRequested!.toDate().getTime();
-      return timeA - timeB;
     });
   };
 

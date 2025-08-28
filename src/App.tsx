@@ -175,8 +175,6 @@ function App() {
         }
         last = binaryData.last;
       }
-
-      // need to associate files to what they are, right now is a giant list. What hsould it be instead?
       
       setFiles(allFiles);
       // console.log("Fetched video files:", binaryData.data);

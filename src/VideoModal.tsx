@@ -78,6 +78,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
       const fetchVideo = async () => {
         setLoadingModalVideo(true);
         try {
+          console.log("fetching video", selectedVideo.metadata!.binaryDataId);
           const binaryData = await viamClient.dataClient.binaryDataByIds([selectedVideo.metadata!.binaryDataId]);
           if (binaryData.length > 0) {
             setModalVideoUrl(createVideoStreamFromBase64(binaryData[0].binary));
