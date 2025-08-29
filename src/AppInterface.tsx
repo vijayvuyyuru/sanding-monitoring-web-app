@@ -12,6 +12,7 @@ interface AppViewProps {
   passSummaries?: any[];
   files: VIAM.dataApi.BinaryData[];
   viamClient: VIAM.ViamClient;
+
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
@@ -38,6 +39,7 @@ export interface Pass {
 
 
 const AppInterface: React.FC<AppViewProps> = ({ 
+
   machineName,
   viamClient,
   passSummaries = [],
@@ -49,6 +51,7 @@ const AppInterface: React.FC<AppViewProps> = ({
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
 
@@ -149,7 +152,6 @@ const AppInterface: React.FC<AppViewProps> = ({
       });
     }
   }
-
 
   return (
     <div className="appInterface">
@@ -314,11 +316,13 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       return fileTime >= passStart && fileTime <= passEnd;
                                     }).map((x)=> x.metadata!.binaryDataId);
                                     
+
                                     // Additionally include pass-specific files if pass_id is not blank
                                     const passFileIDs: string[] = pass.pass_id && pass.pass_id.trim() !== '' 
                                       ? files.filter((x)=> x.metadata!.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
                                       : [];
                                     
+
                                     const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
                                     const passFiles  = files.filter((x)=> ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
                                       const timeA = a.metadata!.timeRequested!.toDate().getTime();

@@ -100,6 +100,7 @@ function App() {
 
       const viamClient = await connect(apiKeyId, apiKeySecret);
 
+
       setViamClient(viamClient);
       try {
         const robotClient = await viamClient.connectToMachine({
@@ -221,10 +222,13 @@ function App() {
 
   return (
     <AppInterface 
+
       machineName={machineName}
+
       viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       files={files}
+
       robotClient={robotClient}
       // sanderClient={null}
       // sanderWarning={sanderWarning} // Pass the sanding warning
