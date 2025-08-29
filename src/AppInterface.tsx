@@ -12,9 +12,12 @@ interface AppViewProps {
   passSummaries?: any[];
   files: VIAM.dataApi.BinaryData[];
   viamClient: VIAM.ViamClient;
+
+
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
+  fetchVideos: () => Promise<void>;
   machineName: string | null;
 }
 export interface Step {
@@ -37,6 +40,7 @@ export interface Pass {
 
 
 const AppInterface: React.FC<AppViewProps> = ({ 
+
   machineName,
   viamClient,
   passSummaries = [],
@@ -44,6 +48,8 @@ const AppInterface: React.FC<AppViewProps> = ({
   // sanderClient, 
   robotClient,
   // sanderWarning
+
+  fetchVideos,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -148,7 +154,6 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   }
 
-
   return (
     <div className="appInterface">
       <style>
@@ -234,7 +239,17 @@ const AppInterface: React.FC<AppViewProps> = ({
                           </td>
                           <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
-                            {pass.pass_id ? pass.pass_id.substring(0, 8) : '—'}
+                            {pass.pass_id ? (
+                              <button
+                                onClick={() => navigator.clipboard.writeText(pass.pass_id)}
+                                className="hover:bg-blue-100 hover:text-blue-700 px-1 py-0.5 rounded cursor-pointer transition-colors"
+                                title={`Click to copy full pass ID: ${pass.pass_id}`}
+                              >
+                                {pass.pass_id.substring(0, 8)}
+                              </button>
+                            ) : (
+                              '—'
+                            )}
                           </td>
                           <td>{getStatusBadge(pass.success)}</td>
                           <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
@@ -283,6 +298,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               stepVideos={stepVideos}
                                               videoStoreClient={videoStoreClient}
                                               viamClient={viamClient}
+                                              fetchVideos={fetchVideos}
+
                                             />
                                           </div>
                                         );
@@ -301,11 +318,13 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       return fileTime >= passStart && fileTime <= passEnd;
                                     }).map((x)=> x.metadata!.binaryDataId);
                                     
+
                                     // Additionally include pass-specific files if pass_id is not blank
                                     const passFileIDs: string[] = pass.pass_id && pass.pass_id.trim() !== '' 
                                       ? files.filter((x)=> x.metadata!.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
                                       : [];
                                     
+
                                     const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
                                     const passFiles  = files.filter((x)=> ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
                                       const timeA = a.metadata!.timeRequested!.toDate().getTime();

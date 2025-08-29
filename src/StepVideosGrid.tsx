@@ -1,14 +1,18 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect, useRef } from "react";
 import * as VIAM from "@viamrobotics/sdk";
 import VideoModal from "./VideoModal";
 import { Step } from "./AppInterface";
 import { generateVideo } from "./lib/videoUtils";
+import { VideoPollingManager } from "./lib/videoPollingManager";
+
 
 interface StepVideosGridProps {
   stepVideos: VIAM.dataApi.BinaryData[];
   videoStoreClient?: VIAM.GenericComponentClient | null;
   viamClient: VIAM.ViamClient;
   step: Step;
+  fetchVideos: () => Promise<void>;
 }
 
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({
@@ -16,11 +20,46 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   videoStoreClient,
   viamClient,
   step,
+  fetchVideos,
 }) => {
   const [selectedVideo, setSelectedVideo] =
     useState<VIAM.dataApi.BinaryData | null>(null);
   const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
-  const [showNotification, setShowNotification] = useState<boolean>(false);
+
+  const [isPolling, setIsPolling] = useState<boolean>(false);
+  const requestIdRef = useRef<string | null>(null);
+  const pollingManager = VideoPollingManager.getInstance();
+
+  // Add CSS keyframes for spinner animation
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Update current videos in the polling manager and check for completed requests
+  pollingManager.setFetchData(fetchVideos);
+  pollingManager.updateCurrentVideos(stepVideos);
+  pollingManager.forceVideoCheck();
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (requestIdRef.current) {
+        pollingManager.removeRequest(requestIdRef.current);
+      }
+    };
+  }, []);
+
 
   const handleVideoClick = (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
@@ -41,8 +80,22 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
         return;
     }
 
-    setShowNotification(true);
-    await generateVideo(videoStoreClient, step);
+
+    setIsPolling(true);
+    
+    try {
+      // Start video generation
+      await generateVideo(videoStoreClient, step);
+      
+      // Add to polling manager
+      requestIdRef.current = pollingManager.addRequest(step, () => {
+        setIsPolling(false);
+      });
+      
+    } catch (error) {
+      console.error("Error generating video:", error);
+      setIsPolling(false);
+    }
   };
 
   if (stepVideos.length === 0) {
@@ -52,46 +105,65 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
           <button
             className="generate-video-button"
             onClick={() => handleGenerateVideo()}
-            disabled={videoStoreClient == null}
+
+            disabled={videoStoreClient == null || isPolling}
             style={{
               padding: '8px 16px',
-              backgroundColor: videoStoreClient ? '#3b82f6' : '#9ca3af',
+              backgroundColor: videoStoreClient && !isPolling ? '#3b82f6' : '#9ca3af',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
-              cursor: videoStoreClient ? 'pointer' : 'not-allowed',
+              cursor: videoStoreClient && !isPolling ? 'pointer' : 'not-allowed',
               fontSize: '14px',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              minWidth: '140px',
+              justifyContent: 'center'
             }}
             onMouseEnter={(e) => {
-              if (videoStoreClient) {
+              if (videoStoreClient && !isPolling) {
                 e.currentTarget.style.backgroundColor = '#2563eb';
               }
             }}
             onMouseLeave={(e) => {
-              if (videoStoreClient) {
+
+              if (videoStoreClient && !isPolling) {
                 e.currentTarget.style.backgroundColor = '#3b82f6';
               }
             }}
-          >
-            Generate Video
-          </button>
-          {showNotification && (
-            <div 
-              style={{
-                marginTop: '12px',
-                padding: '12px',
-                backgroundColor: '#fef3c7',
-                border: '1px solid #f59e0b',
-                borderRadius: '6px',
-                color: '#92400e',
-                fontSize: '14px',
-                maxWidth: '400px'
-              }}
-            >
-              ⏳ Video generation has started. You will need to refresh the page and wait some time before videos appear here.
-            </div>
-          )}
+                      >
+              {isPolling ? (
+                <>
+                  <div 
+                    style={{
+                      width: '16px',
+                      height: '16px',
+                      border: '2px solid #ffffff',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }}
+                  />
+                  Generating...
+                </>
+              ) : (
+                'Generate Video'
+              )}
+            </button>
+                      {isPolling && (
+              <div 
+                style={{
+                  marginTop: '8px',
+                  fontSize: '12px',
+                  color: '#6b7280',
+                  textAlign: 'center'
+                }}
+              >
+                This can take up to a minute.
+              </div>
+            )}
         </div>
       </>
     );

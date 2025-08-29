@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
@@ -42,17 +42,57 @@ function App() {
   const locationIdMatch = window.location.pathname.match(locationIdRegex);
   const locationId = locationIdMatch ? locationIdMatch[1] : null;
 
+  const machineInfo = window.location.pathname.split("/")[2];
+    
+  const {
+    apiKey: { id: apiKeyId, key: apiKeySecret },
+    machineId,
+    hostname,
+  } = JSON.parse(Cookies.get(machineInfo)!);
+
+  // Only fetch videos for polling
+  const fetchVideos = useCallback(async () => {
+    if (!viamClient) return;
+    
+    console.log("Fetching videos only for polling");
+
+    let filter = {
+      robotId: machineId,
+      mimeType: ["application/octet-stream"],
+    } as VIAM.dataApi.Filter;
+
+    // Only fetch recent files (last 100) for polling efficiency
+    const binaryData = await viamClient.dataClient.binaryDataByFilter(
+      filter,
+      100, // limit
+      VIAM.dataApi.Order.DESCENDING,
+      undefined, // no pagination token
+      false,
+      false,
+      false
+    );
+    
+    // Update only the files state, keeping existing pass summaries
+    setFiles(prevFiles => {
+      // Merge new files with existing ones, avoiding duplicates
+      const existingIds = new Set(prevFiles.map(f => f.metadata?.binaryDataId));
+      const newFiles = binaryData.data.filter(f => !existingIds.has(f.metadata?.binaryDataId));
+      
+      if (newFiles.length > 0) {
+        console.log(`Found ${newFiles.length} new files during polling`);
+        // Return new files first (most recent) followed by existing files
+        return [...newFiles, ...prevFiles];
+      }
+      
+      return prevFiles;
+    });
+  }, [viamClient]);
+
+
   useEffect(() => {
     const fetchData = async () => {
       console.log("Fetching data start");
-      const machineInfo = window.location.pathname.split("/")[2];
       
-      const {
-        apiKey: { id: apiKeyId, key: apiKeySecret },
-        machineId,
-        hostname,
-      } = JSON.parse(Cookies.get(machineInfo)!);
-
       let filter = {
         robotId: machineId,
       } as VIAM.dataApi.Filter;
@@ -176,19 +216,23 @@ function App() {
       // console.log("Fetched video files:", binaryData.data);
       console.log("Fetching data end");
     };
-
+    
     fetchData();
   }, []);
 
   return (
     <AppInterface 
+
+
       machineName={machineName}
+
       viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       files={files}
       robotClient={robotClient}
       // sanderClient={null}
       // sanderWarning={sanderWarning} // Pass the sanding warning
+      fetchVideos={fetchVideos}
     />
   );
 }
