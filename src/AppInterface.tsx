@@ -13,6 +13,7 @@ interface AppViewProps {
   files: VIAM.dataApi.BinaryData[];
   viamClient: VIAM.ViamClient;
 
+
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
@@ -47,11 +48,11 @@ const AppInterface: React.FC<AppViewProps> = ({
   // sanderClient, 
   robotClient,
   // sanderWarning
+
   fetchVideos,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
 
@@ -298,6 +299,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               videoStoreClient={videoStoreClient}
                                               viamClient={viamClient}
                                               fetchVideos={fetchVideos}
+
                                             />
                                           </div>
                                         );

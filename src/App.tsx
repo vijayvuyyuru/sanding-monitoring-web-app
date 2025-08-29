@@ -88,6 +88,7 @@ function App() {
     });
   }, [viamClient]);
 
+
   useEffect(() => {
     const fetchData = async () => {
       console.log("Fetching data start");
@@ -99,7 +100,6 @@ function App() {
       
 
       const viamClient = await connect(apiKeyId, apiKeySecret);
-
 
       setViamClient(viamClient);
       try {
@@ -223,12 +223,12 @@ function App() {
   return (
     <AppInterface 
 
+
       machineName={machineName}
 
       viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
       files={files}
-
       robotClient={robotClient}
       // sanderClient={null}
       // sanderWarning={sanderWarning} // Pass the sanding warning

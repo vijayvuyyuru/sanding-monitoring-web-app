@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import * as VIAM from "@viamrobotics/sdk";
 import VideoModal from "./VideoModal";
 import { Step } from "./AppInterface";
 import { generateVideo } from "./lib/videoUtils";
 import { VideoPollingManager } from "./lib/videoPollingManager";
+
 
 interface StepVideosGridProps {
   stepVideos: VIAM.dataApi.BinaryData[];
@@ -58,6 +60,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     };
   }, []);
 
+
   const handleVideoClick = (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
   };
@@ -76,6 +79,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
         console.error("No video store client available");
         return;
     }
+
 
     setIsPolling(true);
     
@@ -101,6 +105,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
           <button
             className="generate-video-button"
             onClick={() => handleGenerateVideo()}
+
             disabled={videoStoreClient == null || isPolling}
             style={{
               padding: '8px 16px',
@@ -123,6 +128,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
               }
             }}
             onMouseLeave={(e) => {
+
               if (videoStoreClient && !isPolling) {
                 e.currentTarget.style.backgroundColor = '#3b82f6';
               }
