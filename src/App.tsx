@@ -33,7 +33,6 @@ function App() {
   const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
-  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
 
@@ -108,15 +107,10 @@ function App() {
           id: machineId,
         });
         setRobotClient(robotClient); // Store the robot client
-        
-        const videoStoreClient = new VIAM.GenericComponentClient(robotClient, videoStoreName);
-        setVideoStoreClient(videoStoreClient);
       } catch (error) {
-        console.error('Failed to create robot client or video store client:', error);
+        console.error('Failed to create robot client:', error);
         setRobotClient(null);
-        setVideoStoreClient(null);
       }
-      // const resources = await robotClient.resourceNames();
 
       // console.log("Resources:", resources);
 
@@ -230,11 +224,9 @@ function App() {
       machineName={machineName}
       viamClient={viamClient!}
       passSummaries={passSummaries} // Pass the actual summaries
-      // videoFiles={videoFiles}
       files={files}
+      robotClient={robotClient}
       // sanderClient={null}
-      videoStoreClient={videoStoreClient}
-      // robotClient={null}
       // sanderWarning={sanderWarning} // Pass the sanding warning
       fetchVideos={fetchVideos}
     />

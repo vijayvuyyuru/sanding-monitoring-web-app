@@ -3,6 +3,7 @@ import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import RobotOperator from './RobotOperator';
 import StepVideosGrid from './StepVideosGrid';
+import VideoStoreSelector from './VideoStoreSelector';
 import { 
   formatDurationToMinutesSeconds,
 } from './lib/videoUtils';
@@ -11,7 +12,6 @@ interface AppViewProps {
   passSummaries?: any[];
   files: VIAM.dataApi.BinaryData[];
   viamClient: VIAM.ViamClient;
-  videoStoreClient?: VIAM.GenericComponentClient | null;
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
@@ -43,7 +43,6 @@ const AppInterface: React.FC<AppViewProps> = ({
   passSummaries = [],
   files: files, 
   // sanderClient, 
-  videoStoreClient, 
   robotClient,
   // sanderWarning
   fetchVideos,
@@ -51,6 +50,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
 
   // Filter files to only include video files (.mp4)
   const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
@@ -191,6 +191,11 @@ const AppInterface: React.FC<AppViewProps> = ({
               <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes
                 {machineName ? ` for ${machineName}` : ''}
               </h2>
+              
+              <VideoStoreSelector
+                robotClient={robotClient || null}
+                onVideoStoreSelected={setVideoStoreClient}
+              />
               
               <div className="viam-table-container">
                 <table className="viam-table">
