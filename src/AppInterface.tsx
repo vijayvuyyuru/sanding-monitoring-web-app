@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import RobotOperator from './RobotOperator';
+import StepVideosGrid from './StepVideosGrid';
+import VideoStoreSelector from './VideoStoreSelector';
 import { 
   formatDurationToMinutesSeconds,
-  extractCameraName,
-  handleVideoStoreCommand 
 } from './lib/videoUtils';
 
 interface AppViewProps {
   passSummaries?: any[];
   files: VIAM.dataApi.BinaryData[];
   viamClient: VIAM.ViamClient;
-  videoStoreClient?: VIAM.GenericComponentClient | null;
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
+  machineName: string | null;
 }
 export interface Step {
   name: string;
   start: Date;
   end: Date;
+  pass_id: string;
   // duration_ms?: number;
 }
 
@@ -36,20 +37,24 @@ export interface Pass {
 
 
 const AppInterface: React.FC<AppViewProps> = ({ 
+  machineName,
   viamClient,
   passSummaries = [],
   files: files, 
   // sanderClient, 
-  videoStoreClient, 
   robotClient,
-  sanderWarning
+  // sanderWarning
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [selectedVideo, setSelectedVideo] = useState<VIAM.dataApi.BinaryData | null>(null);
-  const [modalVideoUrl, setModalVideoUrl] = useState<string | null>(null);
-  const [loadingModalVideo, setLoadingModalVideo] = useState(false);
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
+  const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+
+  // Filter files to only include video files (.mp4)
+  const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
+    file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+  );
+
   const filesByID = files.reduce((acc: any, file: VIAM.dataApi.BinaryData) => {
     acc[file.metadata!.binaryDataId] = file;
     return acc;
@@ -75,37 +80,13 @@ const AppInterface: React.FC<AppViewProps> = ({
     setExpandedRows(newExpandedRows);
   };
 
-  const getStepVideos = (step: { start: string; end:string; name?: string }) => {
-    if (!files) return [];
+  const getStepVideos = (step: Step) => {
+    if (!videoFiles) return [];
 
-    const stepStart = new Date(step.start);
-    const stepEnd = new Date(step.end);
-
-    // Debug logging
-    console.log(`Looking for videos in step ${step.name || 'unknown'}:`, {
-      stepStart: stepStart.toISOString(),
-      stepEnd: stepEnd.toISOString(),
-      availableVideos: files.map(f => ({
-        time: f.metadata?.timeRequested?.toDate().toISOString(),
-        fileName: f.metadata?.fileName
-      }))
-    });
-
-    return files.filter(file => {
-      if (!file.metadata?.timeRequested || !file.metadata?.fileName?.endsWith('.mp4')) return false;
-      const fileTime = file.metadata.timeRequested.toDate();
-      const isInRange = fileTime >= stepStart && fileTime <= stepEnd;
-      
-      // Debug log for each video check
-      if (step.name) {
-        console.log(`Video ${file.metadata.fileName} at ${fileTime.toISOString()} is ${isInRange ? 'IN' : 'OUT OF'} range for step ${step.name}`);
-      }
-      
-      return isInRange;
-    }).sort((a, b) => {
-      const timeA = a.metadata!.timeRequested!.toDate().getTime();
-      const timeB = b.metadata!.timeRequested!.toDate().getTime();
-      return timeA - timeB;
+    return videoFiles.filter(file => {
+      if (!file.metadata || !file.metadata.fileName) return false;
+      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && file.metadata.fileName.includes(step.name)
+      return isMatchingStep
     });
   };
 
@@ -123,36 +104,6 @@ const AppInterface: React.FC<AppViewProps> = ({
         </span>
       );
     }
-  };
-
-
-  const handleVideoClick = async (video: VIAM.dataApi.BinaryData) => {
-    setSelectedVideo(video);
-    
-    if (videoStoreClient && video.metadata?.timeRequested) {
-      setLoadingModalVideo(true);
-      try {
-        // Pass null as pass and let handleVideoStoreCommand use the time range from storage
-        const result = await handleVideoStoreCommand(videoStoreClient, null);
-        
-        if (result.videoUrl) {
-          setModalVideoUrl(result.videoUrl);
-        }
-      } catch (error) {
-        console.error("Error fetching video:", error);
-      } finally {
-        setLoadingModalVideo(false);
-      }
-    }
-  };
-
-  const closeVideoModal = () => {
-    // Clean up video URL if it exists
-    if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(modalVideoUrl);
-    }
-    setSelectedVideo(null);
-    setModalVideoUrl(null);
   };
 
   const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
@@ -197,14 +148,6 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   }
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (modalVideoUrl && modalVideoUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(modalVideoUrl);
-      }
-    };
-  }, [modalVideoUrl]);
 
   return (
     <div className="appInterface">
@@ -243,7 +186,14 @@ const AppInterface: React.FC<AppViewProps> = ({
         {activeRoute === 'live' ? (
           <>
             <section>
-              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes</h2>
+              <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes
+                {machineName ? ` for ${machineName}` : ''}
+              </h2>
+              
+              <VideoStoreSelector
+                robotClient={robotClient || null}
+                onVideoStoreSelected={setVideoStoreClient}
+              />
               
               <div className="viam-table-container">
                 <table className="viam-table">
@@ -310,7 +260,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 <div className="passes-container">
                                   <div className="steps-grid">
                                     {pass.steps.map((step: Step) => {
-                                        // const stepVideos = getStepVideos(step);
+                                        const stepVideos = getStepVideos(step);
 
                                         return (
                                           <div key={step.name} className="step-card">
@@ -328,36 +278,12 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             </div>
                                             <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
                                             
-                                            {/* {stepVideos.length > 0 ? (
-                                              <div className="step-videos-grid">
-                                                {stepVideos.map((video, videoIndex) => (
-                                                  <div 
-                                                    key={videoIndex} 
-                                                    className="step-video-item"
-                                                    onClick={() => handleVideoClick(video)}
-                                                  >
-                                                    <div className="video-thumbnail-container">
-                                                      <div className="video-thumbnail">
-                                                        <span className="video-icon">🎬</span>
-                                                      </div>
-                                                    </div>
-                                                    <div className="video-info">
-                                                      <div className="camera-name" title={extractCameraName(video.metadata?.fileName || '')}>
-                                                        {extractCameraName(video.metadata?.fileName || '')}
-                                                      </div>
-                                                      <div className="video-time">
-                                                        {video.metadata?.timeRequested ?
-                                                          formatShortTimestamp(video.metadata.timeRequested.toDate().toISOString()) :
-                                                          'Unknown'
-                                                        }
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                ))}
-                                              </div>
-                                            ) : (
-                                              <div className="no-videos-message">No videos found</div>
-                                            )} */}
+                                            <StepVideosGrid
+                                              step={step}
+                                              stepVideos={stepVideos}
+                                              videoStoreClient={videoStoreClient}
+                                              viamClient={viamClient}
+                                            />
                                           </div>
                                         );
                                     })}
@@ -368,13 +294,18 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     const passStart = new Date(pass.start);
                                     const passEnd = new Date(pass.end);
                                     
+                                    // Always include files that fall within the pass time range (this includes .pcd files)
                                     const passTimeRangeFileIDS = files.filter((file: VIAM.dataApi.BinaryData) => {
                                       if (!file.metadata?.timeRequested) return false;
                                       const fileTime = file.metadata.timeRequested.toDate();
                                       return fileTime >= passStart && fileTime <= passEnd;
                                     }).map((x)=> x.metadata!.binaryDataId);
                                     
-                                    const passFileIDs =  files.filter((x)=> x.metadata?.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId);
+                                    // Additionally include pass-specific files if pass_id is not blank
+                                    const passFileIDs: string[] = pass.pass_id && pass.pass_id.trim() !== '' 
+                                      ? files.filter((x)=> x.metadata!.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
+                                      : [];
+                                    
                                     const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
                                     const passFiles  = files.filter((x)=> ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
                                       const timeA = a.metadata!.timeRequested!.toDate().getTime();
@@ -538,100 +469,7 @@ const AppInterface: React.FC<AppViewProps> = ({
           // </section>
         )}
       </main>
-
-      {/* Video Modal */}
-      {selectedVideo && (
-        <div className="video-modal-overlay" onClick={closeVideoModal}>
-          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="video-modal-header">
-              <h3>{extractCameraName(selectedVideo.metadata?.fileName || '')}</h3>
-              <button className="video-modal-close" onClick={closeVideoModal}>×</button>
-            </div>
-            <div className="video-modal-content">
-              <div className="video-modal-player">
-                {loadingModalVideo ? (
-                  <>
-                    <div className="loading-spinner">⏳</div>
-                    <p>Loading video...</p>
-                  </>
-                ) : modalVideoUrl ? (
-                  <video 
-                    controls 
-                    autoPlay
-                    src={modalVideoUrl}
-                    style={{ 
-                      width: '100%', 
-                      height: '100%',
-                      borderRadius: '8px'
-                    }}
-                    onError={(e) => {
-                      console.error("Video playback error:", e);
-                      alert("Error playing video");
-                    }}
-                  />
-                ) : (
-                  <>
-                    <span className="video-icon-large">🎬</span>
-                    <p>Video Preview</p>
-                    {videoStoreClient && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (selectedVideo) {
-                            await handleVideoClick(selectedVideo);
-                          }
-                        }}
-                        className="fetch-video-btn"
-                        style={{
-                          marginTop: '10px',
-                          padding: '8px 16px',
-                          backgroundColor: '#007bff',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          cursor: 'pointer',
-                          fontSize: '14px'
-                        }}
-                      >
-                        Load Video from Store
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              <div className="video-modal-info">
-                <p><strong>Time:</strong> {selectedVideo.metadata?.timeRequested ? 
-                  selectedVideo.metadata.timeRequested.toDate().toLocaleString() : 
-                  'Unknown'
-                }</p>
-                <p><strong>File:</strong> {selectedVideo.metadata?.fileName || 'Unknown'}</p>
-                {modalVideoUrl && (
-                  <p style={{ fontSize: '12px', color: '#28a745', marginTop: '10px' }}>
-                    ✅ Video loaded from base64 data
-                  </p>
-                )}
-              </div>
-              <div className="video-modal-actions">
-                <a 
-                  href={selectedVideo.metadata?.uri} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="video-modal-button primary"
-                >
-                  Open in New Tab
-                </a>
-                <a 
-                  href={selectedVideo.metadata?.uri} 
-                  download={selectedVideo.metadata?.fileName || 'video.mp4'}
-                  className="video-modal-button secondary"
-                >
-                  Download
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 };
