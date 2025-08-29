@@ -15,6 +15,7 @@ interface AppViewProps {
   // sanderClient: VIAM.GenericComponentClient | null;
   robotClient?: VIAM.RobotClient | null;
   // sanderWarning?: string | null;
+  fetchVideos: () => Promise<void>;
   machineName: string | null;
 }
 export interface Step {
@@ -44,6 +45,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   // sanderClient, 
   robotClient,
   // sanderWarning
+  fetchVideos,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -234,7 +236,17 @@ const AppInterface: React.FC<AppViewProps> = ({
                           </td>
                           <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                           <td className="text-zinc-700 text-xs">
-                            {pass.pass_id ? pass.pass_id.substring(0, 8) : '—'}
+                            {pass.pass_id ? (
+                              <button
+                                onClick={() => navigator.clipboard.writeText(pass.pass_id)}
+                                className="hover:bg-blue-100 hover:text-blue-700 px-1 py-0.5 rounded cursor-pointer transition-colors"
+                                title={`Click to copy full pass ID: ${pass.pass_id}`}
+                              >
+                                {pass.pass_id.substring(0, 8)}
+                              </button>
+                            ) : (
+                              '—'
+                            )}
                           </td>
                           <td>{getStatusBadge(pass.success)}</td>
                           <td className="text-zinc-700">{pass.start.toLocaleTimeString()}</td>
@@ -283,6 +295,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               stepVideos={stepVideos}
                                               videoStoreClient={videoStoreClient}
                                               viamClient={viamClient}
+                                              fetchVideos={fetchVideos}
                                             />
                                           </div>
                                         );
