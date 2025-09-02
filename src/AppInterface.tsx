@@ -127,7 +127,7 @@ const AppInterface: React.FC<AppViewProps> = ({
 
         const fileName = fileData.metadata?.fileName ?? "unknown";
         
-        const fileObj = new File([fileData.binary], fileName, { 
+        const fileObj = new File([new Uint8Array(fileData.binary)], fileName, { 
           type: fileData.metadata?.fileExt || 'application/octet-stream' 
         });
         
@@ -270,7 +270,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                         </tr>
                         {expandedRows.has(index) && (
                           <tr className="expanded-content">
-                            <td colSpan={8}>
+                            <td colSpan={9}>
                               <div className="pass-details">
                                 <div className="passes-container">
                                   <div className="steps-grid">
@@ -351,9 +351,12 @@ const AppInterface: React.FC<AppViewProps> = ({
                                         </h4>
                                         
                                         <div style={{ 
-                                          display: 'grid',
-                                          gridTemplateColumns: 'repeat(2, 1fr)',
-                                          gap: '8px' 
+                                          display: 'flex',
+                                          flexWrap: 'wrap',
+                                          gap: '8px',
+                                          maxHeight: '400px', // Add max height
+                                          overflowY: 'auto',  // Add scrolling
+                                          padding: '4px'      // Add padding for scrollbar
                                         }}>
                                           {passFiles.map((file, fileIndex) => {
                                             const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
@@ -371,7 +374,11 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   borderRadius: '6px',
                                                   fontSize: '13px',
                                                   cursor: 'pointer',
-                                                  transition: 'all 0.2s ease'
+                                                  transition: 'all 0.2s ease',
+                                                  flex: '1 0 calc(50% - 8px)', // Take up half the width minus gap
+                                                  minWidth: '280px',          // Slightly smaller min width
+                                                  maxWidth: '100%',           // Don't exceed container width
+                                                  boxSizing: 'border-box'
                                                 }}
                                                 onMouseEnter={(e) => {
                                                   e.currentTarget.style.backgroundColor = '#e5e7eb';
@@ -382,12 +389,21 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   e.currentTarget.style.transform = 'translateY(0)';
                                                 }}
                                               >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                                <div style={{ 
+                                                  display: 'flex', 
+                                                  alignItems: 'center', 
+                                                  gap: '8px', // Reduced from 12px
+                                                  flex: 1, 
+                                                  minWidth: 0,
+                                                  overflow: 'hidden' // Ensure content doesn't overflow
+                                                }}>
                                                   <span style={{ 
                                                     color: '#374151',
-                                                    wordBreak: 'break-all',
+                                                    textOverflow: 'ellipsis', // Add ellipsis for long text
+                                                    overflow: 'hidden',       // Hide overflow
+                                                    whiteSpace: 'nowrap',     // Prevent wrapping
                                                     flex: 1
-                                                  }}>
+                                                  }} title={fileName}> {/* Add title for hover tooltip */}
                                                     {fileName}
                                                   </span>
                                                   <span style={{ 
