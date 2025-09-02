@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
-import RobotOperator from './RobotOperator';
 import StepVideosGrid from './StepVideosGrid';
 import VideoStoreSelector from './VideoStoreSelector';
 import { 
@@ -354,9 +353,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           display: 'flex',
                                           flexWrap: 'wrap',
                                           gap: '8px',
-                                          maxHeight: '400px', // Add max height
-                                          overflowY: 'auto',  // Add scrolling
-                                          padding: '4px'      // Add padding for scrollbar
+                                          maxHeight: '400px',
+                                          overflowY: 'auto',
+                                          padding: '4px'
                                         }}>
                                           {passFiles.map((file, fileIndex) => {
                                             const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
@@ -375,9 +374,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   fontSize: '13px',
                                                   cursor: 'pointer',
                                                   transition: 'all 0.2s ease',
-                                                  flex: '1 0 calc(50% - 8px)', // Take up half the width minus gap
-                                                  minWidth: '280px',          // Slightly smaller min width
-                                                  maxWidth: '100%',           // Don't exceed container width
+                                                  flex: '1 0 calc(50% - 8px)',
+                                                  minWidth: '280px',
+                                                  maxWidth: '100%',
                                                   boxSizing: 'border-box'
                                                 }}
                                                 onMouseEnter={(e) => {
@@ -392,18 +391,18 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                 <div style={{ 
                                                   display: 'flex', 
                                                   alignItems: 'center', 
-                                                  gap: '8px', // Reduced from 12px
+                                                  gap: '8px',
                                                   flex: 1, 
                                                   minWidth: 0,
-                                                  overflow: 'hidden' // Ensure content doesn't overflow
+                                                  overflow: 'hidden'
                                                 }}>
                                                   <span style={{ 
                                                     color: '#374151',
-                                                    textOverflow: 'ellipsis', // Add ellipsis for long text
-                                                    overflow: 'hidden',       // Hide overflow
-                                                    whiteSpace: 'nowrap',     // Prevent wrapping
+                                                    textOverflow: 'ellipsis',
+                                                    overflow: 'hidden',
+                                                    whiteSpace: 'nowrap',
                                                     flex: 1
-                                                  }} title={fileName}> {/* Add title for hover tooltip */}
+                                                  }} title={fileName}>
                                                     {fileName}
                                                   </span>
                                                   <span style={{ 

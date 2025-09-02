@@ -268,15 +268,13 @@ button:focus {
   outline-offset: 2px;
 }
 
+/* Base styles for mainContent */
 .mainContent {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
   padding: 2rem 0.5rem;
-  /* Remove overflow-y: auto */
-  /* Remove overflow-x: hidden */
   min-width: 0;
-  /* Remove flex: 1 */
 }
 
 @media (min-width: 480px) {
@@ -290,6 +288,7 @@ button:focus {
   .mainContent {
     padding-left: 1rem;
     padding-right: 1rem;
+    width: 95%;
   }
 }
 
@@ -297,14 +296,16 @@ button:focus {
   .mainContent {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+    width: 95%;
   }
 }
 
 @media (min-width: 1024px) {
   .mainContent {
-    max-width: 1024px;
+    width: 95%;
     padding-left: 2rem;
     padding-right: 2rem;
+    max-width: none;
   }
 }
 
@@ -316,25 +317,8 @@ button:focus {
 
 @media (min-width: 1536px) {
   .mainContent {
-    max-width: 1680px;
+    max-width: 1440px;
   }
-}
-
-.steps-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 12px;
-}
-
-.step-card {
-  background: white;
-  border: 1px solid #e4e4e7;
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 250px;
 }
 
 .test-controls {
@@ -625,7 +609,8 @@ button:focus {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 250px; /* Added minimum width */
+  min-width: 250px;
+  max-width: 400px;
 }
 
 .step-name {
