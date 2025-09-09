@@ -63,6 +63,7 @@ const formatDateToVideoStoreFormat = (date: Date): string => {
   return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}Z`;
 };
 
+// 10 seconds in milliseconds
 const VIDEO_LENGTH_BUFFER = 10000;
 
 const getVideoTimeWithBuffer = (date: Date, isStart: boolean): Date => {
