@@ -4,6 +4,7 @@ import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
+import { Timestamp } from '@bufbuild/protobuf';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -79,12 +80,35 @@ function App() {
 
     let filter = {
       robotId: machineId,
+      mimeType: ["application/octet-stream"],
     } as VIAM.dataApi.Filter;
+
+    // Add time range filtering if a specific pass is requested
+    if (passToLoad) {
+      // Create proper Timestamp objects
+      const startTimestamp = Timestamp.fromDate(passToLoad.start);
+      
+      // Add 10 minute buffer to end time
+      const endDateWithBuffer = new Date(passToLoad.end.getTime() + 10 * 60 * 1000); // Add 10 minutes in milliseconds
+      const endTimestamp = Timestamp.fromDate(endDateWithBuffer);
+      
+      filter.interval = {
+        start: startTimestamp,
+        end: endTimestamp
+      } as VIAM.dataApi.CaptureInterval;
+      
+      console.log("Filtering for pass time range:", {
+        start: passToLoad.start.toISOString(),
+        end: passToLoad.end.toISOString(),
+        endWithBuffer: endDateWithBuffer.toISOString()
+      });
+    }
 
     try {
       let keepFetching = true;
       let loadedFiles = false;
-      let currentToken = lastFileToken;
+      // When filtering by time, start fresh without a pagination token
+      let currentToken = passToLoad ? undefined : lastFileToken;
       const newFiles: VIAM.dataApi.BinaryData[] = [];
 
       while (keepFetching) {
@@ -103,19 +127,11 @@ function App() {
           newFiles.push(...binaryData.data);
           currentToken = binaryData.last;
 
+          // Since we're filtering on the backend, we don't need to check timestamps anymore
           if (passToLoad) {
-            const passStart = new Date(passToLoad.start);
-            const passEnd = new Date(passToLoad.end);
-            const found = binaryData.data.some(file => {
-              if (!file.metadata?.timeRequested) return false;
-              const fileTime = file.metadata.timeRequested.toDate();
-              return fileTime >= passStart && fileTime <= passEnd;
-            });
-
-            if (found) {
-              console.log("Found relevant files for the pass, stopping fetch.");
-              keepFetching = false;
-            }
+            // If we got any data for this pass, we're done
+            console.log(`Found ${binaryData.data.length} files for the pass`);
+            keepFetching = false;
           } else {
             keepFetching = false;
           }
@@ -126,7 +142,10 @@ function App() {
 
         if (!binaryData.last) {
           console.log("No more pages to fetch.");
-          setHasMoreFiles(false);
+          // Only update hasMoreFiles if we're not doing a pass-specific query
+          if (!passToLoad) {
+            setHasMoreFiles(false);
+          }
           keepFetching = false;
         }
       }
@@ -134,10 +153,13 @@ function App() {
       // Update the global state once, after the loop is complete
       if (newFiles.length > 0) {
         setFiles(prevFiles => [...prevFiles, ...newFiles]);
-        setLastFileToken(currentToken);
+        // Only update the token if we're not doing a pass-specific query
+        if (!passToLoad) {
+          setLastFileToken(currentToken);
+        }
       }
 
-      loadedFiles = true;
+      loadedFiles = newFiles.length > 0;
       return loadedFiles;
     } catch (error) {
       console.error("Failed to load more files:", error);
