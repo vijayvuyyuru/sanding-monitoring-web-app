@@ -40,39 +40,37 @@ function App() {
   const fetchVideos = useCallback(async () => {
     if (!viamClient) return;
     
-    console.log("Fetching videos only for polling");
-
-    let filter = {
-      robotId: machineId,
-      mimeType: ["application/octet-stream"],
-    } as VIAM.dataApi.Filter;
-
-    // Only fetch recent files (last 100) for polling efficiency
-    const binaryData = await viamClient.dataClient.binaryDataByFilter(
-      filter,
-      100, // limit
-      VIAM.dataApi.Order.DESCENDING,
-      undefined, // no pagination token
-      false,
-      false,
-      false
-    );
+    console.log("Fetching videos");
     
-    // Update only the files state, keeping existing pass summaries
-    setFiles(prevFiles => {
-      // Merge new files with existing ones, avoiding duplicates
-      const existingIds = new Set(prevFiles.map(f => f.metadata?.binaryDataId));
-      const newFiles = binaryData.data.filter(f => !existingIds.has(f.metadata?.binaryDataId));
+    try {
+      const binaryData = await viamClient.dataClient.binaryDataByFilter(
+        {
+          robotId: machineId,
+          mimeType: ["video/mp4"],
+        } as VIAM.dataApi.Filter,
+        100, // limit
+        VIAM.dataApi.Order.DESCENDING,
+        undefined,
+        false,
+        false,
+        false
+      );
       
-      if (newFiles.length > 0) {
-        console.log(`Found ${newFiles.length} new files during polling`);
-        // Return new files first (most recent) followed by existing files
-        return [...newFiles, ...prevFiles];
-      }
+      console.log("Fetched video files:", binaryData.data.length);
       
-      return prevFiles;
-    });
-  }, [viamClient, machineId]);
+      setFiles((prevFiles) => {
+        // Filter out existing video files
+        const nonVideoFiles = prevFiles.filter(
+          (file) => !file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+        );
+        
+        // Combine non-video files with newly fetched video files
+        return [...nonVideoFiles, ...binaryData.data];
+      });
+    } catch (error) {
+      console.error("Failed to fetch videos:", error);
+    }
+  }, [viamClient]); // Remove machineId from dependencies since it's a constant
 
   const loadMoreFiles = useCallback(async (passToLoad?: Pass) => {
     // If no pass is specified, use global loading state
