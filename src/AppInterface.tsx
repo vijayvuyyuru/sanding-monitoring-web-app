@@ -17,6 +17,7 @@ interface AppViewProps {
   loadMoreFiles: (passToLoad?: Pass) => Promise<boolean | void>;
   hasMoreFiles: boolean;
   isLoadingFiles: boolean;
+  loadingPasses: Set<string>;
 }
 
 export interface Step {
@@ -45,6 +46,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   loadMoreFiles,
   hasMoreFiles,
   isLoadingFiles,
+  loadingPasses,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -490,7 +492,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               e.stopPropagation();
                                               loadMoreFiles(pass);
                                             }}
-                                            disabled={isLoadingFiles}
+                                            disabled={isLoadingFiles || loadingPasses.has(pass.pass_id)}
                                             style={{
                                               padding: '4px 12px',
                                               backgroundColor: isLoadingFiles ? '#9ca3af' : 'rgb(59, 130, 246)', 

@@ -19,6 +19,8 @@ function App() {
   const [lastFileToken, setLastFileToken] = useState<string | undefined>(undefined);
   const [hasMoreFiles, setHasMoreFiles] = useState(true);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  // Add a state to track which passes are currently loading
+  const [loadingPasses, setLoadingPasses] = useState<Set<string>>(new Set());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -73,10 +75,22 @@ function App() {
   }, [viamClient, machineId]);
 
   const loadMoreFiles = useCallback(async (passToLoad?: Pass) => {
-    if (!viamClient || !hasMoreFiles || isLoadingFiles) return false;
+    // If no pass is specified, use global loading state
+    // Otherwise check if this specific pass is already loading
+    if (!viamClient || !hasMoreFiles || 
+        (!passToLoad && isLoadingFiles) || 
+        (passToLoad && loadingPasses.has(passToLoad.pass_id))) {
+      return false;
+    }
 
-    setIsLoadingFiles(true);
-    console.log("Loading more files...");
+    // Set appropriate loading state
+    if (passToLoad) {
+      setLoadingPasses(prev => new Set([...prev, passToLoad.pass_id]));
+    } else {
+      setIsLoadingFiles(true);
+    }
+
+    console.log("Loading more files...", passToLoad?.pass_id || "global");
 
     let filter = {
       robotId: machineId,
@@ -165,9 +179,18 @@ function App() {
       console.error("Failed to load more files:", error);
       return false;
     } finally {
-      setIsLoadingFiles(false);
+      // Clear the appropriate loading state
+      if (passToLoad) {
+        setLoadingPasses(prev => {
+          const next = new Set(prev);
+          next.delete(passToLoad.pass_id);
+          return next;
+        });
+      } else {
+        setIsLoadingFiles(false);
+      }
     }
-  }, [viamClient, hasMoreFiles, isLoadingFiles, lastFileToken, machineId]);
+  }, [viamClient, hasMoreFiles, isLoadingFiles, lastFileToken, machineId, loadingPasses]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -258,6 +281,7 @@ function App() {
       loadMoreFiles={loadMoreFiles}
       hasMoreFiles={hasMoreFiles}
       isLoadingFiles={isLoadingFiles}
+      loadingPasses={loadingPasses}
     />
   );
 }
