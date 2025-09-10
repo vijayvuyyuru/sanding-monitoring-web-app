@@ -46,13 +46,12 @@ const AppInterface: React.FC<AppViewProps> = ({
   loadMoreFiles,
   hasMoreFiles,
   isLoadingFiles,
-  loadingPasses,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
-  const [isInitialFileLoad, setIsInitialFileLoad] = useState(false);
+  const [loadingRows, setLoadingRows] = useState<Set<number>>(new Set());
 
   // Filter files to only include video files (.mp4)
   const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
@@ -73,10 +72,14 @@ const AppInterface: React.FC<AppViewProps> = ({
 
       // If we are expanding a row, trigger a fetch for that pass's files.
       if (hasMoreFiles) {
-        // Set local loading state immediately for instant UI feedback
-        setIsInitialFileLoad(true);
+        // Set loading state for this specific row
+        setLoadingRows(prev => new Set(prev).add(index));
         await loadMoreFiles(pass);
-        setIsInitialFileLoad(false);
+        setLoadingRows(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(index);
+          return newSet;
+        });
       }
     } else {
       newExpandedRows.delete(index);
@@ -322,8 +325,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     return timeA - timeB;
                                   })
 
-                                  // Determine if we are in a loading state.
-                                  const isLoading = isLoadingFiles || isInitialFileLoad;
+                                  // Determine if we are in a loading state for this specific row.
+                                  const isLoading = isLoadingFiles || loadingRows.has(index);
 
                                   // Show a loading indicator inside the expanded row while fetching files for this pass.
                                   if (isLoading && passFiles.length === 0) {
