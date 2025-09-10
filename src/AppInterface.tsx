@@ -483,34 +483,6 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           {hasMoreFiles ? 'No relevant files found in the current batch.' : 'No files found for this pass.'}
                                         </p>
                                       )}
-
-                                      {/* Show the "Load More" button if there are more files to fetch and none were found for this pass */}
-                                      {hasMoreFiles && passFiles.length === 0 && !isLoading && (
-                                        <div style={{ marginBottom: '10px' }}>
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              loadMoreFiles(pass);
-                                            }}
-                                            disabled={isLoadingFiles || loadingPasses.has(pass.pass_id)}
-                                            style={{
-                                              padding: '4px 12px',
-                                              backgroundColor: isLoadingFiles ? '#9ca3af' : 'rgb(59, 130, 246)', 
-                                              color: 'white',
-                                              borderRadius: '4px',
-                                              textDecoration: 'none',
-                                              fontSize: '12px',
-                                              whiteSpace: 'nowrap',
-                                              transition: 'background-color 0.2s',
-                                              flexShrink: 0,
-                                              cursor: isLoadingFiles ? 'not-allowed' : 'pointer',
-                                              border: 'none'
-                                            }}
-                                          >
-                                            {isLoadingFiles ? 'Loading...' : 'Load More Files'}
-                                          </button>
-                                        </div>
-                                      )}
                                     </div>
                                   );
                                 })()}
