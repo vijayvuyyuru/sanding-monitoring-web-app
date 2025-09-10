@@ -40,37 +40,53 @@ function App() {
   const fetchVideos = useCallback(async () => {
     if (!viamClient) return;
     
-    console.log("Fetching videos");
+    console.log("Fetching videos only for polling");
+
+    let filter = {
+      robotId: machineId,
+    } as VIAM.dataApi.Filter;
+
+    // Fetch recent files without MIME type filter
+    const binaryData = await viamClient.dataClient.binaryDataByFilter(
+      filter,
+      100, // limit
+      VIAM.dataApi.Order.DESCENDING,
+      undefined, // no pagination token
+      false,
+      false,
+      false
+    );
     
-    try {
-      const binaryData = await viamClient.dataClient.binaryDataByFilter(
-        {
-          robotId: machineId,
-          mimeType: ["video/mp4"],
-        } as VIAM.dataApi.Filter,
-        100, // limit
-        VIAM.dataApi.Order.DESCENDING,
-        undefined,
-        false,
-        false,
-        false
+    // Update files, filtering for videos by extension
+    setFiles(prevFiles => {
+      // Get existing non-video files
+      const existingNonVideoFiles = prevFiles.filter(
+        f => !f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
       );
       
-      console.log("Fetched video files:", binaryData.data.length);
+      // Get new video files from the fetched data
+      const newVideoFiles = binaryData.data.filter(
+        f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+      );
       
-      setFiles((prevFiles) => {
-        // Filter out existing video files
-        const nonVideoFiles = prevFiles.filter(
-          (file) => !file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-        );
-        
-        // Combine non-video files with newly fetched video files
-        return [...nonVideoFiles, ...binaryData.data];
-      });
-    } catch (error) {
-      console.error("Failed to fetch videos:", error);
-    }
-  }, [viamClient]); // Remove machineId from dependencies since it's a constant
+      // Combine existing non-video files with new video files
+      const existingVideoIds = new Set(prevFiles
+        .filter(f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4'))
+        .map(f => f.metadata?.binaryDataId)
+      );
+      
+      const uniqueNewVideos = newVideoFiles.filter(
+        f => !existingVideoIds.has(f.metadata?.binaryDataId)
+      );
+      
+      if (uniqueNewVideos.length > 0) {
+        console.log(`Found ${uniqueNewVideos.length} new video files during polling`);
+      }
+      
+      // Return combined files
+      return [...existingNonVideoFiles, ...newVideoFiles];
+    });
+  }, [viamClient, machineId]);
 
   const loadMoreFiles = useCallback(async (passToLoad?: Pass) => {
     // If no pass is specified, use global loading state
