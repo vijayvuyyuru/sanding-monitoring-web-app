@@ -140,13 +140,19 @@ function App() {
         if (binaryData.data.length > 0) {
           newFiles.push(...binaryData.data);
           currentToken = binaryData.last;
+          loadedFiles = true;
 
-          // Since we're filtering on the backend, we don't need to check timestamps anymore
           if (passToLoad) {
-            // If we got any data for this pass, we're done
-            console.log(`Found ${binaryData.data.length} files for the pass`);
-            keepFetching = false;
+            // For pass-specific queries, continue if there's a pagination token
+            if (binaryData.last) {
+              console.log(`Found ${binaryData.data.length} files for pass, continuing to next page...`);
+              keepFetching = true;
+            } else {
+              console.log(`Found ${newFiles.length} total files for the pass`);
+              keepFetching = false;
+            }
           } else {
+            // For general queries, stop after one page
             keepFetching = false;
           }
         } else {
