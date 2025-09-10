@@ -484,7 +484,7 @@ const AppInterface: React.FC<AppViewProps> = ({
 
                                       {/* Show the "Load More" button if there are more files to fetch and none were found for this pass */}
                                       {hasMoreFiles && passFiles.length === 0 && !isLoading && (
-                                        <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                        <div style={{ marginBottom: '10px' }}>
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -492,13 +492,17 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             }}
                                             disabled={isLoadingFiles}
                                             style={{
-                                              padding: '8px 16px',
-                                              backgroundColor: isLoadingFiles ? '#9ca3af' : '#3b82f6',
+                                              padding: '4px 12px',
+                                              backgroundColor: isLoadingFiles ? '#9ca3af' : 'rgb(59, 130, 246)', 
                                               color: 'white',
-                                              borderRadius: '6px',
+                                              borderRadius: '4px',
+                                              textDecoration: 'none',
+                                              fontSize: '12px',
+                                              whiteSpace: 'nowrap',
+                                              transition: 'background-color 0.2s',
+                                              flexShrink: 0,
                                               cursor: isLoadingFiles ? 'not-allowed' : 'pointer',
-                                              border: 'none',
-                                              fontSize: '14px',
+                                              border: 'none'
                                             }}
                                           >
                                             {isLoadingFiles ? 'Loading...' : 'Load More Files'}
