@@ -18,6 +18,9 @@ interface AppViewProps {
   // sanderWarning?: string | null;
   fetchVideos: () => Promise<void>;
   machineName: string | null;
+  loadMoreFiles: (passToLoad?: Pass) => Promise<boolean | void>;
+  hasMoreFiles: boolean;
+  isLoadingFiles: boolean;
 }
 export interface Step {
   name: string;
@@ -49,11 +52,15 @@ const AppInterface: React.FC<AppViewProps> = ({
   // sanderWarning
 
   fetchVideos,
+  loadMoreFiles,
+  hasMoreFiles,
+  isLoadingFiles,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [isInitialFileLoad, setIsInitialFileLoad] = useState(false);
 
   // Filter files to only include video files (.mp4)
   const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
@@ -75,14 +82,26 @@ const AppInterface: React.FC<AppViewProps> = ({
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
-  const toggleRowExpansion = (index: number) => {
+  const toggleRowExpansion = async (index: number) => {
     const newExpandedRows = new Set(expandedRows);
-    if (newExpandedRows.has(index)) {
-      newExpandedRows.delete(index);
-    } else {
+    const isExpanding = !newExpandedRows.has(index);
+    const pass = passSummaries[index];
+
+    if (isExpanding) {
       newExpandedRows.add(index);
+      setExpandedRows(newExpandedRows); // Expand row immediately
+
+      // If we are expanding a row, trigger a fetch for that pass's files.
+      if (hasMoreFiles) {
+        // Set local loading state immediately for instant UI feedback
+        setIsInitialFileLoad(true);
+        await loadMoreFiles(pass);
+        setIsInitialFileLoad(false);
+      }
+    } else {
+      newExpandedRows.delete(index);
+      setExpandedRows(newExpandedRows);
     }
-    setExpandedRows(newExpandedRows);
   };
 
   const getStepVideos = (step: Step) => {
@@ -331,140 +350,191 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       return timeA - timeB;
                                     })
 
-                                    // Only render the section if there are files
-                                    if (passFiles.length === 0) {
-                                      return <div className="pass-files-section">
-                                        <h4>
-                                          Files captured during this pass
-                                        </h4>
-                                        <p>
-                                          No files found
-                                        </p>
+                                    // Determine if we are in a loading state.
+                                    const isLoading = isLoadingFiles || isInitialFileLoad;
+
+                                    // Show a loading indicator inside the expanded row while fetching files for this pass.
+                                    if (isLoading && passFiles.length === 0) {
+                                      return (
+                                        <div className="pass-files-section" style={{
+                                          display: 'flex',
+                                          flexDirection: 'column',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          padding: '20px',
+                                          minHeight: '100px',
+                                        }}>
+                                          <span style={{ 
+                                            display: 'inline-block',
+                                            width: '28px',
+                                            height: '28px',
+                                            border: '3px solid rgba(59, 130, 246, 0.2)',
+                                            borderTopColor: '#3b82f6',
+                                            borderRadius: '50%',
+                                            animation: 'spin 1s linear infinite'
+                                          }}></span>
+                                          <p style={{ marginTop: '12px', color: '#6b7280', fontSize: '14px' }}>
+                                            Loading files...
+                                          </p>
                                         </div>
+                                      );
                                     }
-                                    
+
                                     return (
                                       <div className="pass-files-section">
                                         <h4>
                                           Files captured during this pass
                                         </h4>
                                         
-                                        <div style={{ 
-                                          display: 'flex',
-                                          flexWrap: 'wrap',
-                                          gap: '8px',
-                                          maxHeight: '400px',
-                                          overflowY: 'auto',
-                                          padding: '4px'
-                                        }}>
-                                          {passFiles.map((file, fileIndex) => {
-                                            const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
-                                            
-                                            return (
-                                              <div 
-                                                key={fileIndex}
-                                                style={{
-                                                  display: 'flex',
-                                                  alignItems: 'center',
-                                                  justifyContent: 'space-between',
-                                                  padding: '8px 12px',
-                                                  backgroundColor: '#f9fafb',
-                                                  border: '1px solid #e5e7eb',
-                                                  borderRadius: '6px',
-                                                  fontSize: '13px',
-                                                  cursor: 'pointer',
-                                                  transition: 'all 0.2s ease',
-                                                  flex: '1 0 calc(50% - 8px)',
-                                                  minWidth: '280px',
-                                                  maxWidth: '100%',
-                                                  boxSizing: 'border-box'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                  e.currentTarget.style.backgroundColor = '#e5e7eb';
-                                                  e.currentTarget.style.transform = 'translateY(-1px)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                                                  e.currentTarget.style.transform = 'translateY(0)';
-                                                }}
-                                              >
-                                                <div style={{ 
-                                                  display: 'flex', 
-                                                  alignItems: 'center', 
-                                                  gap: '8px',
-                                                  flex: 1, 
-                                                  minWidth: 0,
-                                                  overflow: 'hidden'
-                                                }}>
-                                                  <span style={{ 
-                                                    color: '#374151',
-                                                    textOverflow: 'ellipsis',
-                                                    overflow: 'hidden',
-                                                    whiteSpace: 'nowrap',
-                                                    flex: 1
-                                                  }} title={fileName}>
-                                                    {fileName}
-                                                  </span>
-                                                  <span style={{ 
-                                                    color: '#9ca3af', 
-                                                    fontSize: '12px',
-                                                    whiteSpace: 'nowrap',
-                                                    flexShrink: 0
-                                                  }}>
-                                                    {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
-                                                  </span>
-                                                </div>
-                                                <button 
+                                        {passFiles.length > 0 && (
+                                          <div style={{ 
+                                            display: 'flex',
+                                            flexWrap: 'wrap',
+                                            gap: '8px',
+                                            maxHeight: '200px',
+                                            overflowY: 'auto',
+                                            padding: '4px'
+                                          }}>
+                                            {passFiles.map((file, fileIndex) => {
+                                              const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
+                                              
+                                              return (
+                                                <div 
+                                                  key={fileIndex}
                                                   style={{
-                                                    marginLeft: '12px',
-                                                    padding: '4px 12px',
-                                                    backgroundColor: downloadingFiles.has(file.metadata?.binaryDataId || '') ? '#9ca3af' : '#3b82f6',
-                                                    color: 'white',
-                                                    borderRadius: '4px',
-                                                    textDecoration: 'none',
-                                                    fontSize: '12px',
-                                                    whiteSpace: 'nowrap',
-                                                    transition: 'background-color 0.2s',
-                                                    flexShrink: 0,
-                                                    cursor: downloadingFiles.has(file.metadata?.binaryDataId || '') ? 'not-allowed' : 'pointer'
-                                                  }}
-                                                  onClick={async (e) => {
-                                                    if (downloadingFiles.has(file.metadata?.binaryDataId || '')) return;
-                                                    await handleDownload(file);
-                                                    e.stopPropagation();
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '8px 12px',
+                                                    backgroundColor: '#f9fafb',
+                                                    border: '1px solid #e5e7eb',
+                                                    borderRadius: '6px',
+                                                    fontSize: '13px',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    flex: '1 0 calc(50% - 8px)',
+                                                    minWidth: '280px',
+                                                    maxWidth: '100%',
+                                                    boxSizing: 'border-box'
                                                   }}
                                                   onMouseEnter={(e) => {
-                                                    if (!downloadingFiles.has(file.metadata?.binaryDataId || '')) {
-                                                      e.currentTarget.style.backgroundColor = '#2563eb';
-                                                    }
+                                                    e.currentTarget.style.backgroundColor = '#e5e7eb';
+                                                    e.currentTarget.style.transform = 'translateY(-1px)';
                                                   }}
                                                   onMouseLeave={(e) => {
-                                                    if (!downloadingFiles.has(file.metadata?.binaryDataId || '')) {
-                                                      e.currentTarget.style.backgroundColor = '#3b82f6';
-                                                    }
+                                                    e.currentTarget.style.backgroundColor = '#f9fafb';
+                                                    e.currentTarget.style.transform = 'translateY(0)';
                                                   }}
                                                 >
-                                                  {downloadingFiles.has(file.metadata?.binaryDataId || '') ? (
-                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                      <span style={{ 
-                                                        display: 'inline-block',
-                                                        width: '12px',
-                                                        height: '12px',
-                                                        border: '2px solid transparent',
-                                                        borderTop: '2px solid white',
-                                                        borderRadius: '50%',
-                                                        animation: 'spin 1s linear infinite'
-                                                      }}></span>
-                                                      Processing...
+                                                  <div style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    gap: '8px',
+                                                    flex: 1, 
+                                                    minWidth: 0,
+                                                    overflow: 'hidden'
+                                                  }}>
+                                                    <span style={{ 
+                                                      color: '#374151',
+                                                      textOverflow: 'ellipsis',
+                                                      overflow: 'hidden',
+                                                      whiteSpace: 'nowrap',
+                                                      flex: 1
+                                                    }} title={fileName}>
+                                                      {fileName}
                                                     </span>
-                                                  ) : (
-                                                    'Download'
-                                                  )}
-                                                </button>
-                                              </div>
-                                            );
-                                          })}
-                                        </div>
+                                                    <span style={{ 
+                                                      color: '#9ca3af', 
+                                                      fontSize: '12px',
+                                                      whiteSpace: 'nowrap',
+                                                      flexShrink: 0
+                                                    }}>
+                                                      {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
+                                                    </span>
+                                                  </div>
+                                                  <button 
+                                                    style={{
+                                                      marginLeft: '12px',
+                                                      padding: '4px 12px',
+                                                      backgroundColor: downloadingFiles.has(file.metadata?.binaryDataId || '') ? '#9ca3af' : '#3b82f6',
+                                                      color: 'white',
+                                                      borderRadius: '4px',
+                                                      textDecoration: 'none',
+                                                      fontSize: '12px',
+                                                      whiteSpace: 'nowrap',
+                                                      transition: 'background-color 0.2s',
+                                                      flexShrink: 0,
+                                                      cursor: downloadingFiles.has(file.metadata?.binaryDataId || '') ? 'not-allowed' : 'pointer'
+                                                    }}
+                                                    onClick={async (e) => {
+                                                      if (downloadingFiles.has(file.metadata?.binaryDataId || '')) return;
+                                                      await handleDownload(file);
+                                                      e.stopPropagation();
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                      if (!downloadingFiles.has(file.metadata?.binaryDataId || '')) {
+                                                        e.currentTarget.style.backgroundColor = '#2563eb';
+                                                      }
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                      if (!downloadingFiles.has(file.metadata?.binaryDataId || '')) {
+                                                        e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                      }
+                                                    }}
+                                                  >
+                                                    {downloadingFiles.has(file.metadata?.binaryDataId || '') ? (
+                                                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <span style={{ 
+                                                          display: 'inline-block',
+                                                          width: '12px',
+                                                          height: '12px',
+                                                          border: '2px solid transparent',
+                                                          borderTop: '2px solid white',
+                                                          borderRadius: '50%',
+                                                          animation: 'spin 1s linear infinite'
+                                                        }}></span>
+                                                        Processing...
+                                                      </span>
+                                                    ) : (
+                                                      'Download'
+                                                    )}
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                        
+                                        {/* Show message if no files are found in the current view */}
+                                        {passFiles.length === 0 && !isLoading && (
+                                          <p>
+                                            {hasMoreFiles ? 'No relevant files found in the current batch.' : 'No files found for this pass.'}
+                                          </p>
+                                        )}
+
+                                        {/* Show the "Load More" button if there are more files to fetch and none were found for this pass */}
+                                        {hasMoreFiles && passFiles.length === 0 && !isLoading && (
+                                          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                loadMoreFiles(pass);
+                                              }}
+                                              disabled={isLoadingFiles}
+                                              style={{
+                                                padding: '8px 16px',
+                                                backgroundColor: isLoadingFiles ? '#9ca3af' : '#3b82f6',
+                                                color: 'white',
+                                                borderRadius: '6px',
+                                                cursor: isLoadingFiles ? 'not-allowed' : 'pointer',
+                                                border: 'none',
+                                                fontSize: '14px',
+                                              }}
+                                            >
+                                              {isLoadingFiles ? 'Loading...' : 'Load More Files'}
+                                            </button>
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })()}

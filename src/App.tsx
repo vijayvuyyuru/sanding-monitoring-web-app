@@ -35,6 +35,9 @@ function App() {
   // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
+  const [lastFileToken, setLastFileToken] = useState<string | undefined>(undefined);
+  const [hasMoreFiles, setHasMoreFiles] = useState(true);
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -87,6 +90,83 @@ function App() {
       return prevFiles;
     });
   }, [viamClient]);
+
+
+  const loadMoreFiles = useCallback(async (passToLoad?: Pass) => {
+    if (!viamClient || !hasMoreFiles || isLoadingFiles) return false;
+
+    setIsLoadingFiles(true);
+    console.log("Loading more files...");
+
+    let filter = {
+      robotId: machineId,
+    } as VIAM.dataApi.Filter;
+
+    try {
+      let keepFetching = true;
+      let loadedFiles = false;
+      let currentToken = lastFileToken; // Use a local variable for the token within the loop
+      const newFiles: VIAM.dataApi.BinaryData[] = []; // Accumulate new files locally
+
+      while (keepFetching) {
+        console.log(`Fetching page with token: ${currentToken}`);
+        const binaryData = await viamClient.dataClient.binaryDataByFilter(
+          filter,
+          50, // limit
+          VIAM.dataApi.Order.DESCENDING,
+          currentToken, // Use the local token variable
+          false,
+          false,
+          false
+        );
+
+        if (binaryData.data.length > 0) {
+          newFiles.push(...binaryData.data); // Add to local array
+          currentToken = binaryData.last; // Update the local token for the next iteration
+
+          if (passToLoad) {
+            const passStart = new Date(passToLoad.start);
+            const passEnd = new Date(passToLoad.end);
+            const found = binaryData.data.some(file => {
+              if (!file.metadata?.timeRequested) return false;
+              const fileTime = file.metadata.timeRequested.toDate();
+              return fileTime >= passStart && fileTime <= passEnd;
+            });
+
+            if (found) {
+              console.log("Found relevant files for the pass, stopping fetch.");
+              keepFetching = false;
+            }
+          } else {
+            keepFetching = false;
+          }
+        } else {
+          console.log("No more data from API.");
+          keepFetching = false;
+        }
+
+        if (!binaryData.last) {
+          console.log("No more pages to fetch.");
+          setHasMoreFiles(false);
+          keepFetching = false;
+        }
+      }
+
+      // Update the global state once, after the loop is complete
+      if (newFiles.length > 0) {
+        setFiles(prevFiles => [...prevFiles, ...newFiles]);
+        setLastFileToken(currentToken);
+      }
+
+      loadedFiles = true;
+      return loadedFiles;
+    } catch (error) {
+      console.error("Failed to load more files:", error);
+      return false;
+    } finally {
+      setIsLoadingFiles(false);
+    }
+  }, [viamClient, hasMoreFiles, isLoadingFiles, lastFileToken, machineId]);
 
 
   useEffect(() => {
@@ -185,35 +265,31 @@ function App() {
 
       setPassSummaries(processedPasses);
 
-      let allFiles = [];
-      let last = undefined;
-      const earliestPassTime = new Date(Math.min(...processedPasses.map(p => p.start.getTime())));
-
-      var i = 0
-      while (true) {
-        console.log("Fetching files files", i);
+      /*
+      setIsLoadingFiles(true);
+      try {
         const binaryData = await viamClient.dataClient.binaryDataByFilter(
           filter,
           50, // limit
           VIAM.dataApi.Order.DESCENDING,
-          last, // pagination token
+          undefined, // pagination token
           false,
           false,
           false
         );
         
-        allFiles.push(...binaryData.data);
-        
-        // Check if we've reached the earliest pass time or no more data
-        const oldestFileTime = binaryData.data[binaryData.data.length - 1]?.metadata?.timeRequested?.toDate();
-        if (!binaryData.last || !oldestFileTime || oldestFileTime < earliestPassTime) {
-          break;
+        setFiles(binaryData.data);
+        setLastFileToken(binaryData.last);
+        if (!binaryData.last) {
+          setHasMoreFiles(false);
         }
-        last = binaryData.last;
+      } catch (error) {
+        console.error("Failed to fetch initial files:", error);
+      } finally {
+        setIsLoadingFiles(false);
       }
+      */
       
-      setFiles(allFiles);
-      // console.log("Fetched video files:", binaryData.data);
       console.log("Fetching data end");
     };
     
@@ -233,6 +309,9 @@ function App() {
       // sanderClient={null}
       // sanderWarning={sanderWarning} // Pass the sanding warning
       fetchVideos={fetchVideos}
+      loadMoreFiles={loadMoreFiles}
+      hasMoreFiles={hasMoreFiles}
+      isLoadingFiles={isLoadingFiles}
     />
   );
 }
