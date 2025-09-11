@@ -19,7 +19,6 @@ function App() {
   const [lastFileToken, setLastFileToken] = useState<string | undefined>(undefined);
   const [hasMoreFiles, setHasMoreFiles] = useState(true);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
-  // Add a state to track which passes are currently loading
   const [loadingPasses, setLoadingPasses] = useState<Set<string>>(new Set());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
@@ -46,7 +45,6 @@ function App() {
       robotId: machineId,
     } as VIAM.dataApi.Filter;
 
-    // Fetch recent files without MIME type filter
     const binaryData = await viamClient.dataClient.binaryDataByFilter(
       filter,
       100, // limit
