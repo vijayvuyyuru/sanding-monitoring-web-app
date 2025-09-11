@@ -14,10 +14,12 @@ const machineNameRegex = /\/machine\/(.+?)-main\./;
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
   const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  const [videoFiles, setVideoFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [lastFileToken, setLastFileToken] = useState<string | undefined>(undefined);
   const [hasMoreFiles, setHasMoreFiles] = useState(true);
+  const [isFetchingVideos, setIsFetchingVideos] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [loadingPasses, setLoadingPasses] = useState<Set<string>>(new Set());
 
@@ -36,55 +38,55 @@ function App() {
   } = JSON.parse(Cookies.get(machineInfo)!);
 
   // Only fetch videos for polling
-  const fetchVideos = useCallback(async () => {
-    if (!viamClient) return;
+  // const fetchVideos = async () => {
+  //   if (!viamClient) return;
     
-    console.log("Fetching videos only for polling");
+  //   console.log("Fetching videos only for polling");
 
-    let filter = {
-      robotId: machineId,
-    } as VIAM.dataApi.Filter;
+  //   let filter = {
+  //     robotId: machineId,
+  //   } as VIAM.dataApi.Filter;
 
-    const binaryData = await viamClient.dataClient.binaryDataByFilter(
-      filter,
-      200, // limit
-      VIAM.dataApi.Order.DESCENDING,
-      undefined, // no pagination token
-      false,
-      false,
-      false
-    );
+  //   const binaryData = await viamClient.dataClient.binaryDataByFilter(
+  //     filter,
+  //     2000, // limit
+  //     VIAM.dataApi.Order.DESCENDING,
+  //     undefined, // no pagination token
+  //     false,
+  //     false,
+  //     false
+  //   );
     
-    // Update files, filtering for videos by extension
-    setFiles(prevFiles => {
-      // Get existing non-video files
-      const existingNonVideoFiles = prevFiles.filter(
-        f => !f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-      );
+  //   // Update files, filtering for videos by extension
+  //   setFiles(prevFiles => {
+  //     // Get existing non-video files
+  //     const existingNonVideoFiles = prevFiles.filter(
+  //       f => !f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+  //     );
       
-      // Get new video files from the fetched data
-      const newVideoFiles = binaryData.data.filter(
-        f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-      );
+  //     // Get new video files from the fetched data
+  //     const newVideoFiles = binaryData.data.filter(
+  //       f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+  //     );
       
-      // Combine existing non-video files with new video files
-      const existingVideoIds = new Set(prevFiles
-        .filter(f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4'))
-        .map(f => f.metadata?.binaryDataId)
-      );
+  //     // Combine existing non-video files with new video files
+  //     const existingVideoIds = new Set(prevFiles
+  //       .filter(f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4'))
+  //       .map(f => f.metadata?.binaryDataId)
+  //     );
       
-      const uniqueNewVideos = newVideoFiles.filter(
-        f => !existingVideoIds.has(f.metadata?.binaryDataId)
-      );
+  //     const uniqueNewVideos = newVideoFiles.filter(
+  //       f => !existingVideoIds.has(f.metadata?.binaryDataId)
+  //     );
       
-      if (uniqueNewVideos.length > 0) {
-        console.log(`Found ${uniqueNewVideos.length} new video files during polling`);
-      }
+  //     if (uniqueNewVideos.length > 0) {
+  //       console.log(`Found ${uniqueNewVideos.length} new video files during polling`);
+  //     }
       
-      // Return combined files
-      return [...existingNonVideoFiles, ...newVideoFiles];
-    });
-  }, [viamClient, machineId]);
+  //     // Return combined files
+  //     return [...existingNonVideoFiles, ...newVideoFiles];
+  //   });
+  // };
 
   const loadMoreFiles = useCallback(async (passToLoad?: Pass) => {
     // If no pass is specified, use global loading state
@@ -210,6 +212,83 @@ function App() {
     }
   }, [viamClient, hasMoreFiles, isLoadingFiles, lastFileToken, machineId, loadingPasses]);
 
+  const fetchVideos = async (start: Date, shouldSetLoadingState: boolean = true) => {
+    if (!viamClient) return;
+
+    const end = new Date();
+    
+    console.log("Fetching videos for time range:", start, end);
+    if (shouldSetLoadingState) {
+      setIsFetchingVideos(true);
+    }
+
+    let filter = {
+      robotId: machineId,
+      interval: {
+        start: Timestamp.fromDate(start),
+        end: Timestamp.fromDate(end),
+      } as VIAM.dataApi.CaptureInterval,
+      mimeType: ["application/octet-stream"],
+    } as VIAM.dataApi.Filter;
+
+    let binaryData = await viamClient.dataClient.binaryDataByFilter(
+      filter,
+      100, // limit
+      VIAM.dataApi.Order.DESCENDING,
+      undefined, // no pagination token
+      false,
+      false,
+      false
+    );
+    // Filter for .mp4 files and add to Set
+    console.log("Raw binary data count:", binaryData.data.length);
+    // console.log("All filenames from first batch:", binaryData.data.map(file => file.metadata?.fileName));
+    
+    setVideoFiles(prevVideoFiles => {
+      const newVideoFiles = new Map(prevVideoFiles);
+      binaryData.data
+        .filter(file => file.metadata?.fileName?.toLowerCase().includes('.mp4'))
+        .forEach(file => {
+          if (file.metadata?.binaryDataId) {
+            newVideoFiles.set(file.metadata.binaryDataId, file);
+          }
+        });
+      console.log("Filtered video files count:", newVideoFiles.size);
+      return newVideoFiles;
+    });
+
+
+    while (binaryData.last) {
+      binaryData = await viamClient.dataClient.binaryDataByFilter(
+        filter,
+        100, // limit
+        VIAM.dataApi.Order.DESCENDING,
+        binaryData.last,
+        false,
+        false,
+        false
+      );
+      
+      // Filter new data for .mp4 files and add to Set
+      console.log(`Additional batch count: ${binaryData.data.length}`);
+      
+      setVideoFiles(prevVideoFiles => {
+        const newVideoFiles = new Map(prevVideoFiles);
+        binaryData.data
+          .filter(file => file.metadata?.fileName?.toLowerCase().includes('.mp4'))
+          .forEach(file => {
+            if (file.metadata?.binaryDataId) {
+              newVideoFiles.set(file.metadata.binaryDataId, file);
+            }
+          });
+        console.log(`Total video files after this batch: ${newVideoFiles.size}`);
+        return newVideoFiles;
+      });
+    }
+    
+    setIsFetchingVideos(false);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       console.log("Fetching data start");
@@ -280,13 +359,20 @@ function App() {
           err_string: pass.err_string || null
         };
       });
-
       setPassSummaries(processedPasses);
       console.log("Fetching data end");
     };
     
-    fetchData();
-  }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
+      fetchData();
+    }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
+
+  // Fetch videos when passSummaries and viamClient are available
+  useEffect(() => {
+    if (passSummaries.length > 0 && viamClient) {
+      const earliestVideoTime = passSummaries[passSummaries.length - 1].end;
+      fetchVideos(earliestVideoTime);
+    }
+  }, [passSummaries, viamClient]);
 
   return (
     <AppInterface 
@@ -294,11 +380,13 @@ function App() {
       viamClient={viamClient!}
       passSummaries={passSummaries}
       files={files}
+      videoFiles={videoFiles}
       robotClient={robotClient}
       fetchVideos={fetchVideos}
       loadMoreFiles={loadMoreFiles}
       hasMoreFiles={hasMoreFiles}
       isLoadingFiles={isLoadingFiles}
+      isFetchingVideos={isFetchingVideos}
       loadingPasses={loadingPasses}
     />
   );

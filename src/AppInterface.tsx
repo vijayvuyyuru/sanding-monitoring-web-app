@@ -10,13 +10,15 @@ import {
 interface AppViewProps {
   passSummaries?: any[];
   files: VIAM.dataApi.BinaryData[];
+  videoFiles: Map<string, VIAM.dataApi.BinaryData>;
   viamClient: VIAM.ViamClient;
   robotClient?: VIAM.RobotClient | null;
-  fetchVideos: () => Promise<void>;
+  fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
   loadMoreFiles: (passToLoad?: Pass) => Promise<boolean | void>;
   hasMoreFiles: boolean;
   isLoadingFiles: boolean;
+  isFetchingVideos: boolean;
   loadingPasses: Set<string>;
 }
 
@@ -41,11 +43,13 @@ const AppInterface: React.FC<AppViewProps> = ({
   viamClient,
   passSummaries = [],
   files, 
+  videoFiles,
   robotClient,
   fetchVideos,
   loadMoreFiles,
   hasMoreFiles,
   isLoadingFiles,
+  isFetchingVideos,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -54,11 +58,11 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [loadingRows, setLoadingRows] = useState<Set<number>>(new Set());
 
   // Filter files to only include video files (.mp4) - recalculated whenever files changes
-  const videoFiles = useMemo(() => {
-    return files.filter((file: VIAM.dataApi.BinaryData) => 
-      file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-    );
-  }, [files]);
+  // const videoFiles = useMemo(() => {
+  //   return files.filter((file: VIAM.dataApi.BinaryData) => 
+  //     file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+  //   );
+  // }, [files]);
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -78,7 +82,6 @@ const AppInterface: React.FC<AppViewProps> = ({
         setLoadingRows(prev => new Set(prev).add(index));
         await loadMoreFiles(pass);
         // Also fetch videos when expanding a row
-        await fetchVideos();
         setLoadingRows(prev => {
           const newSet = new Set(prev);
           newSet.delete(index);
@@ -92,31 +95,22 @@ const AppInterface: React.FC<AppViewProps> = ({
   };
 
   const getStepVideos = useCallback((step: Step) => {
-    if (!videoFiles) return [];
-
-    // Create a map to track unique videos by their binary ID
-    const uniqueVideos = new Map<string, VIAM.dataApi.BinaryData>();
+    if (!videoFiles || videoFiles.size === 0) return [];
     
-    videoFiles.forEach(file => {
+    let stepVideos: VIAM.dataApi.BinaryData[] = [];
+    
+    videoFiles.forEach((file) => {
       if (!file.metadata || !file.metadata.fileName) return;
-      
+
       const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && 
                            file.metadata.fileName.includes(step.name);
       
-      if (isMatchingStep && file.metadata.binaryDataId) {
-        // Only add if we haven't seen this ID before
-        if (!uniqueVideos.has(file.metadata.binaryDataId)) {
-          uniqueVideos.set(file.metadata.binaryDataId, file);
-        }
+      if (isMatchingStep) {
+        stepVideos.push(file);
       }
     });
-    
-    // Return array of unique videos sorted by time
-    return Array.from(uniqueVideos.values()).sort((a, b) => {
-      const timeA = a.metadata?.timeRequested?.toDate().getTime() || 0;
-      const timeB = b.metadata?.timeRequested?.toDate().getTime() || 0;
-      return timeA - timeB;
-    });
+
+    return stepVideos;
   }, [videoFiles]);
 
   const getStatusBadge = (success: boolean) => {
@@ -312,6 +306,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           <StepVideosGrid
                                             step={step}
                                             stepVideos={stepVideos}
+                                            videoFiles={videoFiles}
+                                            isFetchingVideos={isFetchingVideos}
                                             videoStoreClient={videoStoreClient}
                                             viamClient={viamClient}
                                             fetchVideos={fetchVideos}
