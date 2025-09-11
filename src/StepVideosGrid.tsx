@@ -68,11 +68,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     };
   }, []);
 
-  // useEffect(() => {
-  //   console.log("stepVideos", stepVideos);
-  // }, [stepVideos]);
-
-
   const handleVideoClick = (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
   };
