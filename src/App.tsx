@@ -47,7 +47,7 @@ function App() {
 
     const binaryData = await viamClient.dataClient.binaryDataByFilter(
       filter,
-      100, // limit
+      200, // limit
       VIAM.dataApi.Order.DESCENDING,
       undefined, // no pagination token
       false,

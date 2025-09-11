@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
@@ -53,10 +53,12 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [loadingRows, setLoadingRows] = useState<Set<number>>(new Set());
 
-  // Filter files to only include video files (.mp4)
-  const videoFiles = files.filter((file: VIAM.dataApi.BinaryData) => 
-    file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-  );
+  // Filter files to only include video files (.mp4) - recalculated whenever files changes
+  const videoFiles = useMemo(() => {
+    return files.filter((file: VIAM.dataApi.BinaryData) => 
+      file.metadata?.fileName?.toLowerCase().endsWith('.mp4')
+    );
+  }, [files]);
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -75,6 +77,8 @@ const AppInterface: React.FC<AppViewProps> = ({
         // Set loading state for this specific row
         setLoadingRows(prev => new Set(prev).add(index));
         await loadMoreFiles(pass);
+        // Also fetch videos when expanding a row
+        await fetchVideos();
         setLoadingRows(prev => {
           const newSet = new Set(prev);
           newSet.delete(index);
@@ -87,7 +91,7 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  const getStepVideos = (step: Step) => {
+  const getStepVideos = useCallback((step: Step) => {
     if (!videoFiles) return [];
 
     return videoFiles.filter(file => {
@@ -95,7 +99,7 @@ const AppInterface: React.FC<AppViewProps> = ({
       const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && file.metadata.fileName.includes(step.name)
       return isMatchingStep
     });
-  };
+  }, [videoFiles]);
 
   const getStatusBadge = (success: boolean) => {
     if (success) {
