@@ -9,17 +9,14 @@ import {
 
 interface AppViewProps {
   passSummaries?: any[];
-  files: VIAM.dataApi.BinaryData[];
+  files: Map<string, VIAM.dataApi.BinaryData>;
   videoFiles: Map<string, VIAM.dataApi.BinaryData>;
   viamClient: VIAM.ViamClient;
   robotClient?: VIAM.RobotClient | null;
   fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
-  loadMoreFiles: (passToLoad?: Pass) => Promise<boolean | void>;
-  hasMoreFiles: boolean;
-  isLoadingFiles: boolean;
-  isFetchingVideos: boolean;
   loadingPasses: Set<string>;
+  fetchTimestamp: Date | null;
 }
 
 export interface Step {
@@ -46,44 +43,26 @@ const AppInterface: React.FC<AppViewProps> = ({
   videoFiles,
   robotClient,
   fetchVideos,
-  loadMoreFiles,
-  hasMoreFiles,
-  isLoadingFiles,
-  isFetchingVideos,
+  fetchTimestamp,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
-  const [loadingRows, setLoadingRows] = useState<Set<number>>(new Set());
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
-  const toggleRowExpansion = async (index: number) => {
+  const toggleRowExpansion = (index: number) => {
     const newExpandedRows = new Set(expandedRows);
     const isExpanding = !newExpandedRows.has(index);
-    const pass = passSummaries[index];
 
     if (isExpanding) {
       newExpandedRows.add(index);
-      setExpandedRows(newExpandedRows); // Expand row immediately
-
-      // If we are expanding a row, trigger a fetch for that pass's files.
-      if (hasMoreFiles) {
-        // Set loading state for this specific row
-        setLoadingRows(prev => new Set(prev).add(index));
-        await loadMoreFiles(pass);
-        setLoadingRows(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(index);
-          return newSet;
-        });
-      }
     } else {
       newExpandedRows.delete(index);
-      setExpandedRows(newExpandedRows);
     }
+    setExpandedRows(newExpandedRows);
   };
 
   const getStepVideos = (step: Step) => {
@@ -299,7 +278,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             step={step}
                                             stepVideos={stepVideos}
                                             videoFiles={videoFiles}
-                                            isFetchingVideos={isFetchingVideos}
+                                            fetchTimestamp={fetchTimestamp}
                                             videoStoreClient={videoStoreClient}
                                             viamClient={viamClient}
                                             fetchVideos={fetchVideos}
@@ -315,28 +294,37 @@ const AppInterface: React.FC<AppViewProps> = ({
                                   const passEnd = new Date(pass.end);
                                   
                                   // Always include files that fall within the pass time range (this includes .pcd files)
-                                  const passTimeRangeFileIDS = files.filter((file: VIAM.dataApi.BinaryData) => {
-                                    if (!file.metadata?.timeRequested) return false;
-                                    const fileTime = file.metadata.timeRequested.toDate();
-                                    return fileTime >= passStart && fileTime <= passEnd;
-                                  }).map((x)=> x.metadata!.binaryDataId);
+                                  const passTimeRangeFileIDS: string[] = [];
+                                  files.forEach((file, binaryDataId) => {
+                                    if (file.metadata?.timeRequested) {
+                                      const fileTime = file.metadata.timeRequested.toDate();
+                                      if (fileTime >= passStart && fileTime <= passEnd) {
+                                        passTimeRangeFileIDS.push(binaryDataId);
+                                      }
+                                    }
+                                  });
                                   
 
                                   // Additionally include pass-specific files if pass_id is not blank
-                                  const passFileIDs: string[] = pass.pass_id && pass.pass_id.trim() !== '' 
-                                    ? files.filter((x)=> x.metadata!.fileName?.split("/").filter((y) => y == pass.pass_id).length > 0).map((x)=> x.metadata!.binaryDataId)
-                                    : [];
+                                  const passFileIDs: string[] = [];
+                                  if (pass.pass_id && pass.pass_id.trim() !== '') {
+                                    files.forEach((file, binaryDataId) => {
+                                      if (file.metadata?.fileName && file.metadata.fileName.split("/").filter((y) => y == pass.pass_id).length > 0) {
+                                        passFileIDs.push(binaryDataId);
+                                      }
+                                    });
+                                  }
                                   
 
                                   const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
-                                  const passFiles  = files.filter((x)=> ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
+                                  const passFiles = Array.from(files.values()).filter((x) => ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
                                     const timeA = a.metadata!.timeRequested!.toDate().getTime();
                                     const timeB = b.metadata!.timeRequested!.toDate().getTime();
                                     return timeA - timeB;
                                   })
 
                                   // Determine if we are in a loading state for this specific row.
-                                  const isLoading = isLoadingFiles || loadingRows.has(index);
+                                  const isLoading = fetchTimestamp && fetchTimestamp > pass.start;
 
                                   // Show a loading indicator inside the expanded row while fetching files for this pass.
                                   if (isLoading && passFiles.length === 0) {
@@ -493,7 +481,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       {/* Show message if no files are found in the current view */}
                                       {passFiles.length === 0 && !isLoading && (
                                         <p>
-                                          {hasMoreFiles ? 'No relevant files found in the current batch.' : 'No files found for this pass.'}
+                                          No files found for this pass.
                                         </p>
                                       )}
                                     </div>

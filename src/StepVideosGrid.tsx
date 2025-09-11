@@ -14,7 +14,7 @@ interface StepVideosGridProps {
   viamClient: VIAM.ViamClient;
   step: Step;
   fetchVideos: (start: Date, shouldSetLoadingState: boolean) => Promise<void>;
-  isFetchingVideos: boolean;
+  fetchTimestamp: Date | null;
 }
 
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({
@@ -24,7 +24,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   viamClient,
   step,
   fetchVideos,
-  isFetchingVideos,
+  fetchTimestamp,
 }) => {
   const [selectedVideo, setSelectedVideo] =
     useState<VIAM.dataApi.BinaryData | null>(null);
@@ -105,7 +105,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
     }
   };
 
-  if (stepVideos.length === 0 && isFetchingVideos) {
+  if (stepVideos.length === 0 && fetchTimestamp && fetchTimestamp > step.start) {
     return (
       <div className="loading-state" style={{
         display: 'flex',
