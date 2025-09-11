@@ -37,57 +37,6 @@ function App() {
     hostname,
   } = JSON.parse(Cookies.get(machineInfo)!);
 
-  // Only fetch videos for polling
-  // const fetchVideos = async () => {
-  //   if (!viamClient) return;
-    
-  //   console.log("Fetching videos only for polling");
-
-  //   let filter = {
-  //     robotId: machineId,
-  //   } as VIAM.dataApi.Filter;
-
-  //   const binaryData = await viamClient.dataClient.binaryDataByFilter(
-  //     filter,
-  //     2000, // limit
-  //     VIAM.dataApi.Order.DESCENDING,
-  //     undefined, // no pagination token
-  //     false,
-  //     false,
-  //     false
-  //   );
-    
-  //   // Update files, filtering for videos by extension
-  //   setFiles(prevFiles => {
-  //     // Get existing non-video files
-  //     const existingNonVideoFiles = prevFiles.filter(
-  //       f => !f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-  //     );
-      
-  //     // Get new video files from the fetched data
-  //     const newVideoFiles = binaryData.data.filter(
-  //       f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4')
-  //     );
-      
-  //     // Combine existing non-video files with new video files
-  //     const existingVideoIds = new Set(prevFiles
-  //       .filter(f => f.metadata?.fileName?.toLowerCase().endsWith('.mp4'))
-  //       .map(f => f.metadata?.binaryDataId)
-  //     );
-      
-  //     const uniqueNewVideos = newVideoFiles.filter(
-  //       f => !existingVideoIds.has(f.metadata?.binaryDataId)
-  //     );
-      
-  //     if (uniqueNewVideos.length > 0) {
-  //       console.log(`Found ${uniqueNewVideos.length} new video files during polling`);
-  //     }
-      
-  //     // Return combined files
-  //     return [...existingNonVideoFiles, ...newVideoFiles];
-  //   });
-  // };
-
   const loadMoreFiles = useCallback(async (passToLoad?: Pass) => {
     // If no pass is specified, use global loading state
     // Otherwise check if this specific pass is already loading
