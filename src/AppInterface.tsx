@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
@@ -87,15 +87,33 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  const getStepVideos = (step: Step) => {
+  const getStepVideos = useCallback((step: Step) => {
     if (!videoFiles) return [];
 
-    return videoFiles.filter(file => {
-      if (!file.metadata || !file.metadata.fileName) return false;
-      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && file.metadata.fileName.includes(step.name)
-      return isMatchingStep
+    // Create a map to track unique videos by their binary ID
+    const uniqueVideos = new Map<string, VIAM.dataApi.BinaryData>();
+    
+    videoFiles.forEach(file => {
+      if (!file.metadata || !file.metadata.fileName) return;
+      
+      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && 
+                           file.metadata.fileName.includes(step.name);
+      
+      if (isMatchingStep && file.metadata.binaryDataId) {
+        // Only add if we haven't seen this ID before
+        if (!uniqueVideos.has(file.metadata.binaryDataId)) {
+          uniqueVideos.set(file.metadata.binaryDataId, file);
+        }
+      }
     });
-  };
+    
+    // Return array of unique videos sorted by time
+    return Array.from(uniqueVideos.values()).sort((a, b) => {
+      const timeA = a.metadata?.timeRequested?.toDate().getTime() || 0;
+      const timeB = b.metadata?.timeRequested?.toDate().getTime() || 0;
+      return timeA - timeB;
+    });
+  }, [videoFiles]);
 
   const getStatusBadge = (success: boolean) => {
     if (success) {
