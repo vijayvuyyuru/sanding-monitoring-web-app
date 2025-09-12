@@ -314,9 +314,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           display: 'flex',
                                           flexWrap: 'wrap',
                                           gap: '8px',
-                                          maxHeight: '200px',
                                           overflowY: 'auto',
-                                          padding: '4px'
+                                          padding: '4px',
                                         }}>
                                           {passFiles.map((file, fileIndex) => {
                                             const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
@@ -337,7 +336,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   transition: 'all 0.2s ease',
                                                   flex: '1 0 calc(50% - 8px)',
                                                   minWidth: '280px',
-                                                  maxWidth: '100%',
+                                                  maxWidth: 'calc(50% - 8px)',
                                                   boxSizing: 'border-box'
                                                 }}
                                                 onMouseEnter={(e) => {
