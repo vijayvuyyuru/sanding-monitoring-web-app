@@ -47,7 +47,6 @@ const AppInterface: React.FC<AppViewProps> = ({
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
-  const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
 
   const activeTabStyle = "bg-blue-600 text-white";
@@ -100,58 +99,9 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  const handleDownload = async (file: VIAM.dataApi.BinaryData) => {
-    if (!file.metadata?.binaryDataId) return;
-    
-    const fileId = file.metadata.binaryDataId;
-    
-    // Set loading state
-    setDownloadingFiles(prev => new Set(prev).add(fileId));
-    
-    try {
-      const binaryData = await viamClient.dataClient.binaryDataByIds([fileId]);
-      if (binaryData.length > 0) {
-        const fileData = binaryData[0];
-
-        const fileName = fileData.metadata?.fileName ?? "unknown";
-        
-        const fileObj = new File([new Uint8Array(fileData.binary)], fileName, { 
-          type: fileData.metadata?.fileExt || 'application/octet-stream' 
-        });
-        
-        // Create object URL from the File
-        const url = URL.createObjectURL(fileObj);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
-    } catch (error) {
-      console.error('Download failed:', error);
-    } finally {
-      // Clear loading state
-      setDownloadingFiles(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(fileId);
-        return newSet;
-      });
-    }
-  }
 
   return (
     <div className="appInterface">
-      <style>
-        {`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}
-      </style>
       <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
         <div className="w-1/3 h-5 font-semibold text-zinc-900">Sanding Control Interface</div>
         
@@ -425,11 +375,13 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                     {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
                                                   </span>
                                                 </div>
-                                                <button 
+                                                <a 
+                                                  href={file.metadata?.uri}
+                                                  download={file.metadata?.fileName?.split('/').pop() || 'download'}
                                                   style={{
                                                     marginLeft: '12px',
                                                     padding: '4px 12px',
-                                                    backgroundColor: downloadingFiles.has(file.metadata?.binaryDataId || '') ? '#9ca3af' : '#3b82f6',
+                                                    backgroundColor: '#3b82f6',
                                                     color: 'white',
                                                     borderRadius: '4px',
                                                     textDecoration: 'none',
@@ -437,41 +389,21 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                     whiteSpace: 'nowrap',
                                                     transition: 'background-color 0.2s',
                                                     flexShrink: 0,
-                                                    cursor: downloadingFiles.has(file.metadata?.binaryDataId || '') ? 'not-allowed' : 'pointer'
+                                                    cursor: 'pointer',
+                                                    display: 'inline-block'
                                                   }}
-                                                  onClick={async (e) => {
-                                                    if (downloadingFiles.has(file.metadata?.binaryDataId || '')) return;
-                                                    await handleDownload(file);
+                                                  onClick={(e) => {
                                                     e.stopPropagation();
                                                   }}
                                                   onMouseEnter={(e) => {
-                                                    if (!downloadingFiles.has(file.metadata?.binaryDataId || '')) {
-                                                      e.currentTarget.style.backgroundColor = '#2563eb';
-                                                    }
+                                                    e.currentTarget.style.backgroundColor = '#2563eb';
                                                   }}
                                                   onMouseLeave={(e) => {
-                                                    if (!downloadingFiles.has(file.metadata?.binaryDataId || '')) {
-                                                      e.currentTarget.style.backgroundColor = '#3b82f6';
-                                                    }
+                                                    e.currentTarget.style.backgroundColor = '#3b82f6';
                                                   }}
                                                 >
-                                                  {downloadingFiles.has(file.metadata?.binaryDataId || '') ? (
-                                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                      <span style={{ 
-                                                        display: 'inline-block',
-                                                        width: '12px',
-                                                        height: '12px',
-                                                        border: '2px solid transparent',
-                                                        borderTop: '2px solid white',
-                                                        borderRadius: '50%',
-                                                        animation: 'spin 1s linear infinite'
-                                                      }}></span>
-                                                      Processing...
-                                                    </span>
-                                                  ) : (
-                                                    'Download'
-                                                  )}
-                                                </button>
+                                                  Download
+                                                </a>
                                               </div>
                                             );
                                           })}
