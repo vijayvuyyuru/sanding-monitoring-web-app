@@ -9,18 +9,22 @@ import { VideoPollingManager } from "./lib/videoPollingManager";
 
 interface StepVideosGridProps {
   stepVideos: VIAM.dataApi.BinaryData[];
+  videoFiles: Map<string, VIAM.dataApi.BinaryData>;
   videoStoreClient?: VIAM.GenericComponentClient | null;
   viamClient: VIAM.ViamClient;
   step: Step;
-  fetchVideos: () => Promise<void>;
+  fetchVideos: (start: Date, shouldSetLoadingState: boolean) => Promise<void>;
+  fetchTimestamp: Date | null;
 }
 
 const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   stepVideos,
+  videoFiles,
   videoStoreClient,
   viamClient,
   step,
   fetchVideos,
+  fetchTimestamp,
 }) => {
   const [selectedVideo, setSelectedVideo] =
     useState<VIAM.dataApi.BinaryData | null>(null);
@@ -47,9 +51,13 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   }, []);
 
   // Update current videos in the polling manager and check for completed requests
-  pollingManager.setFetchData(fetchVideos);
-  pollingManager.updateCurrentVideos(stepVideos);
-  pollingManager.forceVideoCheck();
+  pollingManager.setFetchData(() => fetchVideos(step.start, false));
+  
+  // Update polling manager whenever videoFiles changes
+  useEffect(() => {
+    pollingManager.updateCurrentVideos(videoFiles);
+    pollingManager.forceVideoCheck();
+  }, [videoFiles]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -59,7 +67,6 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       }
     };
   }, []);
-
 
   const handleVideoClick = (video: VIAM.dataApi.BinaryData) => {
     setSelectedVideo(video);
@@ -97,6 +104,32 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       setIsPolling(false);
     }
   };
+
+  if (stepVideos.length === 0 && fetchTimestamp && fetchTimestamp > step.start) {
+    return (
+      <div className="loading-state" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px',
+        color: '#6b7280'
+      }}>
+        <div 
+          style={{
+            width: '24px',
+            height: '24px',
+            border: '3px solid #e5e7eb',
+            borderTop: '3px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: '8px'
+          }}
+        />
+        <div style={{ fontSize: '14px' }}>Loading videos...</div>
+      </div>
+    );
+  }
 
   if (stepVideos.length === 0) {
     return (

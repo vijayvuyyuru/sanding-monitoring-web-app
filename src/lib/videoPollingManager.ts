@@ -16,7 +16,7 @@ export class VideoPollingManager {
   private isPolling: boolean = false;
   private pollInterval: number | null = null;
   private fetchDataFn: (() => Promise<void>) | null = null;
-  private currentVideos: VIAM.dataApi.BinaryData[] = [];
+  private currentVideos: Map<string, VIAM.dataApi.BinaryData> = new Map();
 
   static getInstance(): VideoPollingManager {
     if (!VideoPollingManager.instance) {
@@ -30,8 +30,8 @@ export class VideoPollingManager {
   }
 
   // Method to check if videos are available for a specific step
-  checkVideoAvailability(step: Step, currentVideos: VIAM.dataApi.BinaryData[]): boolean {
-    return currentVideos.some(file => {
+  checkVideoAvailability(step: Step): boolean {
+    return Array.from(this.currentVideos.values()).some(file => {
       if (!file.metadata || !file.metadata.fileName) return false;
       const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && 
                            file.metadata.fileName.includes(step.name);
@@ -40,7 +40,7 @@ export class VideoPollingManager {
   }
 
   // Method to update current videos for availability checking
-  updateCurrentVideos(videos: VIAM.dataApi.BinaryData[]) {
+  updateCurrentVideos(videos: Map<string, VIAM.dataApi.BinaryData>) {
     this.currentVideos = videos;
   }
 
@@ -120,7 +120,7 @@ export class VideoPollingManager {
             end: new Date()
           };
           
-          if (this.checkVideoAvailability(step, this.currentVideos)) {
+          if (this.checkVideoAvailability(step)) {
             console.log(`Videos found for ${requestId}, stopping polling for this request`);
             request.onComplete();
             this.activeRequests.delete(requestId);
@@ -155,7 +155,7 @@ export class VideoPollingManager {
   checkAllRequestsForVideos() {
     const completedRequests: string[] = [];
     console.log(`Checking ${this.activeRequests.size} active requests for video availability`);
-    console.log(`Current videos count: ${this.currentVideos.length}`);
+    console.log(`Current videos count: ${this.currentVideos.size}`);
     
     for (const [requestId, request] of this.activeRequests.entries()) {
       const step: Step = {
@@ -167,7 +167,7 @@ export class VideoPollingManager {
       
       console.log(`Checking request ${requestId} for step ${request.stepName} with pass_id ${request.passId}`);
       
-      if (this.checkVideoAvailability(step, this.currentVideos)) {
+      if (this.checkVideoAvailability(step)) {
         console.log(`Videos found for ${requestId}, marking request as complete`);
         request.onComplete();
         completedRequests.push(requestId);

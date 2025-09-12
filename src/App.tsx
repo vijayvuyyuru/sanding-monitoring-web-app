@@ -4,37 +4,21 @@ import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
+import { Timestamp } from '@bufbuild/protobuf';
 
-/*
-TODO:
-- detect if there is a sanding resource
-    - if so show a button to start sanding
-    - if not, show a warning that there is no sanding resource
-- detect if there is a video-store resource
-    - if so show request a video from the past 1 minute and show the video
-- add pagination
-
-*/
-
-const videoStoreName = "video-store-1";
-const sanderName = "sander-module";
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
 const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
 const machineNameRegex = /\/machine\/(.+?)-main\./;
 
-
-// function duration(start: string, end: string): number {
-//   return new Date(end).getTime() - new Date(start).getTime()
-// }
-
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
-  const [files, setFiles] = useState<VIAM.dataApi.BinaryData[]>([]);
+  const [files, setFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
+  const [videoFiles, setVideoFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
-  // const [sanderClient, setSanderClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
-  const [sanderWarning, setSanderWarning] = useState<string | null>(null); // Warning state
+  const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
+  const [loadingPasses, setLoadingPasses] = useState<Set<string>>(new Set());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -50,84 +34,107 @@ function App() {
     hostname,
   } = JSON.parse(Cookies.get(machineInfo)!);
 
-  // Only fetch videos for polling
-  const fetchVideos = useCallback(async () => {
+  const fetchFiles = async (start: Date, shouldSetLoadingState: boolean = true) => {
     if (!viamClient) return;
+
+    const end = new Date();
     
-    console.log("Fetching videos only for polling");
+    console.log("Fetching for time range:", start, end);
+    if (shouldSetLoadingState) {
+      setFetchTimestamp(start);
+    }
 
     let filter = {
       robotId: machineId,
-      mimeType: ["application/octet-stream"],
+      interval: {
+        start: Timestamp.fromDate(start),
+        end: Timestamp.fromDate(end),
+      } as VIAM.dataApi.CaptureInterval,
     } as VIAM.dataApi.Filter;
 
-    // Only fetch recent files (last 100) for polling efficiency
-    const binaryData = await viamClient.dataClient.binaryDataByFilter(
-      filter,
-      100, // limit
-      VIAM.dataApi.Order.DESCENDING,
-      undefined, // no pagination token
-      false,
-      false,
-      false
-    );
-    
-    // Update only the files state, keeping existing pass summaries
-    setFiles(prevFiles => {
-      // Merge new files with existing ones, avoiding duplicates
-      const existingIds = new Set(prevFiles.map(f => f.metadata?.binaryDataId));
-      const newFiles = binaryData.data.filter(f => !existingIds.has(f.metadata?.binaryDataId));
+    let paginationToken: string | undefined = undefined;
+
+    // Process files in batches using a while loop to eliminate code duplication
+    while (true) {
+      let binaryData = await viamClient.dataClient.binaryDataByFilter(
+        filter,
+        100, // limit
+        VIAM.dataApi.Order.DESCENDING,
+        paginationToken,
+        false,
+        false,
+        false
+      );
       
-      if (newFiles.length > 0) {
-        console.log(`Found ${newFiles.length} new files during polling`);
-        // Return new files first (most recent) followed by existing files
-        return [...newFiles, ...prevFiles];
+      // Process files once and build both files and videoFiles lists
+      const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
+      const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
+      
+      binaryData.data.forEach(file => {
+        if (file.metadata?.binaryDataId) {
+          if (file.metadata.fileName?.toLowerCase().includes('.mp4')) {
+            // Video files go to videoFiles
+            newVideoFiles.set(file.metadata.binaryDataId, file);
+          } else {
+            // Non-video files go to files
+            newFiles.set(file.metadata.binaryDataId, file);
+          }
+        }
+      });
+
+      paginationToken = binaryData.last;
+
+      if (binaryData.data.length > 0 && shouldSetLoadingState) {
+        setFetchTimestamp(binaryData.data[binaryData.data.length - 1].metadata!.timeRequested!.toDate());
       }
       
-      return prevFiles;
-    });
-  }, [viamClient]);
-
+      // Update both states with the processed files
+      setFiles(prevFiles => {
+        const updatedFiles = new Map(prevFiles);
+        newFiles.forEach((file, id) => {
+          updatedFiles.set(id, file);
+        });
+        return updatedFiles;
+      });
+      
+      setVideoFiles(prevVideoFiles => {
+        const updatedVideoFiles = new Map(prevVideoFiles);
+        newVideoFiles.forEach((file, id) => {
+          updatedVideoFiles.set(id, file);
+        });
+        return updatedVideoFiles;
+      });
+      
+      // Break if no more data to fetch
+      if (!binaryData.last) break;
+    }
+    console.log("total files count:", files.size);
+    console.log("total video files count:", videoFiles.size);
+    
+    setFetchTimestamp(null)
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPasses = async () => {
       console.log("Fetching data start");
-      
-      let filter = {
-        robotId: machineId,
-      } as VIAM.dataApi.Filter;
-
-      
 
       const viamClient = await connect(apiKeyId, apiKeySecret);
-
       setViamClient(viamClient);
+
       try {
         const robotClient = await viamClient.connectToMachine({
           host: hostname, 
           id: machineId,
         });
-        setRobotClient(robotClient); // Store the robot client
+        setRobotClient(robotClient);
       } catch (error) {
         console.error('Failed to create robot client:', error);
         setRobotClient(null);
       }
-
-      // console.log("Resources:", resources);
-
-      // Check for sander module resource
-      // if (resources.find((x) => (x.type == "service" && x.subtype == "generic" && x.name == sanderName))) {
-        // const sanderClient = new VIAM.GenericComponentClient(robotClient, sanderName);
-        // setSanderClient(sanderClient);
-        // TODO: Add visual indication that sander resource is available
-      // } else {
-      //   setSanderWarning("No sanding module found on this robot");
-      //   console.warn("No sander-module resource found");
-      // }
       
       const organizations = await viamClient.appClient.listOrganizations();
       console.log("Organizations:", organizations);
-      if (organizations.length != 1) {
+      if (organizations.length !== 1) {
         console.warn("expected 1 organization, got " + organizations.length);
         return;
       }
@@ -142,7 +149,7 @@ function App() {
             organization_id: orgID,
             location_id: locationId,
             component_name: sandingSummaryName,
-            robot_id: machineId, // Filter by current robot
+            robot_id: machineId,
             component_type: sandingSummaryComponentType
           },
         },
@@ -152,7 +159,7 @@ function App() {
           },
         },
         {
-          $limit: 100 // Get last 100 passes
+          $limit: 100
         }
       ];
 
@@ -161,10 +168,8 @@ function App() {
 
       // Process tabular data into pass summaries
       const processedPasses: Pass[] = tabularData.map((item: any) => {
-        // The actual data is nested in data.readings
         const pass = item.data!.readings!;
         
-
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
@@ -173,66 +178,39 @@ function App() {
             start: new Date(x.start),
             end: new Date(x.end),
             pass_id: pass.pass_id,
-            // duration_ms: duration(x.start, x.end),
           })): [],
           success: pass.success ?? true,
           pass_id: pass.pass_id,
-          // duration_ms: duration(pass.start, pass.end),
-          err_string: pass.err_string  || null
+          err_string: pass.err_string || null
         };
       });
-
-
       setPassSummaries(processedPasses);
-
-      let allFiles = [];
-      let last = undefined;
-      const earliestPassTime = new Date(Math.min(...processedPasses.map(p => p.start.getTime())));
-
-      var i = 0
-      while (true) {
-        console.log("Fetching files files", i);
-        const binaryData = await viamClient.dataClient.binaryDataByFilter(
-          filter,
-          50, // limit
-          VIAM.dataApi.Order.DESCENDING,
-          last, // pagination token
-          false,
-          false,
-          false
-        );
-        
-        allFiles.push(...binaryData.data);
-        
-        // Check if we've reached the earliest pass time or no more data
-        const oldestFileTime = binaryData.data[binaryData.data.length - 1]?.metadata?.timeRequested?.toDate();
-        if (!binaryData.last || !oldestFileTime || oldestFileTime < earliestPassTime) {
-          break;
-        }
-        last = binaryData.last;
-      }
-      
-      setFiles(allFiles);
-      // console.log("Fetched video files:", binaryData.data);
       console.log("Fetching data end");
     };
     
-    fetchData();
-  }, []);
+      fetchPasses();
+    }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
+
+
+  // Fetch videos when passSummaries and viamClient are available
+  useEffect(() => {
+    if (passSummaries.length > 0 && viamClient) {
+      const earliestVideoTime = passSummaries[passSummaries.length - 1].start;
+      fetchFiles(earliestVideoTime);
+    }
+  }, [passSummaries, viamClient]);
 
   return (
     <AppInterface 
-
-
       machineName={machineName}
-
       viamClient={viamClient!}
-      passSummaries={passSummaries} // Pass the actual summaries
+      passSummaries={passSummaries}
       files={files}
+      videoFiles={videoFiles}
       robotClient={robotClient}
-      // sanderClient={null}
-      // sanderWarning={sanderWarning} // Pass the sanding warning
-      fetchVideos={fetchVideos}
+      fetchVideos={fetchFiles}
+      loadingPasses={loadingPasses}
+      fetchTimestamp={fetchTimestamp}
     />
   );
 }
