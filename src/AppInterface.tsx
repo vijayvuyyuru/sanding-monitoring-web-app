@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
@@ -11,6 +11,7 @@ interface AppViewProps {
   passSummaries?: any[];
   files: Map<string, VIAM.dataApi.BinaryData>;
   videoFiles: Map<string, VIAM.dataApi.BinaryData>;
+  imageFiles: Map<string, VIAM.dataApi.BinaryData>;
   viamClient: VIAM.ViamClient;
   robotClient?: VIAM.RobotClient | null;
   fetchVideos: (start: Date) => Promise<void>;
@@ -41,6 +42,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   passSummaries = [],
   files, 
   videoFiles,
+  imageFiles,
   robotClient,
   fetchVideos,
   fetchTimestamp,
@@ -238,6 +240,44 @@ const AppInterface: React.FC<AppViewProps> = ({
                                   })}
                                 </div>
                               
+                                {/* New section for pass images */}
+                                {(() => {
+                                  const passStart = new Date(pass.start);
+                                  const passEnd = new Date(pass.end);
+                                  const passImages = Array.from(imageFiles.values()).filter(file => {
+                                    if (file.metadata?.timeRequested) {
+                                      const fileTime = file.metadata.timeRequested.toDate();
+                                      return fileTime >= passStart && fileTime <= passEnd;
+                                    }
+                                    return false;
+                                  }).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
+
+                                  if (passImages.length > 0) {
+                                    return (
+                                      <div className="pass-files-section">
+                                        <h4>Images captured during this pass</h4>
+                                        <ul>
+                                          {passImages.map((image, index) => {
+                                            const meta = image.metadata;
+                                            let displayName = meta?.fileName?.split('/').pop();
+                                            if (!displayName && meta?.captureMetadata?.componentName) {
+                                              const time = meta.timeRequested?.toDate().toISOString() ?? 'unknown-time';
+                                              displayName = `${meta.captureMetadata.componentName}-${time}`;
+                                            }
+
+                                            return (
+                                              <li key={index} className="font-mono text-sm">
+                                                {displayName || meta?.binaryDataId}
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
+
                                 {/* New section for all files in pass time range */}
                                 {(() => {
                                   const passStart = new Date(pass.start);
