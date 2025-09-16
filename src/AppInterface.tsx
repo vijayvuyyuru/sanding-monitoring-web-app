@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
 import VideoStoreSelector from './VideoStoreSelector';
+import ImageDisplay from './ImageDisplay';
+import BeforeAfterModal from './BeforeAfterModal';
 import { 
   formatDurationToMinutesSeconds,
 } from './lib/videoUtils';
@@ -16,7 +18,6 @@ interface AppViewProps {
   robotClient?: VIAM.RobotClient | null;
   fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
-  loadingPasses: Set<string>;
   fetchTimestamp: Date | null;
 }
 
@@ -36,171 +37,6 @@ export interface Pass {
   err_string?: string | null;
 }
 
-const ImageDisplay: React.FC<{ binaryData: VIAM.dataApi.BinaryData, viamClient: VIAM.ViamClient }> = ({ binaryData, viamClient }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string>('');
-
-  useEffect(() => {
-    let isMounted = true;
-    let currentObjectUrl: string | null = null;
-
-    const getImageUrl = async (binaryData: VIAM.dataApi.BinaryData): Promise<void> => {
-      try {
-        let data = binaryData.binary;
-        const binaryId = binaryData.metadata?.binaryDataId;
-
-        // If binary data is not present, fetch it by ID
-        if ((!data || data.length === 0) && binaryId) {
-          console.log('Fetching binary data by ID:', binaryId);
-          const results = await viamClient.dataClient.binaryDataByIds([binaryId]);
-          if (results && results.length > 0 && results[0].binary && results[0].binary.length > 0) {
-            console.log(`Retrieved binary data for ID ${binaryId}, size:`, results[0].binary.length);
-            data = results[0].binary;
-          } else {
-            console.error(`Failed to retrieve binary data for ID ${binaryId}`);
-          }
-        }
-
-        if (!data || data.length === 0) {
-          const errMsg = `No binary data available for image ${binaryData.metadata?.fileName || binaryId}`;
-          console.error(errMsg);
-          throw new Error(errMsg);
-        }
-
-        console.log('Binary data size:', data.length);
-
-        // Determine MIME type based on file extension or metadata
-        let mimeType = 'image/jpeg'; // default
-        const fileName = binaryData.metadata?.fileName?.toLowerCase();
-        const fileExt = binaryData.metadata?.fileExt?.toLowerCase();
-        
-        if (fileName?.endsWith('.png') || fileExt === 'png') {
-          mimeType = 'image/png';
-        } else if (fileName?.endsWith('.jpg') || fileName?.endsWith('.jpeg') || fileExt === 'jpg' || fileExt === 'jpeg') {
-          mimeType = 'image/jpeg';
-        }
-
-        console.log('Using MIME type:', mimeType);
-
-        // Don't try to create a blob with empty data
-        if (data.length === 0) {
-          throw new Error('Cannot create image from empty data');
-        }
-
-        // Convert Uint8Array to blob
-        const buffer = new ArrayBuffer(data.length);
-        const view = new Uint8Array(buffer);
-        view.set(data);
-        
-        const blob = new Blob([buffer], { type: mimeType });
-        currentObjectUrl = URL.createObjectURL(blob);
-        
-        console.log('Created blob URL:', currentObjectUrl);
-        
-        if (isMounted) {
-          setImageUrl(currentObjectUrl);
-          setIsLoading(false);
-          setHasError(false);
-          setErrorMessage('');
-        }
-      } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error("Error creating image URL:", errorMsg);
-        if (isMounted) {
-          setImageUrl(null);
-          setIsLoading(false);
-          setHasError(true);
-          setErrorMessage(errorMsg);
-        }
-      }
-    };
-
-    getImageUrl(binaryData);
-
-    return () => {
-      isMounted = false;
-      // Clean up the object URL when component unmounts
-      if (currentObjectUrl) {
-        console.log('Revoking blob URL:', currentObjectUrl);
-        URL.revokeObjectURL(currentObjectUrl);
-      }
-    };
-  }, [binaryData, viamClient]);
-
-  if (isLoading) {
-    return (
-      <div style={{ 
-        width: '300px', 
-        height: '225px', 
-        backgroundColor: '#f0f0f0', 
-        borderRadius: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#6b7280'
-      }}>
-        Loading...
-      </div>
-    );
-  }
-
-  if (hasError || !imageUrl) {
-    return (
-      <div style={{ 
-        width: '300px', 
-        height: '225px', 
-        backgroundColor: '#f0f0f0', 
-        borderRadius: '4px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: '#ef4444',
-        fontSize: '14px',
-        textAlign: 'center',
-        padding: '20px'
-      }}>
-        <div>Failed to load image</div>
-        {errorMessage && (
-          <div style={{ fontSize: '12px', marginTop: '8px', color: '#9ca3af', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {errorMessage}
-          </div>
-        )}
-        {binaryData.metadata?.fileName && (
-          <div style={{ fontSize: '12px', marginTop: '8px', color: '#9ca3af' }}>
-            {binaryData.metadata.fileName.split('/').pop()}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <img 
-      src={imageUrl} 
-      alt="Pass capture" 
-      style={{ 
-        width: '100%',
-        maxWidth: '100%',
-        maxHeight: '225px',
-        borderRadius: '4px',
-        objectFit: 'contain',
-        display: 'block'
-      }} 
-      onLoad={() => {
-        console.log('Image loaded successfully');
-      }}
-      onError={() => {
-        console.error("Image failed to render, URL:", imageUrl);
-        setHasError(true);
-        setErrorMessage('Image failed to render after loading');
-      }}
-    />
-  );
-};
-
 const AppInterface: React.FC<AppViewProps> = ({ 
   machineName,
   viamClient,
@@ -216,6 +52,10 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
   const [selectedCamera, setSelectedCamera] = useState<string>('');
+  const [beforeAfterModal, setBeforeAfterModal] = useState<{
+    beforeImage: VIAM.dataApi.BinaryData | null;
+    afterImage: VIAM.dataApi.BinaryData | null;
+  } | null>(null);
 
   const cameraComponentNames = Array.from(
     new Set(
@@ -224,6 +64,41 @@ const AppInterface: React.FC<AppViewProps> = ({
         .filter((name): name is string => !!name)
     )
   );
+
+  const openBeforeAfterModal = (beforeImage: VIAM.dataApi.BinaryData | null, afterImage: VIAM.dataApi.BinaryData | null) => {
+    setBeforeAfterModal({ beforeImage, afterImage });
+  };
+
+  const closeBeforeAfterModal = () => {
+    setBeforeAfterModal(null);
+  };
+
+  // Helper function to get before/after images for a pass
+  const getBeforeAfterImages = (pass: Pass): { beforeImage: VIAM.dataApi.BinaryData | null, afterImage: VIAM.dataApi.BinaryData | null } => {
+    const passStart = new Date(pass.start);
+    const passEnd = new Date(pass.end);
+    
+    const allCameraImages = Array.from(imageFiles.values()).filter(file => 
+      file.metadata?.captureMetadata?.componentName === selectedCamera && file.metadata?.timeRequested
+    ).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
+    
+    const beforeImage = allCameraImages
+      .filter(img => {
+        const imgTime = img.metadata!.timeRequested!.toDate();
+        return imgTime < passStart;
+      })
+      .pop();
+    
+    const afterImage = allCameraImages.find(img => {
+      const imgTime = img.metadata!.timeRequested!.toDate();
+      return imgTime > passEnd;
+    });
+
+    return { 
+      beforeImage: beforeImage || null, 
+      afterImage: afterImage || null 
+    };
+  };
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -441,7 +316,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             color: '#9ca3af',
                                             fontSize: '14px'
                                           }}>
-                                            No image captured within 30 minutes before pass start
+                                            No image captured before pass start
                                           </div>
                                         </div>
                                       );
@@ -457,7 +332,14 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           </span>
                                         </div>
                                         
-                                        <div className="step-image-container" style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}>
+                                        <div 
+                                          className="step-image-container clickable-image" 
+                                          style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}
+                                          onClick={() => {
+                                            const { beforeImage, afterImage } = getBeforeAfterImages(pass);
+                                            openBeforeAfterModal(beforeImage, afterImage);
+                                          }}
+                                        >
                                           <ImageDisplay binaryData={beforeImage} viamClient={viamClient} />
                                         </div>
                                       </div>
@@ -528,7 +410,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             color: '#9ca3af',
                                             fontSize: '14px'
                                           }}>
-                                            No image captured before/after this pass
+                                            No image captured after pass end
                                           </div>
                                         </div>
                                       );
@@ -544,7 +426,14 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           </span>
                                         </div>
                                         
-                                        <div className="step-image-container" style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}>
+                                        <div 
+                                          className="step-image-container clickable-image" 
+                                          style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}
+                                          onClick={() => {
+                                            const { beforeImage, afterImage } = getBeforeAfterImages(pass);
+                                            openBeforeAfterModal(beforeImage, afterImage);
+                                          }}
+                                        >
                                           <ImageDisplay binaryData={afterImage} viamClient={viamClient} />
                                         </div>
                                       </div>
@@ -745,6 +634,16 @@ const AppInterface: React.FC<AppViewProps> = ({
           </section>
         )}
       </main>
+
+      {/* Add the modal at the end */}
+      {beforeAfterModal && (
+        <BeforeAfterModal
+          beforeImage={beforeAfterModal.beforeImage}
+          afterImage={beforeAfterModal.afterImage}
+          onClose={closeBeforeAfterModal}
+          viamClient={viamClient}
+        />
+      )}
     </div>
   );
 };
