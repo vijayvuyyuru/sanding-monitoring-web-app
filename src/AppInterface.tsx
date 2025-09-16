@@ -182,7 +182,8 @@ const ImageDisplay: React.FC<{ binaryData: VIAM.dataApi.BinaryData, viamClient: 
       src={imageUrl} 
       alt="Pass capture" 
       style={{ 
-        maxWidth: '300px', 
+        width: '100%',
+        maxWidth: '100%',
         maxHeight: '225px',
         borderRadius: '4px',
         objectFit: 'contain',
@@ -399,80 +400,150 @@ const AppInterface: React.FC<AppViewProps> = ({
                             <div className="pass-details">
                               <div className="passes-container">
                                 <div className="steps-grid">
-                                  {pass.steps.map((step: Step) => {
-                                      const stepVideos = getStepVideos(step);
-
+                                  {/* Before Image - with time threshold */}
+                                  {selectedCamera && (() => {
+                                    const passStart = new Date(pass.start);
+                                    
+                                    const allCameraImages = Array.from(imageFiles.values()).filter(file => 
+                                      file.metadata?.captureMetadata?.componentName === selectedCamera && file.metadata?.timeRequested
+                                    ).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
+                                    
+                                    const beforeImage = allCameraImages
+                                      .filter(img => {
+                                        const imgTime = img.metadata!.timeRequested!.toDate();
+                                        return imgTime < passStart; // No minimum time restriction
+                                      })
+                                      .pop(); // Get the last one (most recent before pass start)
+                                    
+                                    // If no image within threshold, show a message instead
+                                    if (!beforeImage) {
                                       return (
-                                        <div key={step.name} className="step-card">
-                                          <div className="step-name">{step.name}</div>
-                                          <div className="step-timeline">
-                                            <div className="step-time">
-                                              <span className="time-label">Start</span>
-                                              <span className="time-value">{step.start.toLocaleTimeString()}</span>
-                                            </div>
-                                            <div className="timeline-arrow">→</div>
-                                            <div className="step-time">
-                                              <span className="time-label">End</span>
-                                              <span className="time-value">{step.end.toLocaleTimeString()}</span>
-                                            </div>
+                                        <div className="step-card" style={{ order: -1 }}>
+                                          <div className="step-name">Before Image</div>
+                                          <div className="step-duration" style={{ color: '#6b7280' }}>No recent image available</div>
+                                          <div style={{ 
+                                            height: '225px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: '#f3f4f6',
+                                            borderRadius: '4px',
+                                            marginTop: '12px',
+                                            color: '#9ca3af',
+                                            fontSize: '14px'
+                                          }}>
+                                            No image captured within 30 minutes before pass start
                                           </div>
-                                          <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
-                                          
-                                          <StepVideosGrid
-                                            step={step}
-                                            stepVideos={stepVideos}
-                                            videoFiles={videoFiles}
-                                            fetchTimestamp={fetchTimestamp}
-                                            videoStoreClient={videoStoreClient}
-                                            viamClient={viamClient}
-                                            fetchVideos={fetchVideos}
-                                          />
                                         </div>
                                       );
+                                    }
+                                    
+                                    return (
+                                      <div className="step-card" style={{ order: -1 }}>
+                                        <div className="step-name">Before Image</div>
+                                        <div className="step-duration">
+                                          {beforeImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
+                                          <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                                            ({Math.round((passStart.getTime() - (beforeImage.metadata?.timeRequested?.toDate()?.getTime() || passStart.getTime())) / 60000)}m before pass)
+                                          </span>
+                                        </div>
+                                        
+                                        <div className="step-image-container" style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}>
+                                          <ImageDisplay binaryData={beforeImage} viamClient={viamClient} />
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                  
+                                  {/* Regular step cards */}
+                                  {pass.steps.map((step: Step) => {
+                                    const stepVideos = getStepVideos(step);
+
+                                    return (
+                                      <div key={step.name} className="step-card">
+                                        <div className="step-name">{step.name}</div>
+                                        <div className="step-timeline">
+                                          <div className="step-time">
+                                            <span className="time-label">Start</span>
+                                            <span className="time-value">{step.start.toLocaleTimeString()}</span>
+                                          </div>
+                                          <div className="timeline-arrow">→</div>
+                                          <div className="step-time">
+                                            <span className="time-label">End</span>
+                                            <span className="time-value">{step.end.toLocaleTimeString()}</span>
+                                          </div>
+                                        </div>
+                                        <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
+                                        
+                                        <StepVideosGrid
+                                          step={step}
+                                          stepVideos={stepVideos}
+                                          videoFiles={videoFiles}
+                                          fetchTimestamp={fetchTimestamp}
+                                          videoStoreClient={videoStoreClient}
+                                          viamClient={viamClient}
+                                          fetchVideos={fetchVideos}
+                                        />
+                                      </div>
+                                    );
                                   })}
+
+                                  {/* After Image - with time threshold */}
+                                  {selectedCamera && (() => {
+                                    const passEnd = new Date(pass.end);
+                                    
+                                    const allCameraImages = Array.from(imageFiles.values()).filter(file => 
+                                      file.metadata?.captureMetadata?.componentName === selectedCamera && file.metadata?.timeRequested
+                                    ).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
+                                    
+                                    // Only consider images taken after pass end, with no maximum time restriction
+                                    const afterImage = allCameraImages.find(img => {
+                                      const imgTime = img.metadata!.timeRequested!.toDate();
+                                      return imgTime > passEnd; // No maximum time restriction
+                                    });
+                                    
+                                    // If no image within threshold, show a message instead
+                                    if (!afterImage) {
+                                      return (
+                                        <div className="step-card" style={{ order: 999 }}>
+                                          <div className="step-name">After Image</div>
+                                          <div className="step-duration" style={{ color: '#6b7280' }}>No recent image available</div>
+                                          <div style={{ 
+                                            height: '225px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: '#f3f4f6',
+                                            borderRadius: '4px',
+                                            marginTop: '12px',
+                                            color: '#9ca3af',
+                                            fontSize: '14px'
+                                          }}>
+                                            No image captured within 30 minutes after pass end
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <div className="step-card" style={{ order: 999 }}>
+                                        <div className="step-name">After Image</div>
+                                        <div className="step-duration">
+                                          {afterImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
+                                          <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                                            ({Math.round(((afterImage.metadata?.timeRequested?.toDate()?.getTime() || passEnd.getTime()) - passEnd.getTime()) / 60000)}m after pass)
+                                          </span>
+                                        </div>
+                                        
+                                        <div className="step-image-container" style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}>
+                                          <ImageDisplay binaryData={afterImage} viamClient={viamClient} />
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               
-                                {/* New section for pass images */}
-                                {selectedCamera && (() => {
-                                  const passStart = new Date(pass.start);
-                                  const passEnd = new Date(pass.end);
-
-                                  const allCameraImages = Array.from(imageFiles.values()).filter(file => 
-                                    file.metadata?.captureMetadata?.componentName === selectedCamera && file.metadata?.timeRequested
-                                  ).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
-
-                                  const beforeImage = allCameraImages.filter(img => img.metadata!.timeRequested!.toDate() < passStart).pop();
-                                  const afterImage = allCameraImages.find(img => img.metadata!.timeRequested!.toDate() > passEnd);
-
-                                  if (!beforeImage && !afterImage) {
-                                    return null;
-                                  }
-
-                                  return (
-                                    <div className="pass-files-section">
-                                      <h4>Before & After Images ({selectedCamera})</h4>
-                                      <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                                        {beforeImage ? (
-                                          <div className="image-container">
-                                            <h5>Before</h5>
-                                            <ImageDisplay binaryData={beforeImage} viamClient={viamClient} />
-                                            <p className="font-mono text-xs" style={{marginTop: '4px'}}>{beforeImage.metadata?.timeRequested?.toDate().toLocaleString()}</p>
-                                          </div>
-                                        ) : <div><p>No "Before" image found.</p></div>}
-                                        
-                                        {afterImage ? (
-                                          <div className="image-container">
-                                            <h5>After</h5>
-                                            <ImageDisplay binaryData={afterImage} viamClient={viamClient} />
-                                            <p className="font-mono text-xs" style={{marginTop: '4px'}}>{afterImage.metadata?.timeRequested?.toDate().toLocaleString()}</p>
-                                          </div>
-                                        ) : <div><p>No "After" image found.</p></div>}
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-
-                                {/* New section for all files in pass time range */}
+                                {/* Keep the "all files in pass time range" section unchanged */}
                                 {(() => {
                                   const passStart = new Date(pass.start);
                                   const passEnd = new Date(pass.end);
