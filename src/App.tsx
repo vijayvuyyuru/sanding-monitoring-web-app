@@ -184,12 +184,7 @@ function App() {
           success: pass.success ?? true,
           pass_id: pass.pass_id,
           err_string: pass.err_string || null,
-          // If no build_info exists, create a default one with basic run information
-          build_info: Object.keys(buildInfo).length > 0 ? buildInfo : {
-            run_id: pass.pass_id,
-            timestamp: pass.start,
-            note: "No build info available"
-          }
+          build_info: buildInfo
         };
       });
       
