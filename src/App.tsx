@@ -62,12 +62,12 @@ function App() {
         100,
         VIAM.dataApi.Order.DESCENDING,
         paginationToken,
-        false, // includeBinary
+        false,
         false,
         false
       );
       
-      // Process files once and build both files and videoFiles lists
+      // Process files once and build files, videoFiles, and images lists
       const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newImages = new Map<string, VIAM.dataApi.BinaryData>();
