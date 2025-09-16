@@ -455,9 +455,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       
                                       {/* Show message if no files are found in the current view */}
                                       {passFiles.length === 0 && !isLoading && (
-                                        <p>
+                                        <div className="no-files-message" style={{ textAlign: 'left', padding: '12px 0' }}>
                                           No files found for this pass.
-                                        </p>
+                                        </div>
                                       )}
                                     </div>
                                   );
