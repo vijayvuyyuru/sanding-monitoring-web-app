@@ -215,7 +215,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                               {/* Simplified build info section */}
                               <div className="build-info-section">
                                 <h4>Build information</h4>
-                                {pass.build_info && Object.keys(pass.build_info).length > 0 ? (
+                                {pass.build_info && (pass.build_info.version || pass.build_info.git_revision || pass.build_info.date_compiled) ? (
                                   <div className="build-info-grid">
                                     {/* Version */}
                                     {pass.build_info.version && (
@@ -242,7 +242,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     )}
                                   </div>
                                 ) : (
-                                  <div className="build-info-message">
+                                  <div className="build-info-notice">
                                     Build information not available for this run.
                                   </div>
                                 )}
