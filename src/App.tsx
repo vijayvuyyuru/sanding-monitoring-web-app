@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
@@ -18,7 +18,7 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
-  const [loadingPasses, setLoadingPasses] = useState<Set<string>>(new Set());
+  const [loadingPasses] = useState<Set<string>>(new Set());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -166,9 +166,23 @@ function App() {
       const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
 
+      // Add debug logging to check raw build_info presence in each record
+      console.log("Raw data build_info check:", tabularData.map((item: any, index) => ({
+        index,
+        pass_id: item.data?.readings?.pass_id,
+        has_build_info: item.data?.readings?.build_info ? true : false
+      })));
+
       // Process tabular data into pass summaries
-      const processedPasses: Pass[] = tabularData.map((item: any) => {
+      const processedPasses: Pass[] = tabularData.map((item: any, index) => {
         const pass = item.data!.readings!;
+        
+        // Ensure build_info is properly extracted from each record
+        // Clone the build_info to ensure we don't modify the original data
+        const buildInfo = pass.build_info ? {...pass.build_info} : {};
+        
+        // Debug each pass's build info separately
+        console.log(`Pass ${index} (${pass.pass_id}) build info:`, buildInfo);
         
         return {
           start: new Date(pass.start),
@@ -181,9 +195,25 @@ function App() {
           })): [],
           success: pass.success ?? true,
           pass_id: pass.pass_id,
-          err_string: pass.err_string || null
+          err_string: pass.err_string || null,
+          // If no build_info exists, create a default one with basic run information
+          build_info: Object.keys(buildInfo).length > 0 ? buildInfo : {
+            run_id: pass.pass_id,
+            timestamp: pass.start,
+            note: "No build info available"
+          }
         };
       });
+      
+      // Log all processed passes to verify build_info is present for all
+      console.log("All processed passes with build info:", 
+        processedPasses.map((p, idx) => ({ 
+          index: idx,
+          pass_id: p.pass_id, 
+          has_build_info: p.build_info ? Object.keys(p.build_info).length > 0 : false 
+        }))
+      );
+      
       setPassSummaries(processedPasses);
       console.log("Fetching data end");
     };

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
-import { extractCameraName } from './lib/videoUtils';
 import { createVideoStreamFromBase64 } from './lib/videoUtils';
 
 interface VideoModalProps {
