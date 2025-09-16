@@ -1189,3 +1189,86 @@ button:focus {
   border-radius: 4px;
   word-break: break-all;
 }
+
+/* Day Summary Styles */
+.day-summary-header {
+  background-color: #f8fafc;
+}
+
+.day-summary-header td {
+  padding: 10px 20px;
+  font-weight: 600;
+}
+
+.day-summary-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 32px;
+}
+
+.day-summary-date {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.day-summary-stats {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.day-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border: 1px solid rgba(203, 213, 225, 0.5);
+  min-width: 80px;
+  transition: all 0.2s ease;
+}
+
+.day-summary-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.day-summary-label {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.day-summary-value {
+  font-size: 16px;
+  color: #0f172a;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  line-height: 1.1;
+}
+
+/* Special styling for execution percentage */
+.day-summary-item:last-child .day-summary-value {
+  color: #059669;
+}
+
+/* Add some spacing between day groups */
+.day-summary-header + .expandable-row {
+  border-top: none;
+}
+
+/* Ensure proper spacing after each day group */
+.expandable-row:last-of-type,
+.expanded-content:last-of-type {
+  margin-bottom: 8px;
+}
