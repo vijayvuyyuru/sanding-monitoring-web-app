@@ -40,7 +40,6 @@ export interface Pass {
     description?: string;
     git_revision?: string;
     date_compiled?: string;
-    // Add other build fields as needed
   };
 }
 
@@ -212,7 +211,6 @@ const AppInterface: React.FC<AppViewProps> = ({
                         <tr className="expanded-content">
                           <td colSpan={9}>
                             <div className="pass-details">
-                              {/* Simplified build info section */}
                               <div className="build-info-section">
                                 <h4>Build information</h4>
                                 {pass.build_info && (pass.build_info.version || pass.build_info.git_revision || pass.build_info.date_compiled) ? (
