@@ -166,24 +166,12 @@ function App() {
       const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
 
-      // Add debug logging to check raw build_info presence in each record
-      console.log("Raw data build_info check:", tabularData.map((item: any, index) => ({
-        index,
-        pass_id: item.data?.readings?.pass_id,
-        has_build_info: item.data?.readings?.build_info ? true : false
-      })));
-
       // Process tabular data into pass summaries
-      const processedPasses: Pass[] = tabularData.map((item: any, index) => {
+      const processedPasses: Pass[] = tabularData.map((item: any) => {
         const pass = item.data!.readings!;
         
-        // Ensure build_info is properly extracted from each record
-        // Clone the build_info to ensure we don't modify the original data
         const buildInfo = pass.build_info ? {...pass.build_info} : {};
-        
-        // Debug each pass's build info separately
-        console.log(`Pass ${index} (${pass.pass_id}) build info:`, buildInfo);
-        
+                
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
@@ -204,15 +192,6 @@ function App() {
           }
         };
       });
-      
-      // Log all processed passes to verify build_info is present for all
-      console.log("All processed passes with build info:", 
-        processedPasses.map((p, idx) => ({ 
-          index: idx,
-          pass_id: p.pass_id, 
-          has_build_info: p.build_info ? Object.keys(p.build_info).length > 0 : false 
-        }))
-      );
       
       setPassSummaries(processedPasses);
       console.log("Fetching data end");
