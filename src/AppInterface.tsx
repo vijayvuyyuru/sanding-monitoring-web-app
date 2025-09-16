@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
@@ -36,6 +36,170 @@ export interface Pass {
   err_string?: string | null;
 }
 
+const ImageDisplay: React.FC<{ binaryData: VIAM.dataApi.BinaryData, viamClient: VIAM.ViamClient }> = ({ binaryData, viamClient }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+    let currentObjectUrl: string | null = null;
+
+    const getImageUrl = async (binaryData: VIAM.dataApi.BinaryData): Promise<void> => {
+      try {
+        let data = binaryData.binary;
+        const binaryId = binaryData.metadata?.binaryDataId;
+
+        // If binary data is not present, fetch it by ID
+        if ((!data || data.length === 0) && binaryId) {
+          console.log('Fetching binary data by ID:', binaryId);
+          const results = await viamClient.dataClient.binaryDataByIds([binaryId]);
+          if (results && results.length > 0 && results[0].binary && results[0].binary.length > 0) {
+            console.log(`Retrieved binary data for ID ${binaryId}, size:`, results[0].binary.length);
+            data = results[0].binary;
+          } else {
+            console.error(`Failed to retrieve binary data for ID ${binaryId}`);
+          }
+        }
+
+        if (!data || data.length === 0) {
+          const errMsg = `No binary data available for image ${binaryData.metadata?.fileName || binaryId}`;
+          console.error(errMsg);
+          throw new Error(errMsg);
+        }
+
+        console.log('Binary data size:', data.length);
+
+        // Determine MIME type based on file extension or metadata
+        let mimeType = 'image/jpeg'; // default
+        const fileName = binaryData.metadata?.fileName?.toLowerCase();
+        const fileExt = binaryData.metadata?.fileExt?.toLowerCase();
+        
+        if (fileName?.endsWith('.png') || fileExt === 'png') {
+          mimeType = 'image/png';
+        } else if (fileName?.endsWith('.jpg') || fileName?.endsWith('.jpeg') || fileExt === 'jpg' || fileExt === 'jpeg') {
+          mimeType = 'image/jpeg';
+        }
+
+        console.log('Using MIME type:', mimeType);
+
+        // Don't try to create a blob with empty data
+        if (data.length === 0) {
+          throw new Error('Cannot create image from empty data');
+        }
+
+        // Convert Uint8Array to blob
+        const buffer = new ArrayBuffer(data.length);
+        const view = new Uint8Array(buffer);
+        view.set(data);
+        
+        const blob = new Blob([buffer], { type: mimeType });
+        currentObjectUrl = URL.createObjectURL(blob);
+        
+        console.log('Created blob URL:', currentObjectUrl);
+        
+        if (isMounted) {
+          setImageUrl(currentObjectUrl);
+          setIsLoading(false);
+          setHasError(false);
+          setErrorMessage('');
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error("Error creating image URL:", errorMsg);
+        if (isMounted) {
+          setImageUrl(null);
+          setIsLoading(false);
+          setHasError(true);
+          setErrorMessage(errorMsg);
+        }
+      }
+    };
+
+    getImageUrl(binaryData);
+
+    return () => {
+      isMounted = false;
+      // Clean up the object URL when component unmounts
+      if (currentObjectUrl) {
+        console.log('Revoking blob URL:', currentObjectUrl);
+        URL.revokeObjectURL(currentObjectUrl);
+      }
+    };
+  }, [binaryData, viamClient]);
+
+  if (isLoading) {
+    return (
+      <div style={{ 
+        width: '300px', 
+        height: '225px', 
+        backgroundColor: '#f0f0f0', 
+        borderRadius: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#6b7280'
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (hasError || !imageUrl) {
+    return (
+      <div style={{ 
+        width: '300px', 
+        height: '225px', 
+        backgroundColor: '#f0f0f0', 
+        borderRadius: '4px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#ef4444',
+        fontSize: '14px',
+        textAlign: 'center',
+        padding: '20px'
+      }}>
+        <div>Failed to load image</div>
+        {errorMessage && (
+          <div style={{ fontSize: '12px', marginTop: '8px', color: '#9ca3af', maxWidth: '260px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {errorMessage}
+          </div>
+        )}
+        {binaryData.metadata?.fileName && (
+          <div style={{ fontSize: '12px', marginTop: '8px', color: '#9ca3af' }}>
+            {binaryData.metadata.fileName.split('/').pop()}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={imageUrl} 
+      alt="Pass capture" 
+      style={{ 
+        maxWidth: '300px', 
+        maxHeight: '225px',
+        borderRadius: '4px',
+        objectFit: 'contain',
+        display: 'block'
+      }} 
+      onLoad={() => {
+        console.log('Image loaded successfully');
+      }}
+      onError={() => {
+        console.error("Image failed to render, URL:", imageUrl);
+        setHasError(true);
+        setErrorMessage('Image failed to render after loading');
+      }}
+    />
+  );
+};
+
 const AppInterface: React.FC<AppViewProps> = ({ 
   machineName,
   viamClient,
@@ -50,6 +214,15 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [selectedCamera, setSelectedCamera] = useState<string>('');
+
+  const cameraComponentNames = Array.from(
+    new Set(
+      Array.from(imageFiles.values())
+        .map(file => file.metadata?.captureMetadata?.componentName)
+        .filter((name): name is string => !!name)
+    )
+  );
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -132,6 +305,25 @@ const AppInterface: React.FC<AppViewProps> = ({
               robotClient={robotClient || null}
               onVideoStoreSelected={setVideoStoreClient}
             />
+
+            {cameraComponentNames.length > 0 && (
+              <div className="mb-4">
+                <label htmlFor="camera-select" className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Camera for Before/After Images
+                </label>
+                <select
+                  id="camera-select"
+                  value={selectedCamera}
+                  onChange={(e) => setSelectedCamera(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">-- Select a Camera --</option>
+                  {cameraComponentNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             
             <div className="viam-table-container">
               <table className="viam-table">
@@ -241,41 +433,43 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 </div>
                               
                                 {/* New section for pass images */}
-                                {(() => {
+                                {selectedCamera && (() => {
                                   const passStart = new Date(pass.start);
                                   const passEnd = new Date(pass.end);
-                                  const passImages = Array.from(imageFiles.values()).filter(file => {
-                                    if (file.metadata?.timeRequested) {
-                                      const fileTime = file.metadata.timeRequested.toDate();
-                                      return fileTime >= passStart && fileTime <= passEnd;
-                                    }
-                                    return false;
-                                  }).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
 
-                                  if (passImages.length > 0) {
-                                    return (
-                                      <div className="pass-files-section">
-                                        <h4>Images captured during this pass</h4>
-                                        <ul>
-                                          {passImages.map((image, index) => {
-                                            const meta = image.metadata;
-                                            let displayName = meta?.fileName?.split('/').pop();
-                                            if (!displayName && meta?.captureMetadata?.componentName) {
-                                              const time = meta.timeRequested?.toDate().toISOString() ?? 'unknown-time';
-                                              displayName = `${meta.captureMetadata.componentName}-${time}`;
-                                            }
+                                  const allCameraImages = Array.from(imageFiles.values()).filter(file => 
+                                    file.metadata?.captureMetadata?.componentName === selectedCamera && file.metadata?.timeRequested
+                                  ).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
 
-                                            return (
-                                              <li key={index} className="font-mono text-sm">
-                                                {displayName || meta?.binaryDataId}
-                                              </li>
-                                            );
-                                          })}
-                                        </ul>
-                                      </div>
-                                    );
+                                  const beforeImage = allCameraImages.filter(img => img.metadata!.timeRequested!.toDate() < passStart).pop();
+                                  const afterImage = allCameraImages.find(img => img.metadata!.timeRequested!.toDate() > passEnd);
+
+                                  if (!beforeImage && !afterImage) {
+                                    return null;
                                   }
-                                  return null;
+
+                                  return (
+                                    <div className="pass-files-section">
+                                      <h4>Before & After Images ({selectedCamera})</h4>
+                                      <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+                                        {beforeImage ? (
+                                          <div className="image-container">
+                                            <h5>Before</h5>
+                                            <ImageDisplay binaryData={beforeImage} viamClient={viamClient} />
+                                            <p className="font-mono text-xs" style={{marginTop: '4px'}}>{beforeImage.metadata?.timeRequested?.toDate().toLocaleString()}</p>
+                                          </div>
+                                        ) : <div><p>No "Before" image found.</p></div>}
+                                        
+                                        {afterImage ? (
+                                          <div className="image-container">
+                                            <h5>After</h5>
+                                            <ImageDisplay binaryData={afterImage} viamClient={viamClient} />
+                                            <p className="font-mono text-xs" style={{marginTop: '4px'}}>{afterImage.metadata?.timeRequested?.toDate().toLocaleString()}</p>
+                                          </div>
+                                        ) : <div><p>No "After" image found.</p></div>}
+                                      </div>
+                                    </div>
+                                  );
                                 })()}
 
                                 {/* New section for all files in pass time range */}
