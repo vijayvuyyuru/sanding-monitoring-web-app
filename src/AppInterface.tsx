@@ -519,7 +519,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             color: '#9ca3af',
                                             fontSize: '14px'
                                           }}>
-                                            No image captured within 30 minutes after pass end
+                                            No image captured before/after this pass
                                           </div>
                                         </div>
                                       );
