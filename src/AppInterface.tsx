@@ -34,10 +34,7 @@ export interface Pass {
   pass_id: string;
   err_string?: string | null;
   build_info?: {
-    id?: string;
-    name?: string;
     version?: string;
-    description?: string;
     git_revision?: string;
     date_compiled?: string;
   };
