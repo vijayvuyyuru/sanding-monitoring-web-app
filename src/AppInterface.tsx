@@ -208,13 +208,6 @@ const AppInterface: React.FC<AppViewProps> = ({
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
-                
-                {/* Add the connection status message */}
-                {selectedCamera && (
-                  <div className="video-store-selector-message success">
-                    ✓ Connected to: {selectedCamera}
-                  </div>
-                )}
               </div>
             )}
             </div>
