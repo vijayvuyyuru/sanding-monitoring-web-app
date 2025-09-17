@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
@@ -18,7 +18,7 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
-  const [loadingPasses] = useState<Set<string>>(new Set());
+  const [loadingPasses, setLoadingPasses] = useState<Set<string>>(new Set());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -170,8 +170,6 @@ function App() {
       const processedPasses: Pass[] = tabularData.map((item: any) => {
         const pass = item.data!.readings!;
         
-        const buildInfo = pass.build_info ? {...pass.build_info} : {};
-                
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
@@ -183,11 +181,9 @@ function App() {
           })): [],
           success: pass.success ?? true,
           pass_id: pass.pass_id,
-          err_string: pass.err_string || null,
-          build_info: buildInfo
+          err_string: pass.err_string || null
         };
       });
-      
       setPassSummaries(processedPasses);
       console.log("Fetching data end");
     };
