@@ -597,8 +597,9 @@ button:focus {
 
 .steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Increased from 200px */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
+  justify-content: start;
 }
 
 @media (max-width: 640px) {
