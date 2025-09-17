@@ -203,7 +203,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                   onChange={(e) => setSelectedCamera(e.target.value)}
                   className="video-store-selector-select"
                 >
-                  <option value="">-- Select a Camera --</option>
+                  <option value="">Select a camera resource</option>
                   {cameraComponentNames.map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
