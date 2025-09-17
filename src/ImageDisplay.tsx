@@ -105,7 +105,7 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({
     return (
       <div style={{ 
         width: '300px', 
-        height: '225px', 
+        height: '100%', 
         backgroundColor: '#f0f0f0', 
         borderRadius: '4px',
         display: 'flex',
