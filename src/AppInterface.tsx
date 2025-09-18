@@ -233,16 +233,24 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  // Helper function to format duration from milliseconds to hours and minutes
-  const formatDurationMs = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
+  // Helper function to format duration from milliseconds to hours and minutes with tooltip
+  const formatDurationMs = (ms: number): JSX.Element => {
+    const totalMinutes = Math.floor(ms / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
     
+    let displayText: string;
     if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+      displayText = `${hours}h ${minutes}m`;
+    } else {
+      displayText = `${minutes}m`;
     }
-    return `${minutes}m`;
+    
+    return (
+      <span title={`${totalMinutes} minutes`}>
+        {displayText}
+      </span>
+    );
   };
 
   return (
