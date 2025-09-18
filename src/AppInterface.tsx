@@ -130,7 +130,7 @@ const AppInterface: React.FC<AppViewProps> = ({
     }, {});
   }, [passSummaries]);
 
-  // Memoize day aggregates calculation - calculate both execution percentage AND total factory time
+  // Memoize day aggregates calculation - calculate both execution percentage AND total time
   const dayAggregates = useMemo(() => {
     return Object.entries(groupedPasses).reduce((acc: Record<string, {
       totalFactoryTime: number;
@@ -144,9 +144,9 @@ const AppInterface: React.FC<AppViewProps> = ({
       let totalExecutionTime = 0;
       let totalOtherStepsTime = 0;
       
-      // Calculate both factory time and execution metrics
+      // Calculate both time and execution metrics
       passes.forEach(pass => {
-        // Add pass duration to total factory time
+        // Add pass duration to total time
         const passDuration = pass.end.getTime() - pass.start.getTime();
         totalFactoryTime += passDuration;
         
@@ -155,7 +155,8 @@ const AppInterface: React.FC<AppViewProps> = ({
           pass.steps.forEach(step => {
             const stepDuration = step.end.getTime() - step.start.getTime();
             
-            if (step.name.toLowerCase().includes('execut')) {
+            // Look for the specific "executing" step (exact match or case-insensitive)
+            if (step.name.toLowerCase() === 'executing') {
               totalExecutionTime += stepDuration;
             } else {
               totalOtherStepsTime += stepDuration;
@@ -334,11 +335,11 @@ const AppInterface: React.FC<AppViewProps> = ({
                                   <span className="day-summary-value">{totalPassCount}</span>
                                 </div>
                                 <div className="day-summary-item">
-                                  <span className="day-summary-label">Total Factory Time</span>
+                                  <span className="day-summary-label">Total Time</span>
                                   <span className="day-summary-value">{formatDurationMs(totalFactoryTime)}</span>
                                 </div>
                                 <div className="day-summary-item">
-                                  <span className="day-summary-label">Execution Time</span>
+                                  <span className="day-summary-label">Executing Time</span>
                                   <span className="day-summary-value">{formatDurationMs(totalExecutionTime)}</span>
                                 </div>
                                 <div className="day-summary-item">
