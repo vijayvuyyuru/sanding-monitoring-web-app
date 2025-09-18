@@ -298,7 +298,6 @@ const AppInterface: React.FC<AppViewProps> = ({
                 </thead>
                 <tbody>
                   {Object.entries(groupedPasses).map(([date, passes], dayIndex) => {
-                    // Use pre-calculated aggregates
                     const {
                       totalExecutionTime,
                       totalOtherStepsTime,
@@ -334,13 +333,11 @@ const AppInterface: React.FC<AppViewProps> = ({
                           </td>
                         </tr>
                         {passes.map((pass: Pass, passIndex: number) => {
-                          // Create unique index for each pass across all days
                           const globalIndex = `${dayIndex}-${passIndex}`;
                           
                           return (
                             <React.Fragment key={pass.pass_id || globalIndex}>
-                              <tr 
-                                className="expandable-row"
+                              <tr className="expandable-row"
                                 onClick={() => toggleRowExpansion(globalIndex)}
                                 role="button"
                                 tabIndex={0}
@@ -351,14 +348,13 @@ const AppInterface: React.FC<AppViewProps> = ({
                                   }
                                 }}
                                 aria-expanded={expandedRows.has(globalIndex)}
-                                aria-label={`${expandedRows.has(globalIndex) ? 'Collapse' : 'Expand'} details for pass from ${pass.start.toLocaleTimeString()}`}
-                              >
+                                aria-label={`${expandedRows.has(globalIndex) ? 'Collapse' : 'Expand'} details for pass from ${pass.start.toLocaleTimeString()}`}>
                                 <td>
                                   <span className={`expand-icon ${expandedRows.has(globalIndex) ? 'expanded' : ''}`} aria-hidden="true">
                                     ▶
                                   </span>
                                 </td>
-                                <td className="text-zinc-700">{formatDate(pass.start)}</td> {/* Use consistent formatter */}
+                                <td className="text-zinc-700">{formatDate(pass.start)}</td>
                                 <td className="text-zinc-700 text-xs">
                                   {pass.pass_id ? (
                                     <button
@@ -388,8 +384,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     <span className="text-gray-600">—</span>
                                   )}
                                 </td>
-                              </tr>
-                              {expandedRows.has(globalIndex) && (
+                              </tr>{expandedRows.has(globalIndex) && (
                                 <tr className="expanded-content">
                                   <td colSpan={9}>
                                     <div className="pass-details">
