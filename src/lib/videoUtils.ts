@@ -34,8 +34,15 @@ export const formatDuration = (durationMs?: number, start?: string, end?: string
 export const formatDurationToMinutesSeconds = (start: Date, end: Date): string => {
   const ms = end.getTime() - start.getTime();
   if (isNaN(ms) || ms < 0) return '0m 0s';
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
+
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
   return `${minutes}m ${seconds}s`;
 };
 
@@ -69,7 +76,7 @@ const VIDEO_LENGTH_BUFFER = 10000;
 const getVideoTimeWithBuffer = (date: Date, isStart: boolean): Date => {
   const offset = isStart ? -VIDEO_LENGTH_BUFFER : VIDEO_LENGTH_BUFFER;
   const bufferedDate = new Date(date.getTime() + offset);
-  
+
   // If adding buffer to end time would put us in the future, cap it at current time
   if (!isStart) {
     const now = new Date();
@@ -77,29 +84,29 @@ const getVideoTimeWithBuffer = (date: Date, isStart: boolean): Date => {
       return now;
     }
   }
-  
+
   return bufferedDate;
 };
 
 
 export const generateVideo = async (
-  videoStoreClient: VIAM.GenericComponentClient, 
+  videoStoreClient: VIAM.GenericComponentClient,
   step: Step) => {
-    console.log("generateVideo called for step", step);
+  console.log("generateVideo called for step", step);
 
-    const videoStart = getVideoTimeWithBuffer(step.start, true);
-    const videoEnd = getVideoTimeWithBuffer(step.end, false); 
-    
-    console.log("formatDateToVideoStoreFormat(step.end)", 
-      formatDateToVideoStoreFormat(videoEnd));
-    console.log("formatDateToVideoStoreFormat(step.start)", 
-      formatDateToVideoStoreFormat(videoStart));
-    const command = VIAM.Struct.fromJson({
-      "command": "save",
-      "to": formatDateToVideoStoreFormat(videoEnd),
-      "from": formatDateToVideoStoreFormat(videoStart),
-      "metadata": `${step.pass_id}${step.name}`,
-    });
+  const videoStart = getVideoTimeWithBuffer(step.start, true);
+  const videoEnd = getVideoTimeWithBuffer(step.end, false);
 
-    return await videoStoreClient.doCommand(command);
-  };
+  console.log("formatDateToVideoStoreFormat(step.end)",
+    formatDateToVideoStoreFormat(videoEnd));
+  console.log("formatDateToVideoStoreFormat(step.start)",
+    formatDateToVideoStoreFormat(videoStart));
+  const command = VIAM.Struct.fromJson({
+    "command": "save",
+    "to": formatDateToVideoStoreFormat(videoEnd),
+    "from": formatDateToVideoStoreFormat(videoStart),
+    "metadata": `${step.pass_id}${step.name}`,
+  });
+
+  return await videoStoreClient.doCommand(command);
+};
