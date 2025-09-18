@@ -117,7 +117,6 @@ const AppInterface: React.FC<AppViewProps> = ({
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
-  // Create a consistent date formatter
   const formatDate = (date: Date): string => {
     return date.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' });
   };
