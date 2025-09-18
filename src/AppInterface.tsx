@@ -35,6 +35,11 @@ export interface Pass {
   success: boolean;
   pass_id: string;
   err_string?: string | null;
+  build_info?: {
+    version?: string;
+    git_revision?: string;
+    date_compiled?: string;
+  };
 }
 
 const AppInterface: React.FC<AppViewProps> = ({ 
@@ -283,6 +288,40 @@ const AppInterface: React.FC<AppViewProps> = ({
                       {expandedRows.has(index) && (
                         <tr className="expanded-content">
                           <td colSpan={9}>
+                            <div className="build-info-section">
+                              <h4>Build information</h4>
+                              {pass.build_info && (pass.build_info.version || pass.build_info.git_revision || pass.build_info.date_compiled) ? (
+                                <div className="build-info-grid">
+                                  {/* Version */}
+                                  {pass.build_info.version && (
+                                    <div className="build-info-item">
+                                      <span className="build-info-label">Version</span>
+                                      <span className="build-info-value">{pass.build_info.version}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Git Revision */}
+                                  {pass.build_info.git_revision && (
+                                    <div className="build-info-item">
+                                      <span className="build-info-label">Git revision</span>
+                                      <span className="build-info-value">{pass.build_info.git_revision}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Date Compiled */}
+                                  {pass.build_info.date_compiled && (
+                                    <div className="build-info-item">
+                                      <span className="build-info-label">Date compiled</span>
+                                      <span className="build-info-value">{pass.build_info.date_compiled}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="build-info-notice">
+                                  Build information not available for this run.
+                                </div>
+                              )}
+                                   </div>
                             <div className="pass-details">
                               <div className="passes-container">
                                 <div className="steps-grid">

@@ -19,7 +19,6 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
-  const [loadingPasses] = useState<Set<string>>(new Set());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -186,7 +185,8 @@ function App() {
       // Process tabular data into pass summaries
       const processedPasses: Pass[] = tabularData.map((item: any) => {
         const pass = item.data!.readings!;
-        
+        const buildInfo = pass.build_info ? pass.build_info : {};
+
         return {
           start: new Date(pass.start),
           end: new Date(pass.end),
@@ -198,7 +198,8 @@ function App() {
           })): [],
           success: pass.success ?? true,
           pass_id: pass.pass_id,
-          err_string: pass.err_string || null
+          err_string: pass.err_string || null,
+          build_info: buildInfo
         };
       });
       setPassSummaries(processedPasses);
@@ -227,7 +228,6 @@ function App() {
       imageFiles={imageFiles}
       robotClient={robotClient}
       fetchVideos={fetchFiles}
-      loadingPasses={loadingPasses}
       fetchTimestamp={fetchTimestamp}
     />
   );
