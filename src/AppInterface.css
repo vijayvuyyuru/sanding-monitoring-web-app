@@ -67,6 +67,10 @@ header {
   margin-left: -0.25rem !important;
 }
 
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
 .mb-4 {
   margin-bottom: 1rem;
 }
@@ -93,6 +97,14 @@ header {
 
 .gap-2 {
   gap: 0.5rem;
+}
+
+.gap-8 {
+  gap: 2rem;
+}
+
+.block {
+  display: block;
 }
 
 .moveleft span {
@@ -589,7 +601,7 @@ button:focus {
 
 .steps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Increased from 200px */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 12px;
   justify-content: start;
   padding: 0 2px;
@@ -890,7 +902,6 @@ button:focus {
   color: #9ca3af;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata,
     "Roboto Mono", Consolas, "Liberation Mono", Menlo, monospace;
-  text-align: left;
 }
 
 /* Video Modal Styles */
@@ -1105,7 +1116,7 @@ button:focus {
 }
 
 .no-files-message, .no-videos-message {
-  grid-: 1 / -1;
+  grid-column: 1 / -1;
   text-align: center;
   padding: 0.25rem 0 0;
   color: #9ca3af;

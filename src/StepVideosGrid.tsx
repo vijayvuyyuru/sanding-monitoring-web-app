@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import * as VIAM from "@viamrobotics/sdk";
 import VideoModal from "./VideoModal";
@@ -134,70 +133,74 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   if (stepVideos.length === 0) {
     return (
       <>
-        <div className="generate video">
-          <button
-            className="generate-video-button"
-            onClick={() => handleGenerateVideo()}
-
-            disabled={videoStoreClient == null || isPolling}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: videoStoreClient && !isPolling ? '#3b82f6' : '#9ca3af',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: videoStoreClient && !isPolling ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-              transition: 'background-color 0.2s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              minWidth: '140px',
-              justifyContent: 'center'
-            }}
-            onMouseEnter={(e) => {
-              if (videoStoreClient && !isPolling) {
-                e.currentTarget.style.backgroundColor = '#2563eb';
-              }
-            }}
-            onMouseLeave={(e) => {
-
-              if (videoStoreClient && !isPolling) {
-                e.currentTarget.style.backgroundColor = '#3b82f6';
-              }
-            }}
-                      >
-              {isPolling ? (
-                <>
-                  <div 
-                    style={{
-                      width: '16px',
-                      height: '16px',
-                      border: '2px solid #ffffff',
-                      borderTop: '2px solid transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 1s linear infinite'
-                    }}
-                  />
-                  Generating...
-                </>
-              ) : (
-                'Generate Video'
-              )}
-            </button>
-                      {isPolling && (
+      <div className="generate-video" style={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        marginTop: '18px'
+      }}>
+        <button
+          className="generate-video-button"
+          onClick={() => handleGenerateVideo()}
+          disabled={videoStoreClient == null || isPolling}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: videoStoreClient && !isPolling ? '#3b82f6' : '#9ca3af',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: videoStoreClient && !isPolling ? 'pointer' : 'not-allowed',
+            fontSize: '14px',
+            transition: 'background-color 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            minWidth: '140px',
+            justifyContent: 'center'
+          }}
+          onMouseEnter={(e) => {
+            if (videoStoreClient && !isPolling) {
+              e.currentTarget.style.backgroundColor = '#2563eb';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (videoStoreClient && !isPolling) {
+              e.currentTarget.style.backgroundColor = '#3b82f6';
+            }
+          }}
+        >
+          {isPolling ? (
+            <>
               <div 
                 style={{
-                  marginTop: '8px',
-                  fontSize: '12px',
-                  color: '#6b7280',
-                  textAlign: 'center'
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid #ffffff',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
                 }}
-              >
-                This can take up to a minute.
-              </div>
-            )}
-        </div>
+              />
+              Generating...
+            </>
+          ) : (
+            'Generate Video'
+          )}
+        </button>
+        {isPolling && (
+          <div 
+            style={{
+              marginTop: '8px',
+              fontSize: '12px',
+              color: '#6b7280',
+              textAlign: 'center'
+            }}
+          >
+            This can take up to a minute.
+          </div>
+        )}
+      </div>
       </>
     );
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import AppInterface from './AppInterface';
 import Cookies from "js-cookie";
@@ -15,6 +15,7 @@ function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
   const [files, setFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
   const [videoFiles, setVideoFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
+  const [imageFiles, setImageFiles] = useState<Map<string, VIAM.dataApi.BinaryData>>(new Map());
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
@@ -57,7 +58,7 @@ function App() {
     while (true) {
       let binaryData = await viamClient.dataClient.binaryDataByFilter(
         filter,
-        100, // limit
+        100,
         VIAM.dataApi.Order.DESCENDING,
         paginationToken,
         false,
@@ -65,17 +66,25 @@ function App() {
         false
       );
       
-      // Process files once and build both files and videoFiles lists
+      // Process files once and build files, videoFiles, and images lists
       const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
+      const newImages = new Map<string, VIAM.dataApi.BinaryData>();
       
       binaryData.data.forEach(file => {
         if (file.metadata?.binaryDataId) {
-          if (file.metadata.fileName?.toLowerCase().includes('.mp4')) {
+          const isVideo = file.metadata.fileName?.toLowerCase().includes('.mp4');
+          const isImageFile = file.metadata.fileName?.toLowerCase().match(/\.(png|jpg|jpeg)$/);
+          const isCameraCapture = file.metadata.captureMetadata?.componentName && file.metadata.captureMetadata?.methodName;
+
+          if (isVideo) {
             // Video files go to videoFiles
             newVideoFiles.set(file.metadata.binaryDataId, file);
+          } else if (isImageFile || isCameraCapture) {
+            // Image files go to images
+            newImages.set(file.metadata.binaryDataId, file);
           } else {
-            // Non-video files go to files
+            // Other files go to files
             newFiles.set(file.metadata.binaryDataId, file);
           }
         }
@@ -102,6 +111,14 @@ function App() {
           updatedVideoFiles.set(id, file);
         });
         return updatedVideoFiles;
+      });
+
+      setImageFiles(prevImageFiles => {
+        const updatedImageFiles = new Map(prevImageFiles);
+        newImages.forEach((file, id) => {
+          updatedImageFiles.set(id, file);
+        });
+        return updatedImageFiles;
       });
       
       // Break if no more data to fetch
@@ -208,6 +225,7 @@ function App() {
       passSummaries={passSummaries}
       files={files}
       videoFiles={videoFiles}
+      imageFiles={imageFiles}
       robotClient={robotClient}
       fetchVideos={fetchFiles}
       fetchTimestamp={fetchTimestamp}

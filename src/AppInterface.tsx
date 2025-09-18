@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
 import VideoStoreSelector from './VideoStoreSelector';
+import ImageDisplay from './ImageDisplay';
+import BeforeAfterModal from './BeforeAfterModal';
 import { 
   formatDurationToMinutesSeconds,
 } from './lib/videoUtils';
@@ -11,11 +13,11 @@ interface AppViewProps {
   passSummaries?: any[];
   files: Map<string, VIAM.dataApi.BinaryData>;
   videoFiles: Map<string, VIAM.dataApi.BinaryData>;
+  imageFiles: Map<string, VIAM.dataApi.BinaryData>;
   viamClient: VIAM.ViamClient;
   robotClient?: VIAM.RobotClient | null;
   fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
-  loadingPasses: Set<string>;
   fetchTimestamp: Date | null;
 }
 
@@ -46,6 +48,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   passSummaries = [],
   files, 
   videoFiles,
+  imageFiles,
   robotClient,
   fetchVideos,
   fetchTimestamp,
@@ -53,6 +56,63 @@ const AppInterface: React.FC<AppViewProps> = ({
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const [videoStoreClient, setVideoStoreClient] = useState<VIAM.GenericComponentClient | null>(null);
+  const [selectedCamera, setSelectedCamera] = useState<string>('');
+  const [beforeAfterModal, setBeforeAfterModal] = useState<{
+    beforeImage: VIAM.dataApi.BinaryData | null;
+    afterImage: VIAM.dataApi.BinaryData | null;
+  } | null>(null);
+
+  const cameraComponentNames = Array.from(
+    new Set(
+      Array.from(imageFiles.values())
+        .map(file => file.metadata?.captureMetadata?.componentName)
+        .filter((name): name is string => !!name)
+    )
+  );
+
+  const openBeforeAfterModal = (beforeImage: VIAM.dataApi.BinaryData | null, afterImage: VIAM.dataApi.BinaryData | null) => {
+    setBeforeAfterModal({ beforeImage, afterImage });
+  };
+
+  const closeBeforeAfterModal = () => {
+    setBeforeAfterModal(null);
+  };
+
+  // Helper function to get before/after images for a pass
+  const getBeforeAfterImages = (pass: Pass): { beforeImage: VIAM.dataApi.BinaryData | null, afterImage: VIAM.dataApi.BinaryData | null } => {
+    const passStart = new Date(pass.start);
+    const passEnd = new Date(pass.end);
+    
+    const allCameraImages = Array.from(imageFiles.values()).filter(file => {
+      if (file.metadata?.captureMetadata?.componentName !== selectedCamera || !file.metadata?.timeRequested) {
+        return false;
+      }
+      
+      const imgTime = file.metadata.timeRequested.toDate();
+      // Only consider images within the pass time range
+      return imgTime >= passStart && imgTime <= passEnd;
+    }).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
+    
+    // Get the first image in the pass (closest to start)
+    const beforeImage = allCameraImages[0];
+    
+    // Get the last image in the pass (closest to end)
+    const afterImage = allCameraImages[allCameraImages.length - 1];
+
+    return { 
+      beforeImage: beforeImage || null, 
+      afterImage: afterImage || null 
+    };
+  };
+
+  // Helper function to format time difference
+  const formatTimeDifference = (time1: number, time2: number): string => {
+    const minutes = Math.abs(time1 - time2) / 60000;
+    if (minutes < 1) {
+      return `${Math.round(minutes * 60)}s`;
+    }
+    return `${Math.round(minutes)}m`;
+  };
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -131,11 +191,32 @@ const AppInterface: React.FC<AppViewProps> = ({
               {machineName ? ` for ${machineName}` : ''}
             </h2>
             
+            <div className='flex gap-8'>
             <VideoStoreSelector
               robotClient={robotClient || null}
               onVideoStoreSelected={setVideoStoreClient}
             />
-            
+
+            {cameraComponentNames.length > 0 && (
+              <div className="video-store-selector">
+                <label htmlFor="camera-select" className="video-store-selector-label">
+                  Select camera resource
+                </label>
+                <select
+                  id="camera-select"
+                  value={selectedCamera}
+                  onChange={(e) => setSelectedCamera(e.target.value)}
+                  className="video-store-selector-select"
+                >
+                  <option value="">Select a camera resource</option>
+                  {cameraComponentNames.map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            </div>
+
             <div className="viam-table-container">
               <table className="viam-table">
                 <thead>
@@ -244,40 +325,121 @@ const AppInterface: React.FC<AppViewProps> = ({
                             <div className="pass-details">
                               <div className="passes-container">
                                 <div className="steps-grid">
-                                  {pass.steps.map((step: Step) => {
-                                      const stepVideos = getStepVideos(step);
-
+                                  {/* Camera Images */}
+                                  {selectedCamera && (() => {
+                                    const { beforeImage, afterImage } = getBeforeAfterImages(pass);
+                                    const passStart = new Date(pass.start);
+                                    const passEnd = new Date(pass.end);
+                                    
+                                    // If no images at all, show a message
+                                    if (!beforeImage && !afterImage) {
                                       return (
-                                        <div key={step.name} className="step-card">
-                                          <div className="step-name">{step.name}</div>
-                                          <div className="step-timeline">
-                                            <div className="step-time">
-                                              <span className="time-label">Start</span>
-                                              <span className="time-value">{step.start.toLocaleTimeString()}</span>
-                                            </div>
-                                            <div className="timeline-arrow">→</div>
-                                            <div className="step-time">
-                                              <span className="time-label">End</span>
-                                              <span className="time-value">{step.end.toLocaleTimeString()}</span>
-                                            </div>
+                                        <div className="step-card" style={{ order: 0 }}>
+                                          <div style={{ 
+                                            display: 'flex',
+                                            height: '100%',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: '#f3f4f6',
+                                            borderRadius: '4px',
+                                            padding: '12px',
+                                            color: '#9ca3af',
+                                            fontSize: '14px'
+                                          }}>
+                                            No images captured during this pass
                                           </div>
-                                          <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
-                                          
-                                          <StepVideosGrid
-                                            step={step}
-                                            stepVideos={stepVideos}
-                                            videoFiles={videoFiles}
-                                            fetchTimestamp={fetchTimestamp}
-                                            videoStoreClient={videoStoreClient}
-                                            viamClient={viamClient}
-                                            fetchVideos={fetchVideos}
-                                          />
                                         </div>
                                       );
+                                    }
+                                    
+                                    return (
+                                      <>
+                                        {/* Start Image */}
+                                        {beforeImage && (
+                                          <div className="step-card" style={{ order: -1 }}>
+                                            <div className="step-name">Start Image</div>
+                                            <div className="step-duration">
+                                              {beforeImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
+                                              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                                                ({formatTimeDifference(
+                                                  beforeImage.metadata?.timeRequested?.toDate()?.getTime() || passStart.getTime(),
+                                                  passStart.getTime()
+                                                )} from start)
+                                              </span>
+                                            </div>
+                                            
+                                            <div 
+                                              className="step-image-container clickable-image" 
+                                              style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}
+                                              onClick={() => openBeforeAfterModal(beforeImage, afterImage)}
+                                            >
+                                              <ImageDisplay binaryData={beforeImage} viamClient={viamClient} />
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* End Image */}
+                                        {afterImage && afterImage !== beforeImage && (
+                                          <div className="step-card" style={{ order: 999 }}>
+                                            <div className="step-name">End Image</div>
+                                            <div className="step-duration">
+                                              {afterImage.metadata?.timeRequested?.toDate().toLocaleTimeString()}
+                                              <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
+                                                ({formatTimeDifference(
+                                                  passEnd.getTime(),
+                                                  afterImage.metadata?.timeRequested?.toDate()?.getTime() || passEnd.getTime()
+                                                )} before end)
+                                              </span>
+                                            </div>
+                                            
+                                            <div 
+                                              className="step-image-container clickable-image" 
+                                              style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}
+                                              onClick={() => openBeforeAfterModal(beforeImage, afterImage)}
+                                            >
+                                              <ImageDisplay binaryData={afterImage} viamClient={viamClient} />
+                                            </div>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                  
+                                  {/* Regular step cards */}
+                                  {pass.steps.map((step: Step) => {
+                                    const stepVideos = getStepVideos(step);
+
+                                    return (
+                                      <div key={step.name} className="step-card">
+                                        <div className="step-name">{step.name}</div>
+                                        <div className="step-timeline">
+                                          <div className="step-time">
+                                            <span className="time-label">Start</span>
+                                            <span className="time-value">{step.start.toLocaleTimeString()}</span>
+                                          </div>
+                                          <div className="timeline-arrow">→</div>
+                                          <div className="step-time">
+                                            <span className="time-label">End</span>
+                                            <span className="time-value">{step.end.toLocaleTimeString()}</span>
+                                          </div>
+                                        </div>
+                                        <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
+                                        
+                                        <StepVideosGrid
+                                          step={step}
+                                          stepVideos={stepVideos}
+                                          videoFiles={videoFiles}
+                                          fetchTimestamp={fetchTimestamp}
+                                          videoStoreClient={videoStoreClient}
+                                          viamClient={viamClient}
+                                          fetchVideos={fetchVideos}
+                                        />
+                                      </div>
+                                    );
                                   })}
                                 </div>
                               
-                                {/* New section for all files in pass time range */}
+                                {/* Keep the "all files in pass time range" section unchanged */}
                                 {(() => {
                                   const passStart = new Date(pass.start);
                                   const passEnd = new Date(pass.end);
@@ -470,6 +632,16 @@ const AppInterface: React.FC<AppViewProps> = ({
           </section>
         )}
       </main>
+
+      {/* Add the modal at the end */}
+      {beforeAfterModal && (
+        <BeforeAfterModal
+          beforeImage={beforeAfterModal.beforeImage}
+          afterImage={beforeAfterModal.afterImage}
+          onClose={closeBeforeAfterModal}
+          viamClient={viamClient}
+        />
+      )}
     </div>
   );
 };
