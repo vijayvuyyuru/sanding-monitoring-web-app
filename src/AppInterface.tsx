@@ -117,14 +117,11 @@ const AppInterface: React.FC<AppViewProps> = ({
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' });
-  };
-
   // Memoize the grouped passes calculation with consistent date formatting
   const groupedPasses = useMemo(() => {
     return passSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
-      const dateKey = formatDate(pass.start); // Use consistent formatter
+      // Use a consistent date key (YYYY-MM-DD)
+      const dateKey = pass.start.toISOString().split('T')[0];
       if (!acc[dateKey]) {
         acc[dateKey] = [];
       }
@@ -133,19 +130,27 @@ const AppInterface: React.FC<AppViewProps> = ({
     }, {});
   }, [passSummaries]);
 
-  // Memoize day aggregates calculation
+  // Memoize day aggregates calculation - calculate both execution percentage AND total factory time
   const dayAggregates = useMemo(() => {
     return Object.entries(groupedPasses).reduce((acc: Record<string, {
+      totalFactoryTime: number;
       totalExecutionTime: number;
       totalOtherStepsTime: number;
       totalPassCount: number;
       executionPercentage: number;
-    }>, [date, passes]) => {
+      formattedDate: string;
+    }>, [dateKey, passes]) => {
+      let totalFactoryTime = 0;
       let totalExecutionTime = 0;
       let totalOtherStepsTime = 0;
-      let totalPassCount = passes.length;
-
+      
+      // Calculate both factory time and execution metrics
       passes.forEach(pass => {
+        // Add pass duration to total factory time
+        const passDuration = pass.end.getTime() - pass.start.getTime();
+        totalFactoryTime += passDuration;
+        
+        // Calculate execution time for percentage
         if (pass.steps && Array.isArray(pass.steps)) {
           pass.steps.forEach(step => {
             const stepDuration = step.end.getTime() - step.start.getTime();
@@ -162,11 +167,18 @@ const AppInterface: React.FC<AppViewProps> = ({
       const totalStepsTime = totalExecutionTime + totalOtherStepsTime;
       const executionPercentage = totalStepsTime > 0 ? (totalExecutionTime / totalStepsTime) * 100 : 0;
 
-      acc[date] = {
+      // Format the date for display using the dateKey (which is already YYYY-MM-DD)
+      const [year, month, day] = dateKey.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      const formattedDate = date.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' });
+
+      acc[dateKey] = {
+        totalFactoryTime,
         totalExecutionTime,
         totalOtherStepsTime,
-        totalPassCount,
-        executionPercentage
+        totalPassCount: passes.length,
+        executionPercentage,
+        formattedDate
       };
 
       return acc;
@@ -220,12 +232,16 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  // Helper function to format duration from milliseconds
+  // Helper function to format duration from milliseconds to hours and minutes
   const formatDurationMs = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   return (
@@ -296,24 +312,30 @@ const AppInterface: React.FC<AppViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(groupedPasses).map(([date, passes], dayIndex) => {
+                  {Object.entries(groupedPasses).map(([dateKey, passes], dayIndex) => {
                     const {
+                      totalFactoryTime,
                       totalExecutionTime,
                       totalOtherStepsTime,
                       totalPassCount,
-                      executionPercentage
-                    } = dayAggregates[date];
+                      executionPercentage,
+                      formattedDate
+                    } = dayAggregates[dateKey];
 
                     return (
-                      <React.Fragment key={date}>
+                      <React.Fragment key={dateKey}>
                         <tr className="day-summary-header">
                           <td colSpan={9}>
                             <div className="day-summary-content">
-                              <div className="day-summary-date">{date}</div>
+                              <div className="day-summary-date">{formattedDate}</div>
                               <div className="day-summary-stats">
                                 <div className="day-summary-item">
                                   <span className="day-summary-label">Total Passes</span>
                                   <span className="day-summary-value">{totalPassCount}</span>
+                                </div>
+                                <div className="day-summary-item">
+                                  <span className="day-summary-label">Total Factory Time</span>
+                                  <span className="day-summary-value">{formatDurationMs(totalFactoryTime)}</span>
                                 </div>
                                 <div className="day-summary-item">
                                   <span className="day-summary-label">Execution Time</span>
@@ -353,7 +375,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                     ▶
                                   </span>
                                 </td>
-                                <td className="text-zinc-700">{formatDate(pass.start)}</td>
+                                <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                                 <td className="text-zinc-700 text-xs">
                                   {pass.pass_id ? (
                                     <button
