@@ -68,6 +68,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   const cameraComponentNames = Array.from(
     new Set(
       Array.from(imageFiles.values())
+        .filter(file => file.metadata?.captureMetadata?.componentType === 'rdk:component:camera')
         .map(file => file.metadata?.captureMetadata?.componentName)
         .filter((name): name is string => !!name)
     )
@@ -216,11 +217,11 @@ const AppInterface: React.FC<AppViewProps> = ({
                 onVideoStoreSelected={setVideoStoreClient}
               />
 
-              {cameraComponentNames.length > 0 && (
-                <div className="video-store-selector">
-                  <label htmlFor="camera-select" className="video-store-selector-label">
-                    Select camera resource
-                  </label>
+              <div className="video-store-selector">
+                <label htmlFor="camera-select" className="video-store-selector-label">
+                  Select camera resource
+                </label>
+                {cameraComponentNames.length > 0 ? (
                   <select
                     id="camera-select"
                     value={selectedCamera}
@@ -232,8 +233,12 @@ const AppInterface: React.FC<AppViewProps> = ({
                       <option key={name} value={name}>{name}</option>
                     ))}
                   </select>
-                </div>
-              )}
+                ) : (
+                  <p>
+                    No camera resources found.
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="viam-table-container">
