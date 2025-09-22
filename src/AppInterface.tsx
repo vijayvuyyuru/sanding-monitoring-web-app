@@ -509,7 +509,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                         </div>
 
                                         {/* Parent container for Files and Notes columns */}
-                                        <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                                        <div style={{ display: 'flex', margin: '10px 3px 0 0' }}>
                                           {/* Column 1: Files captured during this pass */}
                                           <div style={{ flex: '2 1 0%', minWidth: 0 }}>
                                             {(() => {
@@ -652,7 +652,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                               download={file.metadata?.fileName?.split('/').pop() || 'download'}
                                                               style={{
                                                                 marginLeft: '12px',
-                                                                padding: '4px 12px',
+                                                                padding: '6px 8px',
                                                                 backgroundColor: '#3b82f6',
                                                                 color: 'white',
                                                                 borderRadius: '4px',
@@ -662,7 +662,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                                 transition: 'background-color 0.2s',
                                                                 flexShrink: 0,
                                                                 cursor: 'pointer',
-                                                                display: 'inline-block'
+                                                                display: 'inline-block',
+                                                                border: 'none'
                                                               }}
                                                               onClick={(e) => {
                                                                 e.stopPropagation();
@@ -720,24 +721,13 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               />
                                               <div style={{
                                                 display: 'flex',
-                                                justifyContent: 'space-between',
-                                                alignItems: 'center',
+                                                justifyContent: 'flex-end',
                                                 marginTop: '4px'
                                               }}>
-                                                <div
-                                                  id={`pass-notes-help-${pass.pass_id}`}
-                                                  style={{
-                                                    fontSize: '12px',
-                                                    color: '#6b7280'
-                                                  }}
-                                                  aria-live="polite"
-                                                >
-                                                  Enter notes about this sanding pass
-                                                </div>
                                                 <button
                                                   type="button"
                                                   style={{
-                                                    padding: '4px 12px',
+                                                    padding: '6px 8px',
                                                     fontSize: '12px',
                                                     backgroundColor: '#3b82f6',
                                                     color: 'white',
@@ -753,7 +743,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                     e.currentTarget.style.backgroundColor = '#3b82f6';
                                                   }}
                                                 >
-                                                  Save
+                                                  Save note
                                                 </button>
                                               </div>
                                             </div>
