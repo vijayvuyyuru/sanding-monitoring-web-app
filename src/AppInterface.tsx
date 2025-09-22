@@ -5,9 +5,12 @@ import StepVideosGrid from './StepVideosGrid';
 import VideoStoreSelector from './VideoStoreSelector';
 import ImageDisplay from './ImageDisplay';
 import BeforeAfterModal from './BeforeAfterModal';
-import { 
+import {
   formatDurationToMinutesSeconds,
+  formatTimeDifference,
 } from './lib/videoUtils';
+import { getBeforeAfterImages, getStepVideos } from './lib/passUtils';
+import { formatDurationMs } from './lib/uiUtils.tsx';
 
 interface AppViewProps {
   passSummaries?: any[];
@@ -42,11 +45,11 @@ export interface Pass {
   };
 }
 
-const AppInterface: React.FC<AppViewProps> = ({ 
+const AppInterface: React.FC<AppViewProps> = ({
   machineName,
   viamClient,
   passSummaries = [],
-  files, 
+  files,
   videoFiles,
   imageFiles,
   robotClient,
@@ -79,40 +82,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   };
 
   // Helper function to get before/after images for a pass
-  const getBeforeAfterImages = (pass: Pass): { beforeImage: VIAM.dataApi.BinaryData | null, afterImage: VIAM.dataApi.BinaryData | null } => {
-    const passStart = new Date(pass.start);
-    const passEnd = new Date(pass.end);
-    
-    const allCameraImages = Array.from(imageFiles.values()).filter(file => {
-      if (file.metadata?.captureMetadata?.componentName !== selectedCamera || !file.metadata?.timeRequested) {
-        return false;
-      }
-      
-      const imgTime = file.metadata.timeRequested.toDate();
-      // Only consider images within the pass time range
-      return imgTime >= passStart && imgTime <= passEnd;
-    }).sort((a, b) => a.metadata!.timeRequested!.toDate().getTime() - b.metadata!.timeRequested!.toDate().getTime());
-    
-    // Get the first image in the pass (closest to start)
-    const beforeImage = allCameraImages[0];
-    
-    // Get the last image in the pass (closest to end)
-    const afterImage = allCameraImages[allCameraImages.length - 1];
-
-    return { 
-      beforeImage: beforeImage || null, 
-      afterImage: afterImage || null 
-    };
-  };
-
-  // Helper function to format time difference
-  const formatTimeDifference = (time1: number, time2: number): string => {
-    const minutes = Math.abs(time1 - time2) / 60000;
-    if (minutes < 1) {
-      return `${Math.round(minutes * 60)}s`;
-    }
-    return `${Math.round(minutes)}m`;
-  };
+  const passImages = (pass: Pass) => getBeforeAfterImages(pass, imageFiles, selectedCamera);
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -143,18 +113,18 @@ const AppInterface: React.FC<AppViewProps> = ({
       let totalFactoryTime = 0;
       let totalExecutionTime = 0;
       let totalOtherStepsTime = 0;
-      
+
       // Calculate both time and execution metrics
       passes.forEach(pass => {
         // Add pass duration to total time
         const passDuration = pass.end.getTime() - pass.start.getTime();
         totalFactoryTime += passDuration;
-        
+
         // Calculate execution time for percentage
         if (pass.steps && Array.isArray(pass.steps)) {
           pass.steps.forEach(step => {
             const stepDuration = step.end.getTime() - step.start.getTime();
-            
+
             // Look for the specific "executing" step (exact match or case-insensitive)
             if (step.name.toLowerCase() === 'executing') {
               totalExecutionTime += stepDuration;
@@ -198,25 +168,6 @@ const AppInterface: React.FC<AppViewProps> = ({
     setExpandedRows(newExpandedRows);
   };
 
-  const getStepVideos = (step: Step) => {
-    if (!videoFiles || videoFiles.size === 0) return [];
-    
-    let stepVideos: VIAM.dataApi.BinaryData[] = [];
-    
-    videoFiles.forEach((file) => {
-      if (!file.metadata || !file.metadata.fileName) return;
-
-      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && 
-                           file.metadata.fileName.includes(step.name);
-      
-      if (isMatchingStep) {
-        stepVideos.push(file);
-      }
-    });
-
-    return stepVideos;
-  };
-
   const getStatusBadge = (success: boolean) => {
     if (success) {
       return (
@@ -233,31 +184,11 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
-  // Helper function to format duration from milliseconds to hours and minutes with tooltip
-  const formatDurationMs = (ms: number): JSX.Element => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    
-    let displayText: string;
-    if (hours > 0) {
-      displayText = `${hours}h ${minutes}m`;
-    } else {
-      displayText = `${minutes}m`;
-    }
-    
-    return (
-      <span title={`${Math.floor(ms / 60000)} minutes`}>
-        {displayText}
-      </span>
-    );
-  };
-
   return (
     <div className="appInterface">
       <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
         <div className="w-1/3 h-5 font-semibold text-zinc-900">Sanding Control Interface</div>
-        
+
         <div className="w-1/3 flex justify-center">
           <div className="flex flex-row items-center gap-2">
             <button
@@ -271,38 +202,38 @@ const AppInterface: React.FC<AppViewProps> = ({
 
         <div className="w-1/3"></div>
       </header>
-      
+
       <main className="mainContent">
         {activeRoute === 'live' && (
           <section>
             <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes
               {machineName ? ` for ${machineName}` : ''}
             </h2>
-            
-            <div className='flex gap-8'>
-            <VideoStoreSelector
-              robotClient={robotClient || null}
-              onVideoStoreSelected={setVideoStoreClient}
-            />
 
-            {cameraComponentNames.length > 0 && (
-              <div className="video-store-selector">
-                <label htmlFor="camera-select" className="video-store-selector-label">
-                  Select camera resource
-                </label>
-                <select
-                  id="camera-select"
-                  value={selectedCamera}
-                  onChange={(e) => setSelectedCamera(e.target.value)}
-                  className="video-store-selector-select"
-                >
-                  <option value="">Select a camera resource</option>
-                  {cameraComponentNames.map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div className='flex gap-8'>
+              <VideoStoreSelector
+                robotClient={robotClient || null}
+                onVideoStoreSelected={setVideoStoreClient}
+              />
+
+              {cameraComponentNames.length > 0 && (
+                <div className="video-store-selector">
+                  <label htmlFor="camera-select" className="video-store-selector-label">
+                    Select camera resource
+                  </label>
+                  <select
+                    id="camera-select"
+                    value={selectedCamera}
+                    onChange={(e) => setSelectedCamera(e.target.value)}
+                    className="video-store-selector-select"
+                  >
+                    <option value="">Select a camera resource</option>
+                    {cameraComponentNames.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="viam-table-container">
@@ -364,7 +295,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                         </tr>
                         {passes.map((pass: Pass, passIndex: number) => {
                           const globalIndex = `${dayIndex}-${passIndex}`;
-                          
+
                           return (
                             <React.Fragment key={pass.pass_id || globalIndex}>
                               <tr className="expandable-row"
@@ -455,20 +386,20 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           )}
                                         </div>
                                       )}
-                                      
+
                                       <div className="passes-container">
                                         <div className="steps-grid">
                                           {/* Camera Images */}
                                           {selectedCamera && (() => {
-                                            const { beforeImage, afterImage } = getBeforeAfterImages(pass);
+                                            const { beforeImage, afterImage } = passImages(pass);
                                             const passStart = pass.start;
                                             const passEnd = pass.end;
-                                            
+
                                             // If no images at all, show a message
                                             if (!beforeImage && !afterImage) {
                                               return (
                                                 <div className="step-card" style={{ order: 0 }}>
-                                                  <div style={{ 
+                                                  <div style={{
                                                     display: 'flex',
                                                     height: '100%',
                                                     alignItems: 'center',
@@ -484,7 +415,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                 </div>
                                               );
                                             }
-                                            
+
                                             return (
                                               <>
                                                 {/* Start Image */}
@@ -500,9 +431,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                         )} from start)
                                                       </span>
                                                     </div>
-                                                    
-                                                    <div 
-                                                      className="step-image-container clickable-image" 
+
+                                                    <div
+                                                      className="step-image-container clickable-image"
                                                       style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}
                                                       onClick={() => openBeforeAfterModal(beforeImage, afterImage)}
                                                     >
@@ -524,9 +455,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                         )} before end)
                                                       </span>
                                                     </div>
-                                                    
-                                                    <div 
-                                                      className="step-image-container clickable-image" 
+
+                                                    <div
+                                                      className="step-image-container clickable-image"
                                                       style={{ marginTop: "12px", width: "100%", overflow: "hidden" }}
                                                       onClick={() => openBeforeAfterModal(beforeImage, afterImage)}
                                                     >
@@ -537,10 +468,10 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               </>
                                             );
                                           })()}
-                                          
+
                                           {/* Regular step cards */}
                                           {pass.steps.map((step: Step) => {
-                                            const stepVideos = getStepVideos(step);
+                                            const stepVideos = getStepVideos(step, videoFiles);
 
                                             return (
                                               <div key={step.name} className="step-card">
@@ -557,7 +488,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   </div>
                                                 </div>
                                                 <div className="step-duration">{formatDurationToMinutesSeconds(step.start, step.end)}</div>
-                                                
+
                                                 <StepVideosGrid
                                                   step={step}
                                                   stepVideos={stepVideos}
@@ -571,12 +502,12 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             );
                                           })}
                                         </div>
-                                      
+
                                         {/* Keep the "all files in pass time range" section unchanged */}
                                         {(() => {
                                           const passStart = new Date(pass.start);
                                           const passEnd = new Date(pass.end);
-                                          
+
                                           // Always include files that fall within the pass time range (this includes .pcd files)
                                           const passTimeRangeFileIDS: string[] = [];
                                           files.forEach((file, binaryDataId) => {
@@ -587,7 +518,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               }
                                             }
                                           });
-                                          
+
 
                                           // Additionally include pass-specific files if pass_id is not blank
                                           const passFileIDs: string[] = [];
@@ -598,7 +529,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               }
                                             });
                                           }
-                                          
+
 
                                           const ids = new Set([...passFileIDs, ...passTimeRangeFileIDS]);
                                           const passFiles = Array.from(files.values()).filter((x) => ids.has(x.metadata!.binaryDataId)).sort((a, b) => {
@@ -621,7 +552,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                 padding: '20px',
                                                 minHeight: '100px',
                                               }}>
-                                                <span style={{ 
+                                                <span style={{
                                                   display: 'inline-block',
                                                   width: '28px',
                                                   height: '28px',
@@ -642,9 +573,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               <h4>
                                                 Files captured during this pass
                                               </h4>
-                                              
+
                                               {passFiles.length > 0 && (
-                                                <div style={{ 
+                                                <div style={{
                                                   display: 'flex',
                                                   flexWrap: 'wrap',
                                                   gap: '8px',
@@ -653,9 +584,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                 }}>
                                                   {passFiles.map((file, fileIndex) => {
                                                     const fileName = file.metadata?.fileName?.split('/').pop() || 'Unknown file';
-                                                    
+
                                                     return (
-                                                      <div 
+                                                      <div
                                                         key={fileIndex}
                                                         style={{
                                                           display: 'flex',
@@ -682,15 +613,15 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                           e.currentTarget.style.transform = 'translateY(0)';
                                                         }}
                                                       >
-                                                        <div style={{ 
-                                                          display: 'flex', 
-                                                          alignItems: 'center', 
+                                                        <div style={{
+                                                          display: 'flex',
+                                                          alignItems: 'center',
                                                           gap: '8px',
-                                                          flex: 1, 
+                                                          flex: 1,
                                                           minWidth: 0,
                                                           overflow: 'hidden'
                                                         }}>
-                                                          <span style={{ 
+                                                          <span style={{
                                                             color: '#374151',
                                                             textOverflow: 'ellipsis',
                                                             overflow: 'hidden',
@@ -699,8 +630,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                           }} title={fileName}>
                                                             {fileName}
                                                           </span>
-                                                          <span style={{ 
-                                                            color: '#9ca3af', 
+                                                          <span style={{
+                                                            color: '#9ca3af',
                                                             fontSize: '12px',
                                                             whiteSpace: 'nowrap',
                                                             flexShrink: 0
@@ -708,7 +639,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                             {file.metadata?.timeRequested?.toDate().toLocaleTimeString() || ''}
                                                           </span>
                                                         </div>
-                                                        <a 
+                                                        <a
                                                           href={file.metadata?.uri}
                                                           download={file.metadata?.fileName?.split('/').pop() || 'download'}
                                                           style={{
@@ -742,7 +673,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   })}
                                                 </div>
                                               )}
-                                              
+
                                               {/* Show message if no files are found in the current view */}
                                               {passFiles.length === 0 && !isLoading && (
                                                 <p>
