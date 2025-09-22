@@ -696,22 +696,65 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           {/* Column 2: Pass Notes */}
                                           <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                                             <div className="pass-notes-section">
-                                              <h4>Pass notes</h4>
-                                              {/* Placeholder for notes content */}
+                                              <label htmlFor={`pass-notes-${pass.pass_id}`} className="pass-notes-label">
+                                                <h4>Pass notes</h4>
+                                              </label>
+                                              <textarea
+                                                id={`pass-notes-${pass.pass_id}`}
+                                                className="notes-textarea"
+                                                placeholder="Add a note for this pass..."
+                                                style={{
+                                                  width: '100%',
+                                                  minHeight: '100px',
+                                                  padding: '12px',
+                                                  fontSize: '14px',
+                                                  border: '1px solid #e5e7eb',
+                                                  borderRadius: '6px',
+                                                  resize: 'vertical',
+                                                  fontFamily: 'inherit',
+                                                  backgroundColor: '#ffffff',
+                                                  boxSizing: 'border-box'
+                                                }}
+                                                aria-label={`Notes for pass ${pass.pass_id}`}
+                                                aria-describedby={`pass-notes-help-${pass.pass_id}`}
+                                              />
                                               <div style={{
                                                 display: 'flex',
-                                                height: '100%',
-                                                minHeight: '100px',
+                                                justifyContent: 'space-between',
                                                 alignItems: 'center',
-                                                justifyContent: 'center',
-                                                backgroundColor: '#f9fafb',
-                                                border: '1px solid #e5e7eb',
-                                                borderRadius: '6px',
-                                                padding: '12px',
-                                                color: '#9ca3af',
-                                                fontSize: '14px'
+                                                marginTop: '4px'
                                               }}>
-                                                Pass notes will be displayed here.
+                                                <div
+                                                  id={`pass-notes-help-${pass.pass_id}`}
+                                                  style={{
+                                                    fontSize: '12px',
+                                                    color: '#6b7280'
+                                                  }}
+                                                  aria-live="polite"
+                                                >
+                                                  Enter notes about this sanding pass
+                                                </div>
+                                                <button
+                                                  type="button"
+                                                  style={{
+                                                    padding: '4px 12px',
+                                                    fontSize: '12px',
+                                                    backgroundColor: '#3b82f6',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    transition: 'background-color 0.2s'
+                                                  }}
+                                                  onMouseEnter={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#2563eb';
+                                                  }}
+                                                  onMouseLeave={(e) => {
+                                                    e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                  }}
+                                                >
+                                                  Save
+                                                </button>
                                               </div>
                                             </div>
                                           </div>
