@@ -11,6 +11,7 @@ import {
 } from './lib/videoUtils';
 import { getBeforeAfterImages, getStepVideos } from './lib/passUtils';
 import { formatDurationMs } from './lib/uiUtils.tsx';
+import { NotesManager, PassNote } from './lib/notesManager';
 
 interface AppViewProps {
   passSummaries?: any[];
@@ -22,6 +23,7 @@ interface AppViewProps {
   fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
   fetchTimestamp: Date | null;
+  notesManager: NotesManager | null;
 }
 
 export interface Step {
@@ -55,6 +57,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   robotClient,
   fetchVideos,
   fetchTimestamp,
+  notesManager,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());

@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
 import { Timestamp } from '@bufbuild/protobuf';
+import { createNotesManager, NotesManager } from './lib/notesManager';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -19,6 +20,7 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
+  const [notesManager, setNotesManager] = useState<NotesManager | null>(null);
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -27,7 +29,7 @@ function App() {
   const locationId = locationIdMatch ? locationIdMatch[1] : null;
 
   const machineInfo = window.location.pathname.split("/")[2];
-    
+
   const {
     apiKey: { id: apiKeyId, key: apiKeySecret },
     machineId,
@@ -38,7 +40,7 @@ function App() {
     if (!viamClient) return;
 
     const end = new Date();
-    
+
     console.log("Fetching for time range:", start, end);
     if (shouldSetLoadingState) {
       setFetchTimestamp(start);
@@ -65,12 +67,12 @@ function App() {
         false,
         false
       );
-      
+
       // Process files once and build files, videoFiles, and images lists
       const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newImages = new Map<string, VIAM.dataApi.BinaryData>();
-      
+
       binaryData.data.forEach(file => {
         if (file.metadata?.binaryDataId) {
           const isVideo = file.metadata.fileName?.toLowerCase().includes('.mp4');
@@ -95,7 +97,7 @@ function App() {
       if (binaryData.data.length > 0 && shouldSetLoadingState) {
         setFetchTimestamp(binaryData.data[binaryData.data.length - 1].metadata!.timeRequested!.toDate());
       }
-      
+
       // Update both states with the processed files
       setFiles(prevFiles => {
         const updatedFiles = new Map(prevFiles);
@@ -104,7 +106,7 @@ function App() {
         });
         return updatedFiles;
       });
-      
+
       setVideoFiles(prevVideoFiles => {
         const updatedVideoFiles = new Map(prevVideoFiles);
         newVideoFiles.forEach((file, id) => {
@@ -120,13 +122,13 @@ function App() {
         });
         return updatedImageFiles;
       });
-      
+
       // Break if no more data to fetch
       if (!binaryData.last) break;
     }
     console.log("total files count:", files.size);
     console.log("total video files count:", videoFiles.size);
-    
+
     setFetchTimestamp(null)
   };
 
@@ -137,9 +139,13 @@ function App() {
       const viamClient = await connect(apiKeyId, apiKeySecret);
       setViamClient(viamClient);
 
+      // Create NotesManager instance
+      const manager = createNotesManager(viamClient, machineId);
+      setNotesManager(manager);
+
       try {
         const robotClient = await viamClient.connectToMachine({
-          host: hostname, 
+          host: hostname,
           id: machineId,
         });
         setRobotClient(robotClient);
@@ -147,7 +153,7 @@ function App() {
         console.error('Failed to create robot client:', error);
         setRobotClient(null);
       }
-      
+
       const organizations = await viamClient.appClient.listOrganizations();
       console.log("Organizations:", organizations);
       if (organizations.length !== 1) {
@@ -195,7 +201,7 @@ function App() {
             start: new Date(x.start),
             end: new Date(x.end),
             pass_id: pass.pass_id,
-          })): [],
+          })) : [],
           success: pass.success ?? true,
           pass_id: pass.pass_id,
           err_string: pass.err_string || null,
@@ -205,9 +211,9 @@ function App() {
       setPassSummaries(processedPasses);
       console.log("Fetching data end");
     };
-    
-      fetchPasses();
-    }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
+
+    fetchPasses();
+  }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
 
 
   // Fetch videos when passSummaries and viamClient are available
@@ -219,7 +225,7 @@ function App() {
   }, [passSummaries, viamClient]);
 
   return (
-    <AppInterface 
+    <AppInterface
       machineName={machineName}
       viamClient={viamClient!}
       passSummaries={passSummaries}
@@ -229,6 +235,7 @@ function App() {
       robotClient={robotClient}
       fetchVideos={fetchFiles}
       fetchTimestamp={fetchTimestamp}
+      notesManager={notesManager}
     />
   );
 }
