@@ -874,11 +874,11 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   placeholder="Add a note for this pass..."
                                                   style={{
                                                     width: '100%',
-                                                    minHeight: '100px',
+                                                    minHeight: '300px',
                                                     padding: '12px',
                                                     fontSize: '14px',
                                                     border: '1px solid #e5e7eb',
-                                                    borderRadius: '6px',
+                                                    borderRadius: '3px',
                                                     resize: 'vertical',
                                                     fontFamily: 'inherit',
                                                     backgroundColor: '#ffffff',
