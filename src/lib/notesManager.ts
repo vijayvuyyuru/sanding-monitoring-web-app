@@ -120,9 +120,15 @@ export class NotesManager {
   }
 
   /**
-   * Fetch notes for multiple passes
+   * Fetch notes for multiple passes, with optional batching.
+   * @param passIds - An array of pass IDs to fetch notes for.
+   * @param onBatchReceived - An optional callback that receives notes as they are fetched in batches.
+   * @returns A Promise that resolves to a map of all fetched notes if no callback is provided.
    */
-  async fetchNotesForPasses(passIds: string[]): Promise<Map<string, PassNote[]>> {
+  async fetchNotesForPasses(
+    passIds: string[],
+    onBatchReceived?: (batch: Map<string, PassNote[]>) => void
+  ): Promise<Map<string, PassNote[]>> {
     if (!this.viamClient) {
       throw new Error("Viam client not initialized");
     }
@@ -131,59 +137,75 @@ export class NotesManager {
       robotId: this.machineId,
       componentName: "sanding-notes",
       componentType: "rdk:component:generic",
-      tags: ["sanding-notes"]
+      tags: ["sanding-notes"],
     } as unknown as VIAM.dataApi.Filter;
 
-    const binaryData = await this.viamClient.dataClient.binaryDataByFilter(
-      filter,
-      500, // higher limit for multiple passes
-      VIAM.dataApi.Order.DESCENDING,
-      undefined,
-      false,
-      false,
-      false
-    );
-
-    const notesByPassId = new Map<string, PassNote[]>();
-
-    // Initialize empty arrays for all requested pass IDs
+    const allNotesByPassId = new Map<string, PassNote[]>();
     passIds.forEach(passId => {
-      notesByPassId.set(passId, []);
+      allNotesByPassId.set(passId, []);
     });
 
-    // Parse and organize notes by pass ID
-    for (const item of binaryData.data) {
-      try {
-        const noteDataArray = await this.viamClient.dataClient.binaryDataByIds([item.metadata!.binaryDataId!]);
-        if (noteDataArray.length > 0) {
-          const binaryDataItem = noteDataArray[0];
+    let paginationToken: string | undefined = undefined;
+    let hasMore = true;
 
-          if (binaryDataItem.binary) {
-            const noteJson = new TextDecoder().decode(binaryDataItem.binary);
+    while (hasMore) {
+      const binaryData = await this.viamClient.dataClient.binaryDataByFilter(
+        filter,
+        50, // Fetch in smaller batches
+        VIAM.dataApi.Order.DESCENDING,
+        paginationToken,
+        false,
+        false,
+        false
+      );
+
+      const batchNotes = new Map<string, PassNote[]>();
+      const promises = binaryData.data.map(async (item) => {
+        try {
+          const noteDataArray = await this.viamClient.dataClient.binaryDataByIds([item.metadata!.binaryDataId!]);
+          if (noteDataArray.length > 0 && noteDataArray[0].binary) {
+            const noteJson = new TextDecoder().decode(noteDataArray[0].binary);
             const noteData = JSON.parse(noteJson) as PassNote;
 
-            // Only include notes for requested pass IDs
             if (passIds.includes(noteData.pass_id)) {
-              const existingNotes = notesByPassId.get(noteData.pass_id) || [];
-              existingNotes.push(noteData);
-              notesByPassId.set(noteData.pass_id, existingNotes);
+              if (!batchNotes.has(noteData.pass_id)) {
+                batchNotes.set(noteData.pass_id, []);
+              }
+              batchNotes.get(noteData.pass_id)!.push(noteData);
             }
           }
+        } catch (parseError) {
+          console.warn("Failed to parse note data:", parseError);
         }
-      } catch (parseError) {
-        console.warn("Failed to parse note data:", parseError);
+      });
+
+      await Promise.all(promises);
+
+      if (batchNotes.size > 0) {
+        // Merge batch into all notes
+        batchNotes.forEach((notes, passId) => {
+          const existingNotes = allNotesByPassId.get(passId) || [];
+          allNotesByPassId.set(passId, [...existingNotes, ...notes]);
+        });
+
+        if (onBatchReceived) {
+          onBatchReceived(batchNotes);
+        }
       }
+
+      paginationToken = binaryData.last;
+      hasMore = !!paginationToken;
     }
 
-    // Sort notes for each pass ID by creation date (newest first)
-    notesByPassId.forEach((notes, passId) => {
-      notesByPassId.set(
+    // Final sort for each pass
+    allNotesByPassId.forEach((notes, passId) => {
+      allNotesByPassId.set(
         passId,
         notes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       );
     });
 
-    return notesByPassId;
+    return allNotesByPassId;
   }
 }
 

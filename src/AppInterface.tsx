@@ -27,6 +27,7 @@ interface AppViewProps {
   partId: string;
   passNotes: Map<string, PassNote[]>;
   onNotesUpdate: React.Dispatch<React.SetStateAction<Map<string, PassNote[]>>>;
+  fetchingNotes: boolean;
 }
 
 export interface Step {
@@ -64,6 +65,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   partId,
   passNotes,
   onNotesUpdate,
+  fetchingNotes,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -835,86 +837,104 @@ const AppInterface: React.FC<AppViewProps> = ({
 
                                           {/* Column 2: Pass Notes */}
                                           <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-                                            <div className="pass-notes-section">
-                                              <label htmlFor={`pass-notes-${passId}`} className="pass-notes-label">
-                                                <h4>Pass notes</h4>
-                                              </label>
-
-                                              {/* Show previous notes if they exist */}
-                                              {passNotesData.length > 0 && passNotesData[0].note_text !== noteInputs[passId] && (
-                                                <div style={{
-                                                  marginBottom: '10px',
-                                                  fontSize: '13px',
-                                                  color: '#6b7280'
-                                                }}>
-                                                  <div style={{ fontWeight: '500' }}>Previous note:</div>
-                                                  <div style={{
-                                                    padding: '8px',
-                                                    backgroundColor: '#f9fafb',
-                                                    borderRadius: '4px',
-                                                    border: '1px solid #e5e7eb',
-                                                    whiteSpace: 'pre-wrap'
-                                                  }}>
-                                                    {passNotesData[0].note_text}
-                                                  </div>
-                                                  <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                                                    {new Date(passNotesData[0].created_at).toLocaleString()}
-                                                  </div>
+                                            {fetchingNotes && passNotesData.length === 0 ? (
+                                              <div className="pass-notes-section">
+                                                <label className="pass-notes-label"><h4>Pass notes</h4></label>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
+                                                  <span style={{
+                                                    display: 'inline-block',
+                                                    width: '24px',
+                                                    height: '24px',
+                                                    border: '3px solid rgba(59, 130, 246, 0.2)',
+                                                    borderTopColor: '#3b82f6',
+                                                    borderRadius: '50%',
+                                                    animation: 'spin 1s linear infinite'
+                                                  }}></span>
+                                                  <span style={{ marginLeft: '12px', color: '#6b7280' }}>Loading notes...</span>
                                                 </div>
-                                              )}
-
-                                              <textarea
-                                                id={`pass-notes-${passId}`}
-                                                className="notes-textarea"
-                                                value={noteInputs[passId] || ''}
-                                                onChange={(e) => handleNoteChange(passId, e.target.value)}
-                                                placeholder="Add a note for this pass..."
-                                                style={{
-                                                  width: '100%',
-                                                  minHeight: '100px',
-                                                  padding: '12px',
-                                                  fontSize: '14px',
-                                                  border: '1px solid #e5e7eb',
-                                                  borderRadius: '6px',
-                                                  resize: 'vertical',
-                                                  fontFamily: 'inherit',
-                                                  backgroundColor: '#ffffff',
-                                                  boxSizing: 'border-box'
-                                                }}
-                                                aria-label={`Notes for pass ${passId}`}
-                                                aria-describedby={`pass-notes-help-${passId}`}
-                                              />
-                                              <div style={{
-                                                display: 'flex',
-                                                justifyContent: 'flex-end',
-                                                marginTop: '4px'
-                                              }}>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => saveNote(passId)}
-                                                  disabled={
-                                                    savingNotes.has(passId) ||
-                                                    noteSuccess.has(passId) ||
-                                                    !noteInputs[passId]?.trim() ||
-                                                    (passNotesData.length > 0 &&
-                                                      passNotesData[0].note_text === noteInputs[passId]?.trim())
-                                                  }
-                                                  style={getSaveButtonStyles(passId)}
-                                                  onMouseEnter={(e) => {
-                                                    if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
-                                                      e.currentTarget.style.backgroundColor = '#2563eb';
-                                                    }
-                                                  }}
-                                                  onMouseLeave={(e) => {
-                                                    if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
-                                                      e.currentTarget.style.backgroundColor = getSaveButtonStyles(passId).backgroundColor;
-                                                    }
-                                                  }}
-                                                >
-                                                  {getSaveButtonText(passId)}
-                                                </button>
                                               </div>
-                                            </div>
+                                            ) : (
+                                              <div className="pass-notes-section">
+                                                <label htmlFor={`pass-notes-${passId}`} className="pass-notes-label">
+                                                  <h4>Pass notes</h4>
+                                                </label>
+
+                                                {/* Show previous notes if they exist */}
+                                                {passNotesData.length > 0 && passNotesData[0].note_text !== noteInputs[passId] && (
+                                                  <div style={{
+                                                    marginBottom: '10px',
+                                                    fontSize: '13px',
+                                                    color: '#6b7280'
+                                                  }}>
+                                                    <div style={{ fontWeight: '500' }}>Previous note:</div>
+                                                    <div style={{
+                                                      padding: '8px',
+                                                      backgroundColor: '#f9fafb',
+                                                      borderRadius: '4px',
+                                                      border: '1px solid #e5e7eb',
+                                                      whiteSpace: 'pre-wrap'
+                                                    }}>
+                                                      {passNotesData[0].note_text}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                      {new Date(passNotesData[0].created_at).toLocaleString()}
+                                                    </div>
+                                                  </div>
+                                                )}
+
+                                                <textarea
+                                                  id={`pass-notes-${passId}`}
+                                                  className="notes-textarea"
+                                                  value={noteInputs[passId] || ''}
+                                                  onChange={(e) => handleNoteChange(passId, e.target.value)}
+                                                  placeholder="Add a note for this pass..."
+                                                  style={{
+                                                    width: '100%',
+                                                    minHeight: '100px',
+                                                    padding: '12px',
+                                                    fontSize: '14px',
+                                                    border: '1px solid #e5e7eb',
+                                                    borderRadius: '6px',
+                                                    resize: 'vertical',
+                                                    fontFamily: 'inherit',
+                                                    backgroundColor: '#ffffff',
+                                                    boxSizing: 'border-box'
+                                                  }}
+                                                  aria-label={`Notes for pass ${passId}`}
+                                                  aria-describedby={`pass-notes-help-${passId}`}
+                                                />
+                                                <div style={{
+                                                  display: 'flex',
+                                                  justifyContent: 'flex-end',
+                                                  marginTop: '4px'
+                                                }}>
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => saveNote(passId)}
+                                                    disabled={
+                                                      savingNotes.has(passId) ||
+                                                      noteSuccess.has(passId) ||
+                                                      !noteInputs[passId]?.trim() ||
+                                                      (passNotesData.length > 0 &&
+                                                        passNotesData[0].note_text === noteInputs[passId]?.trim())
+                                                    }
+                                                    style={getSaveButtonStyles(passId)}
+                                                    onMouseEnter={(e) => {
+                                                      if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
+                                                        e.currentTarget.style.backgroundColor = '#2563eb';
+                                                      }
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                      if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
+                                                        e.currentTarget.style.backgroundColor = getSaveButtonStyles(passId).backgroundColor;
+                                                      }
+                                                    }}
+                                                  >
+                                                    {getSaveButtonText(passId)}
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                       </div>

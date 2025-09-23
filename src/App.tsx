@@ -22,6 +22,7 @@ function App() {
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
   const [partId, setPartId] = useState<string>('');
   const [passNotes, setPassNotes] = useState<Map<string, PassNote[]>>(new Map());
+  const [fetchingNotes, setFetchingNotes] = useState<boolean>(false);
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -215,18 +216,25 @@ function App() {
 
       setPassSummaries(processedPasses);
 
-      // Fetch all notes for all passes at once
+      // Fetch all notes for all passes incrementally
       if (processedPasses.length > 0 && extractedPartId) {
-        console.log("Fetching notes for all passes...");
-        try {
-          const notesManager = createNotesManager(viamClient, machineId);
-          const passIds = processedPasses.map(pass => pass.pass_id).filter(Boolean);
-          const allNotes = await notesManager.fetchNotesForPasses(passIds);
-          setPassNotes(allNotes);
-          console.log("Fetched notes for", passIds.length, "passes");
-        } catch (error) {
-          console.error("Failed to fetch notes:", error);
-        }
+        const passIds = processedPasses.map(pass => pass.pass_id).filter(Boolean);
+
+        setFetchingNotes(true);
+        setPassNotes(new Map()); // Clear old notes before fetching
+
+        const notesManager = createNotesManager(viamClient, machineId);
+        await notesManager.fetchNotesForPasses(passIds, (batch) => {
+          setPassNotes(prevNotes => {
+            const newNotes = new Map(prevNotes);
+            batch.forEach((notes, passId) => {
+              const existing = newNotes.get(passId) || [];
+              newNotes.set(passId, [...existing, ...notes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+            });
+            return newNotes;
+          });
+        });
+        setFetchingNotes(false);
       }
 
       console.log("Fetching data end");
@@ -259,6 +267,7 @@ function App() {
       partId={partId}
       passNotes={passNotes}
       onNotesUpdate={setPassNotes}
+      fetchingNotes={fetchingNotes}
     />
   );
 }
