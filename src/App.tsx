@@ -5,7 +5,6 @@ import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
 import { Timestamp } from '@bufbuild/protobuf';
-import { createNotesManager, NotesManager } from './lib/notesManager';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -20,7 +19,6 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
-  const [notesManager, setNotesManager] = useState<NotesManager | null>(null);
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -139,10 +137,6 @@ function App() {
       const viamClient = await connect(apiKeyId, apiKeySecret);
       setViamClient(viamClient);
 
-      // Create NotesManager instance
-      const manager = createNotesManager(viamClient, machineId);
-      setNotesManager(manager);
-
       try {
         const robotClient = await viamClient.connectToMachine({
           host: hostname,
@@ -235,7 +229,6 @@ function App() {
       robotClient={robotClient}
       fetchVideos={fetchFiles}
       fetchTimestamp={fetchTimestamp}
-      notesManager={notesManager}
     />
   );
 }
