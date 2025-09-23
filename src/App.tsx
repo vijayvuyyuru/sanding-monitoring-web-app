@@ -186,14 +186,12 @@ function App() {
       const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
 
-      // Set partId in state
       let extractedPartId = '';
       if (tabularData && tabularData.length > 0) {
         extractedPartId = (tabularData[0] as any).part_id || '';
         setPartId(extractedPartId);
       }
 
-      // Process tabular data into pass summaries
       const processedPasses: Pass[] = tabularData.map((item: any) => {
         const pass = item.data!.readings!;
         const buildInfo = pass.build_info ? pass.build_info : {};
