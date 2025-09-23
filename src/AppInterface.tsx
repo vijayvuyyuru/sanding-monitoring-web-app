@@ -108,7 +108,6 @@ const AppInterface: React.FC<AppViewProps> = ({
     if (!viamClient || !passId || !partId) return;
 
     const noteText = noteInputs[passId]?.trim() || '';
-    if (noteText === '') return;
 
     // Show saving indicator
     setSavingNotes(prev => new Set(prev).add(passId));
@@ -284,12 +283,20 @@ const AppInterface: React.FC<AppViewProps> = ({
     const existingNotes = passNotes.get(passId) || [];
     const latestNoteText = existingNotes.length > 0 ? existingNotes[0].note_text : '';
     const hasChanges = noteText.trim() !== latestNoteText.trim();
-    const canSave = hasChanges && noteText.trim() !== '';
 
     let backgroundColor = '#3b82f6'; // Default blue
-    if (isSuccess) backgroundColor = '#10b981'; // Success green
-    if (isSaving) backgroundColor = '#9ca3af'; // Loading gray
-    if (!canSave) backgroundColor = '#9ca3af'; // Disabled gray
+    let cursor = 'pointer';
+
+    if (isSuccess) {
+      backgroundColor = '#10b981'; // Success green
+      cursor = 'not-allowed';
+    } else if (isSaving) {
+      backgroundColor = '#9ca3af'; // Loading gray
+      cursor = 'not-allowed';
+    } else if (!hasChanges) {
+      backgroundColor = '#9ca3af'; // Disabled gray
+      cursor = 'not-allowed';
+    }
 
     return {
       padding: '6px 8px',
@@ -298,7 +305,7 @@ const AppInterface: React.FC<AppViewProps> = ({
       color: 'white',
       border: 'none',
       borderRadius: '4px',
-      cursor: isSaving || !canSave || isSuccess ? 'not-allowed' : 'pointer',
+      cursor,
       transition: 'background-color 0.2s'
     };
   };
@@ -859,29 +866,6 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   <h4>Pass notes</h4>
                                                 </label>
 
-                                                {/* Show previous notes if they exist */}
-                                                {passNotesData.length > 0 && passNotesData[0].note_text !== noteInputs[passId] && (
-                                                  <div style={{
-                                                    marginBottom: '10px',
-                                                    fontSize: '13px',
-                                                    color: '#6b7280'
-                                                  }}>
-                                                    <div style={{ fontWeight: '500' }}>Previous note:</div>
-                                                    <div style={{
-                                                      padding: '8px',
-                                                      backgroundColor: '#f9fafb',
-                                                      borderRadius: '4px',
-                                                      border: '1px solid #e5e7eb',
-                                                      whiteSpace: 'pre-wrap'
-                                                    }}>
-                                                      {passNotesData[0].note_text}
-                                                    </div>
-                                                    <div style={{ fontSize: '11px', marginTop: '4px' }}>
-                                                      {new Date(passNotesData[0].created_at).toLocaleString()}
-                                                    </div>
-                                                  </div>
-                                                )}
-
                                                 <textarea
                                                   id={`pass-notes-${passId}`}
                                                   className="notes-textarea"
@@ -914,9 +898,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                     disabled={
                                                       savingNotes.has(passId) ||
                                                       noteSuccess.has(passId) ||
-                                                      !noteInputs[passId]?.trim() ||
-                                                      (passNotesData.length > 0 &&
-                                                        passNotesData[0].note_text === noteInputs[passId]?.trim())
+                                                      (passNotesData.length > 0
+                                                        ? passNotesData[0].note_text === (noteInputs[passId] || '').trim()
+                                                        : !(noteInputs[passId] || '').trim())
                                                     }
                                                     style={getSaveButtonStyles(passId)}
                                                     onMouseEnter={(e) => {

@@ -7,6 +7,10 @@ export interface PassNote {
   created_by: string;
 }
 
+interface PassNoteWithId extends PassNote {
+  binaryId: string;
+}
+
 export class NotesManager {
   private viamClient: VIAM.ViamClient;
   private machineId: string;
@@ -53,6 +57,78 @@ export class NotesManager {
     );
 
     console.log("Note saved successfully!");
+
+    // After saving, clean up old notes for the same pass
+    await this.deleteOldNotesForPass(passId);
+  }
+
+  /**
+   * Deletes all but the most recent note for a given pass.
+   */
+  async deleteOldNotesForPass(passId: string): Promise<void> {
+    if (!this.viamClient) {
+      throw new Error("Viam client not initialized");
+    }
+
+    console.log(`Cleaning up old notes for pass ${passId}`);
+
+    const filter = {
+      robotId: this.machineId,
+      componentName: "sanding-notes",
+      componentType: "rdk:component:generic",
+      tags: ["sanding-notes"],
+    } as unknown as VIAM.dataApi.Filter;
+
+    const allNotesForPass: PassNoteWithId[] = [];
+    let paginationToken: string | undefined = undefined;
+    let hasMore = true;
+
+    // Fetch all notes metadata
+    while (hasMore) {
+      const binaryData = await this.viamClient.dataClient.binaryDataByFilter(
+        filter,
+        100,
+        VIAM.dataApi.Order.DESCENDING,
+        paginationToken,
+        false
+      );
+
+      const promises = binaryData.data.map(async (item) => {
+        try {
+          const noteDataArray = await this.viamClient.dataClient.binaryDataByIds([item.metadata!.binaryDataId!]);
+          if (noteDataArray.length > 0 && noteDataArray[0].binary) {
+            const noteJson = new TextDecoder().decode(noteDataArray[0].binary);
+            const noteData = JSON.parse(noteJson) as PassNote;
+            if (noteData.pass_id === passId) {
+              allNotesForPass.push({ ...noteData, binaryId: item.metadata!.binaryDataId! });
+            }
+          }
+        } catch (parseError) {
+          console.warn("Failed to parse note data during cleanup:", parseError);
+        }
+      });
+      await Promise.all(promises);
+
+      paginationToken = binaryData.last;
+      hasMore = !!paginationToken;
+    }
+
+    if (allNotesForPass.length <= 1) {
+      console.log("No old notes to delete.");
+      return;
+    }
+
+    // Sort by creation date, newest first
+    allNotesForPass.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    // Get IDs of all notes except the newest one
+    const idsToDelete = allNotesForPass.slice(1).map(note => note.binaryId);
+
+    if (idsToDelete.length > 0) {
+      console.log(`Deleting ${idsToDelete.length} old notes.`);
+      const deletedCount = await this.viamClient.dataClient.deleteBinaryDataByIds(idsToDelete);
+      console.log(`Successfully deleted ${deletedCount} notes.`);
+    }
   }
 
   /**
