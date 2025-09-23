@@ -42,7 +42,7 @@ const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
   return (
     <div className="runs-table-container">
       <h2>Run Details</h2>
-      
+
       {/* Summary Information */}
       <div className="run-summary">
         <div className={`status ${runData.success ? 'success' : 'error'}`}>
@@ -82,7 +82,7 @@ const RunsTable: React.FC<RunsTableProps> = ({ runData }) => {
             ))}
             {tableData.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+                <td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: '#888' }}>
                   No data available
                 </td>
               </tr>

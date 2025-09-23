@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import * as VIAM from "@viamrobotics/sdk";
 import './AppInterface.css';
 import StepVideosGrid from './StepVideosGrid';
@@ -10,7 +10,8 @@ import {
   formatTimeDifference,
 } from './lib/videoUtils';
 import { getBeforeAfterImages, getStepVideos } from './lib/passUtils';
-import { formatDurationMs } from './lib/uiUtils.tsx';
+import { formatDurationMs } from './lib/uiUtils';
+import { PassNote, createNotesManager } from './lib/notesManager';
 
 interface AppViewProps {
   passSummaries?: any[];
@@ -22,6 +23,10 @@ interface AppViewProps {
   fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
   fetchTimestamp: Date | null;
+  machineId: string;
+  partId: string;
+  passNotes: Map<string, PassNote[]>;
+  onNotesUpdate: React.Dispatch<React.SetStateAction<Map<string, PassNote[]>>>;
 }
 
 export interface Step {
@@ -55,6 +60,10 @@ const AppInterface: React.FC<AppViewProps> = ({
   robotClient,
   fetchVideos,
   fetchTimestamp,
+  machineId,
+  partId,
+  passNotes,
+  onNotesUpdate,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -64,6 +73,87 @@ const AppInterface: React.FC<AppViewProps> = ({
     beforeImage: VIAM.dataApi.BinaryData | null;
     afterImage: VIAM.dataApi.BinaryData | null;
   } | null>(null);
+  const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
+  const [savingNotes, setSavingNotes] = useState<Set<string>>(new Set());
+  const [noteSuccess, setNoteSuccess] = useState<Set<string>>(new Set());
+
+  // Initialize note inputs from existing notes
+  useEffect(() => {
+    const initialInputs: Record<string, string> = {};
+    passNotes.forEach((notes, passId) => {
+      if (notes.length > 0) {
+        initialInputs[passId] = notes[0].note_text;
+      }
+    });
+    setNoteInputs(initialInputs);
+  }, [passNotes]);
+
+  const handleNoteChange = (passId: string, value: string) => {
+    setNoteInputs(prev => ({
+      ...prev,
+      [passId]: value
+    }));
+
+    // Clear success state when editing
+    if (noteSuccess.has(passId)) {
+      const newSuccess = new Set(noteSuccess);
+      newSuccess.delete(passId);
+      setNoteSuccess(newSuccess);
+    }
+  };
+
+  const saveNote = async (passId: string) => {
+    if (!viamClient || !passId || !partId) return;
+
+    const noteText = noteInputs[passId]?.trim() || '';
+    if (noteText === '') return;
+
+    // Show saving indicator
+    setSavingNotes(prev => new Set(prev).add(passId));
+
+    try {
+      const notesManager = createNotesManager(viamClient, machineId);
+      await notesManager.savePassNote(passId, noteText, partId);
+
+      // Create new note object
+      const newNote: PassNote = {
+        pass_id: passId,
+        note_text: noteText,
+        created_at: new Date().toISOString(),
+        created_by: "web-app"
+      };
+
+      // Update notes in state
+      onNotesUpdate(prevNotes => {
+        const newNotesMap = new Map(prevNotes);
+        const existingNotes = newNotesMap.get(passId) || [];
+        const updatedNotes = [newNote, ...existingNotes];
+        newNotesMap.set(passId, updatedNotes);
+        return newNotesMap;
+      });
+
+      // Show success state
+      setNoteSuccess(prev => new Set(prev).add(passId));
+
+      // Clear success state after a delay
+      setTimeout(() => {
+        setNoteSuccess(prev => {
+          const newSuccess = new Set(prev);
+          newSuccess.delete(passId);
+          return newSuccess;
+        });
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to save note:", error);
+    } finally {
+      // Hide saving indicator
+      setSavingNotes(prev => {
+        const newSaving = new Set(prev);
+        newSaving.delete(passId);
+        return newSaving;
+      });
+    }
+  };
 
   const cameraComponentNames = Array.from(
     new Set(
@@ -185,6 +275,53 @@ const AppInterface: React.FC<AppViewProps> = ({
     }
   };
 
+  const getSaveButtonStyles = (passId: string) => {
+    const isSaving = savingNotes.has(passId);
+    const isSuccess = noteSuccess.has(passId);
+    const noteText = noteInputs[passId] || '';
+    const existingNotes = passNotes.get(passId) || [];
+    const latestNoteText = existingNotes.length > 0 ? existingNotes[0].note_text : '';
+    const hasChanges = noteText.trim() !== latestNoteText.trim();
+    const canSave = hasChanges && noteText.trim() !== '';
+
+    let backgroundColor = '#3b82f6'; // Default blue
+    if (isSuccess) backgroundColor = '#10b981'; // Success green
+    if (isSaving) backgroundColor = '#9ca3af'; // Loading gray
+    if (!canSave) backgroundColor = '#9ca3af'; // Disabled gray
+
+    return {
+      padding: '6px 8px',
+      fontSize: '12px',
+      backgroundColor,
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: isSaving || !canSave || isSuccess ? 'not-allowed' : 'pointer',
+      transition: 'background-color 0.2s'
+    };
+  };
+
+  const getSaveButtonText = (passId: string) => {
+    if (noteSuccess.has(passId)) return 'Saved!';
+    if (savingNotes.has(passId)) {
+      return (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{
+            display: 'inline-block',
+            width: '10px',
+            height: '10px',
+            border: '2px solid transparent',
+            borderTop: '2px solid white',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          Saving...
+        </span>
+      );
+    }
+    return 'Save note';
+  };
+
   return (
     <div className="appInterface">
       <header className="flex items-center sticky top-0 z-10 mb-4 px-4 py-3 border-b bg-zinc-50 shadow-none md:shadow-xs">
@@ -300,6 +437,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                         </tr>
                         {passes.map((pass: Pass, passIndex: number) => {
                           const globalIndex = `${dayIndex}-${passIndex}`;
+                          const passId = pass.pass_id;
+                          const passNotesData = passNotes.get(passId) || [];
 
                           return (
                             <React.Fragment key={pass.pass_id || globalIndex}>
@@ -697,12 +836,38 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           {/* Column 2: Pass Notes */}
                                           <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                                             <div className="pass-notes-section">
-                                              <label htmlFor={`pass-notes-${pass.pass_id}`} className="pass-notes-label">
+                                              <label htmlFor={`pass-notes-${passId}`} className="pass-notes-label">
                                                 <h4>Pass notes</h4>
                                               </label>
+
+                                              {/* Show previous notes if they exist */}
+                                              {passNotesData.length > 0 && passNotesData[0].note_text !== noteInputs[passId] && (
+                                                <div style={{
+                                                  marginBottom: '10px',
+                                                  fontSize: '13px',
+                                                  color: '#6b7280'
+                                                }}>
+                                                  <div style={{ fontWeight: '500' }}>Previous note:</div>
+                                                  <div style={{
+                                                    padding: '8px',
+                                                    backgroundColor: '#f9fafb',
+                                                    borderRadius: '4px',
+                                                    border: '1px solid #e5e7eb',
+                                                    whiteSpace: 'pre-wrap'
+                                                  }}>
+                                                    {passNotesData[0].note_text}
+                                                  </div>
+                                                  <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                                                    {new Date(passNotesData[0].created_at).toLocaleString()}
+                                                  </div>
+                                                </div>
+                                              )}
+
                                               <textarea
-                                                id={`pass-notes-${pass.pass_id}`}
+                                                id={`pass-notes-${passId}`}
                                                 className="notes-textarea"
+                                                value={noteInputs[passId] || ''}
+                                                onChange={(e) => handleNoteChange(passId, e.target.value)}
                                                 placeholder="Add a note for this pass..."
                                                 style={{
                                                   width: '100%',
@@ -716,8 +881,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                   backgroundColor: '#ffffff',
                                                   boxSizing: 'border-box'
                                                 }}
-                                                aria-label={`Notes for pass ${pass.pass_id}`}
-                                                aria-describedby={`pass-notes-help-${pass.pass_id}`}
+                                                aria-label={`Notes for pass ${passId}`}
+                                                aria-describedby={`pass-notes-help-${passId}`}
                                               />
                                               <div style={{
                                                 display: 'flex',
@@ -726,24 +891,27 @@ const AppInterface: React.FC<AppViewProps> = ({
                                               }}>
                                                 <button
                                                   type="button"
-                                                  style={{
-                                                    padding: '6px 8px',
-                                                    fontSize: '12px',
-                                                    backgroundColor: '#3b82f6',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    transition: 'background-color 0.2s'
-                                                  }}
+                                                  onClick={() => saveNote(passId)}
+                                                  disabled={
+                                                    savingNotes.has(passId) ||
+                                                    noteSuccess.has(passId) ||
+                                                    !noteInputs[passId]?.trim() ||
+                                                    (passNotesData.length > 0 &&
+                                                      passNotesData[0].note_text === noteInputs[passId]?.trim())
+                                                  }
+                                                  style={getSaveButtonStyles(passId)}
                                                   onMouseEnter={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#2563eb';
+                                                    if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
+                                                      e.currentTarget.style.backgroundColor = '#2563eb';
+                                                    }
                                                   }}
                                                   onMouseLeave={(e) => {
-                                                    e.currentTarget.style.backgroundColor = '#3b82f6';
+                                                    if (!savingNotes.has(passId) && !noteSuccess.has(passId)) {
+                                                      e.currentTarget.style.backgroundColor = getSaveButtonStyles(passId).backgroundColor;
+                                                    }
                                                   }}
                                                 >
-                                                  Save note
+                                                  {getSaveButtonText(passId)}
                                                 </button>
                                               </div>
                                             </div>

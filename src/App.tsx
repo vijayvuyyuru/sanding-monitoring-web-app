@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
 import { Timestamp } from '@bufbuild/protobuf';
+import { PassNote, createNotesManager } from './lib/notesManager';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -19,6 +20,8 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
+  const [partId, setPartId] = useState<string>('');
+  const [passNotes, setPassNotes] = useState<Map<string, PassNote[]>>(new Map());
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -182,6 +185,13 @@ function App() {
       const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
       console.log("Tabular Data:", tabularData);
 
+      // Set partId in state
+      let extractedPartId = '';
+      if (tabularData && tabularData.length > 0) {
+        extractedPartId = (tabularData[0] as any).part_id || '';
+        setPartId(extractedPartId);
+      }
+
       // Process tabular data into pass summaries
       const processedPasses: Pass[] = tabularData.map((item: any) => {
         const pass = item.data!.readings!;
@@ -202,7 +212,23 @@ function App() {
           build_info: buildInfo
         };
       });
+
       setPassSummaries(processedPasses);
+
+      // Fetch all notes for all passes at once
+      if (processedPasses.length > 0 && extractedPartId) {
+        console.log("Fetching notes for all passes...");
+        try {
+          const notesManager = createNotesManager(viamClient, machineId);
+          const passIds = processedPasses.map(pass => pass.pass_id).filter(Boolean);
+          const allNotes = await notesManager.fetchNotesForPasses(passIds);
+          setPassNotes(allNotes);
+          console.log("Fetched notes for", passIds.length, "passes");
+        } catch (error) {
+          console.error("Failed to fetch notes:", error);
+        }
+      }
+
       console.log("Fetching data end");
     };
 
@@ -229,6 +255,10 @@ function App() {
       robotClient={robotClient}
       fetchVideos={fetchFiles}
       fetchTimestamp={fetchTimestamp}
+      machineId={machineId}
+      partId={partId}
+      passNotes={passNotes}
+      onNotesUpdate={setPassNotes}
     />
   );
 }

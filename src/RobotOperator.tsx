@@ -49,20 +49,20 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       const updateImage = async () => {
         try {
           const image = await cameraClient.getImage();
-          
+
           // Convert Uint8Array to blob and create URL
           const buffer = new ArrayBuffer(image.length);
           const view = new Uint8Array(buffer);
           view.set(image);
-          
+
           const blob = new Blob([buffer], { type: 'image/jpeg' });
           const url = URL.createObjectURL(blob);
-          
+
           // Revoke previous URL to prevent memory leak
           if (imageUrl) {
             URL.revokeObjectURL(imageUrl);
           }
-          
+
           setImageUrl(url);
           setStreamError(null);
         } catch (error) {
@@ -78,7 +78,7 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       intervalIdRef.current = window.setInterval(updateImage, 100);
       setIsStreaming(true);
       setStreamError(null);
-      
+
     } catch (error) {
       console.error("Failed to start video stream:", error);
       setStreamError("Failed to start video stream");
@@ -91,12 +91,12 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       clearInterval(intervalIdRef.current);
       intervalIdRef.current = null;
     }
-    
+
     if (imageUrl) {
       URL.revokeObjectURL(imageUrl);
       setImageUrl(null);
     }
-    
+
     setIsStreaming(false);
   };
 
@@ -110,7 +110,7 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       const command = VIAM.Struct.fromJson({
         "startSandingOption": true
       });
-      
+
       const response = await sanderClient.doCommand(command);
       console.log("Sanding started:", response);
       alert("Sanding operation started successfully");
@@ -130,7 +130,7 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
       const command = VIAM.Struct.fromJson({
         "stopSandingOption": true
       });
-      
+
       const response = await sanderClient.doCommand(command);
       console.log("Sanding stopped:", response);
       alert("Sanding operation stopped");
@@ -146,7 +146,7 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
         {/* Live Video Feed Section */}
         <div className="video-section">
           <h3>Live Camera Feed - Sensing Camera</h3>
-          
+
           <div className="video-container">
             {isStreaming && imageUrl ? (
               <img
@@ -168,16 +168,16 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
           </div>
           <div className="video-controls">
             {!isStreaming ? (
-              <button 
-                onClick={startVideoStream} 
+              <button
+                onClick={startVideoStream}
                 className="control-btn primary"
                 disabled={!cameraClient}
               >
                 Start Video Feed
               </button>
             ) : (
-              <button 
-                onClick={stopVideoStream} 
+              <button
+                onClick={stopVideoStream}
                 className="control-btn secondary"
               >
                 Stop Video Feed
@@ -193,14 +193,14 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
             <div className="control-group">
               <h4>Sanding Operations</h4>
               <div className="control-buttons">
-                <button 
+                <button
                   onClick={handleStartSanding}
                   className="control-btn success"
                   disabled={!sanderClient}
                 >
                   Start Sanding
                 </button>
-                <button 
+                <button
                   onClick={handleStopSanding}
                   className="control-btn danger"
                   disabled={!sanderClient}
@@ -224,6 +224,12 @@ const RobotOperator: React.FC<RobotOperatorProps> = ({ sanderClient, robotClient
                   <span className="status-label">Sander Module:</span>
                   <span className={`status-value ${sanderClient ? 'connected' : 'disconnected'}`}>
                     {sanderClient ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">Robot Status:</span>
+                  <span className={`status-value ${robotClient ? 'connected' : 'disconnected'}`}>
+                    {robotClient ? 'Connected' : 'Disconnected'}
                   </span>
                 </div>
               </div>
