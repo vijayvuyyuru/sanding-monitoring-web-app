@@ -471,13 +471,28 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 <td className="text-zinc-700">{pass.start.toLocaleDateString()}</td>
                                 <td className="text-zinc-700 text-xs">
                                   {pass.pass_id ? (
-                                    <button
-                                      onClick={() => navigator.clipboard.writeText(pass.pass_id)}
-                                      className="hover:bg-blue-100 hover:text-blue-700 px-1 py-0.5 rounded cursor-pointer transition-colors"
-                                      title={`Click to copy full pass ID: ${pass.pass_id}`}
-                                    >
-                                      {pass.pass_id.substring(0, 8)}
-                                    </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      <button
+                                        onClick={() => navigator.clipboard.writeText(pass.pass_id)}
+                                        className="hover:bg-blue-100 hover:text-blue-700 px-1 py-0.5 rounded cursor-pointer transition-colors"
+                                        title={`Click to copy full pass ID: ${pass.pass_id}`}
+                                      >
+                                        {pass.pass_id.substring(0, 8)}
+                                      </button>
+                                      {passNotesData.length > 0 && passNotesData[0].note_text.trim() && (
+                                        <span
+                                          style={{
+                                            fontSize: '12px',
+                                            color: '#6b7280',
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                          }}
+                                          title="This pass has notes"
+                                        >
+                                          ✏️
+                                        </span>
+                                      )}
+                                    </div>
                                   ) : (
                                     '—'
                                   )}
@@ -846,7 +861,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                           <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                                             {fetchingNotes && passNotesData.length === 0 ? (
                                               <div className="pass-notes-section">
-                                                <label className="pass-notes-label"><h4>Pass notes</h4></label>
+                                                <label className="flex pass-notes-label">
+                                                  <h4>Pass fads</h4></label>
                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
                                                   <span style={{
                                                     display: 'inline-block',
