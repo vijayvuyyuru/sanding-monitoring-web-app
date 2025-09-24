@@ -496,14 +496,13 @@ const AppInterface: React.FC<AppViewProps> = ({
                                       {passNotesData.length > 0 && passNotesData[0].note_text.trim() && (
                                         <span
                                           style={{
-                                            fontSize: '12px',
-                                            color: '#6b7280',
+                                            fontSize: '18px',
                                             display: 'flex',
                                             alignItems: 'center'
                                           }}
                                           title="This pass has notes"
                                         >
-                                          ✏️
+                                          📝
                                         </span>
                                       )}
                                     </div>
@@ -876,7 +875,8 @@ const AppInterface: React.FC<AppViewProps> = ({
                                             {fetchingNotes && passNotesData.length === 0 ? (
                                               <div className="pass-notes-section">
                                                 <label className="flex pass-notes-label">
-                                                  <h4>Pass fads</h4></label>
+                                                  <h4>Pass notes</h4>
+                                                </label>
                                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100px', backgroundColor: '#f9fafb', borderRadius: '6px' }}>
                                                   <span style={{
                                                     display: 'inline-block',
