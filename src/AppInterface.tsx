@@ -356,16 +356,15 @@ const AppInterface: React.FC<AppViewProps> = ({
             <div className='flex gap-8'>
               {machineName && (
                 <div className="video-store-selector">
-                  <div className="video-store-selector-label">Machine name</div>
+                  <div className="video-store-selector-label" style={{ marginBottom: '0.75rem' }}>Machine name</div>
                   <div className="text-sm font-semibold text-zinc-900 py-2">
                     <span style={{
-                      backgroundColor: '#e0e0e0',
+                      backgroundColor: '#f3f3f3',
                       color: 'rgb(37 37 37)',
                       padding: '4px 12px',
-                      borderRadius: '16px',
+                      borderRadius: '4px',
                       fontSize: '14px',
                       fontWeight: '600',
-                      border: '1px solid #c7d2fe'
                     }}>
                       {machineName}
                     </span>
