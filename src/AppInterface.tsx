@@ -353,11 +353,26 @@ const AppInterface: React.FC<AppViewProps> = ({
       <main className="mainContent">
         {activeRoute === 'live' && (
           <section>
-            <h2 className="text-xl font-semibold text-zinc-900 mb-4">Passes
-              {machineName ? ` for ${machineName}` : ''}
-            </h2>
-
             <div className='flex gap-8'>
+              {machineName && (
+                <div className="video-store-selector">
+                  <div className="video-store-selector-label">Machine name</div>
+                  <div className="text-sm font-semibold text-zinc-900 py-2">
+                    <span style={{
+                      backgroundColor: '#e0e0e0',
+                      color: 'rgb(37 37 37)',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      border: '1px solid #c7d2fe'
+                    }}>
+                      {machineName}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <VideoStoreSelector
                 robotClient={robotClient || null}
                 onVideoStoreSelected={setVideoStoreClient}
