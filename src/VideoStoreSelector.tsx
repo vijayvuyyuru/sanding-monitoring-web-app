@@ -12,16 +12,16 @@ interface Resource {
   subtype: string;
 }
 
-const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({ 
-  robotClient, 
-  onVideoStoreSelected 
+const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
+  robotClient,
+  onVideoStoreSelected
 }) => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [selectedResource, setSelectedResource] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-    // Fetch available resources when robotClient changes
+  // Fetch available resources when robotClient changes
   useEffect(() => {
     const fetchResources = async () => {
       if (!robotClient) {
@@ -35,16 +35,16 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
       try {
         // Get resource names from the robot client
         const resourceNames = await robotClient.resourceNames();
-        
+
         // Filter for components with type "component" and subtype "generic"
         const filteredResources = resourceNames.filter(
-          (resource: any) => 
-            resource.type === "component" && 
+          (resource: any) =>
+            resource.type === "component" &&
             resource.subtype === "generic"
         );
 
         setResources(filteredResources);
-        
+
         // Clear selection when resources change
         setSelectedResource('');
         onVideoStoreSelected(null);
@@ -62,7 +62,7 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
 
   const handleResourceSelect = (resourceName: string) => {
     setSelectedResource(resourceName);
-    
+
     if (resourceName && robotClient) {
       try {
         const videoStoreClient = new VIAM.GenericComponentClient(robotClient, resourceName);
@@ -78,22 +78,12 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
     }
   };
 
-  if (!robotClient) {
-    return (
-      <div className="video-store-selector">
-        <div className="video-store-selector-message info">
-          Robot not connected
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="video-store-selector">
       <label htmlFor="video-store-select" className="video-store-selector-label">
         Select video store resource
       </label>
-      
+
       <div style={{ position: 'relative' }}>
         <select
           id="video-store-select"
@@ -111,7 +101,7 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
             </option>
           ))}
         </select>
-        
+
         {isLoading && (
           <div className="video-store-selector-spinner-container">
             <div className="video-store-selector-spinner"></div>
