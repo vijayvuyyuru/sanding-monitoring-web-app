@@ -81,7 +81,7 @@ const formatDateToVideoStoreFormat = (date: Date): string => {
   const minutes = String(date.getUTCMinutes()).padStart(2, '0');
   const seconds = String(date.getUTCSeconds()).padStart(2, '0');
 
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}Z`;
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
 };
 
 // 10 seconds in milliseconds
