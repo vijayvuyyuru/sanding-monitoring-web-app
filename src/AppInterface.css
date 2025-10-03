@@ -1515,3 +1515,123 @@ button:focus {
 .expanded-content:last-of-type {
   margin-bottom: 8px;
 }
+
+.pagination {
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 5px;
+}
+
+.pagination-btn {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background: #f8f8f8;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pagination-info {
+  color: #666;
+}
+
+.pagination-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-button.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.pagination-button.active:hover {
+  background-color: #2563eb;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.items-per-page label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.items-per-page select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  background-color: white;
+}
+
+@media (min-width: 768px) {
+  .pagination-container {
+    flex-wrap: nowrap;
+  }
+  
+  .pagination-info,
+  .items-per-page {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}

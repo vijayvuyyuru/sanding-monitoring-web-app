@@ -20,6 +20,8 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7; // 7 days per page
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -55,7 +57,7 @@ function App() {
 
     let paginationToken: string | undefined = undefined;
 
-    // Process files in batches using a while loop to eliminate code duplication
+    // Process files in batches
     while (true) {
       let binaryData = await viamClient.dataClient.binaryDataByFilter(
         filter,
@@ -67,7 +69,6 @@ function App() {
         false
       );
 
-      // Process files once and build files, videoFiles, and images lists
       const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newImages = new Map<string, VIAM.dataApi.BinaryData>();
@@ -97,7 +98,6 @@ function App() {
         setFetchTimestamp(binaryData.data[binaryData.data.length - 1].metadata!.timeRequested!.toDate());
       }
 
-      // Update both states with the processed files
       setFiles(prevFiles => {
         const updatedFiles = new Map(prevFiles);
         newFiles.forEach((file, id) => {
@@ -160,13 +160,12 @@ function App() {
       console.log("machineId:", machineId);
       console.log("orgID:", orgID);
 
-      // Implement batched fetching of pass summaries
+      // batched fetching of pass summaries
       let allTabularData: any[] = [];
       let hasMoreData = true;
       let oldestTimeReceived: string | null = null;
 
       while (hasMoreData) {
-        // Base query
         const baseQuery: Record<string, JsonValue>[] = [
           {
             $match: {
@@ -268,17 +267,57 @@ function App() {
     }
   }, [passSummaries, viamClient]);
 
+  // After fetching all pass summaries, add grouping by day logic
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Group passes by day
+  const groupedByDay = passSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
+    // Use a consistent date key (YYYY-MM-DD)
+    const dateKey = pass.start.toISOString().split('T')[0];
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(pass);
+    return acc;
+  }, {});
+
+  // Get sorted day keys (dates)
+  const sortedDays = Object.keys(groupedByDay).sort().reverse(); // Most recent first
+
+  // Paginate by days
+  const indexOfLastDay = currentPage * itemsPerPage;
+  const indexOfFirstDay = indexOfLastDay - itemsPerPage;
+  const currentDays = sortedDays.slice(indexOfFirstDay, indexOfLastDay);
+
+  // Get all passes for the current days
+  const currentPassSummaries = currentDays.flatMap(day => groupedByDay[day]);
+
+  const totalPages = Math.ceil(sortedDays.length / itemsPerPage);
+
   return (
     <AppInterface
       machineName={machineName}
       viamClient={viamClient!}
-      passSummaries={passSummaries}
+      passSummaries={currentPassSummaries}
       files={files}
       videoFiles={videoFiles}
       imageFiles={imageFiles}
       robotClient={robotClient}
       fetchVideos={fetchFiles}
       fetchTimestamp={fetchTimestamp}
+      pagination={{
+        currentPage,
+        totalPages,
+        itemsPerPage,
+        totalItems: sortedDays.length,
+        totalEntries: passSummaries.length,
+        onPageChange: handlePageChange,
+        onItemsPerPageChange: () => { },
+        currentDaysDisplayed: currentDays.length,
+        daysPerPage: true
+      }}
     />
   );
 }
