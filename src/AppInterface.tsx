@@ -25,10 +25,9 @@ interface AppViewProps {
     itemsPerPage: number;
     totalItems: number;
     onPageChange: (page: number) => void;
-    onItemsPerPageChange: (itemsPerPage: number) => void;
     daysPerPage?: boolean;
     currentDaysDisplayed?: number;
-    totalEntries?: number;  // Add this for the total number of pass entries
+    totalEntries?: number;
   };
 }
 
@@ -798,70 +797,67 @@ const AppInterface: React.FC<AppViewProps> = ({
 
       {/* Add pagination controls as sticky footer - only show when data is loaded */}
       {pagination && passSummaries.length > 0 && (
-        <div className="pagination-container-sticky">
-          <div className="pagination-container">
-            {/* Center pagination controls only */}
-            <div className="pagination-controls" style={{
-              display: 'flex',
-              justifyContent: 'center',
-              width: '100%',
-              gap: '4px'
-            }}>
-              <button
-                className="pagination-button"
-                disabled={pagination.currentPage === 1}
-                onClick={() => pagination.onPageChange(1)}
-              >
-                &laquo; First
-              </button>
-              <button
-                className="pagination-button"
-                disabled={pagination.currentPage === 1}
-                onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
-              >
-                &lt; Prev
-              </button>
+        <div className="pagination-container">
+          <div className="pagination-controls" style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            gap: '4px'
+          }}>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.onPageChange(1)}
+            >
+              &laquo; First
+            </button>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+            >
+              &lt; Prev
+            </button>
 
-              {/* Page numbers */}
-              {(() => {
-                const pages = [];
-                const maxVisible = 5; // Max visible page numbers
-                let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
-                let endPage = Math.min(pagination.totalPages, startPage + maxVisible - 1);
+            {/* Page numbers */}
+            {(() => {
+              const pages = [];
+              const maxVisible = 5; // Max visible page numbers
+              let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
+              let endPage = Math.min(pagination.totalPages, startPage + maxVisible - 1);
 
-                if (endPage - startPage + 1 < maxVisible) {
-                  startPage = Math.max(1, endPage - maxVisible + 1);
-                }
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+              }
 
-                for (let i = startPage; i <= endPage; i++) {
-                  pages.push(
-                    <button
-                      key={i}
-                      className={`pagination-button ${pagination.currentPage === i ? 'active' : ''}`}
-                      onClick={() => pagination.onPageChange(i)}
-                    >
-                      {i}
-                    </button>
-                  );
-                }
-                return pages;
-              })()}
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <button
+                    key={i}
+                    className={`pagination-button ${pagination.currentPage === i ? 'active' : ''}`}
+                    onClick={() => pagination.onPageChange(i)}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pages;
+            })()}
 
-              <button
-                className="pagination-button"
-                disabled={pagination.currentPage === pagination.totalPages}
-                onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
-              >
-                Next &gt;
-              </button>
-              <button
-                className="pagination-button"
-                disabled={pagination.currentPage === pagination.totalPages}
-                onClick={() => pagination.onPageChange(pagination.totalPages)}
-              >
-                Last &raquo;
-              </button>
-            </div>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+            >
+              Next &gt;
+            </button>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.onPageChange(pagination.totalPages)}
+            >
+              Last &raquo;
+            </button>
           </div>
         </div>
       )}

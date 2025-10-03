@@ -314,7 +314,6 @@ function App() {
         totalItems: sortedDays.length,
         totalEntries: passSummaries.length,
         onPageChange: handlePageChange,
-        onItemsPerPageChange: () => { },
         currentDaysDisplayed: currentDays.length,
         daysPerPage: true
       }}
