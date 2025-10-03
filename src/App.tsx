@@ -10,6 +10,7 @@ const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
 const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
 const machineNameRegex = /\/machine\/(.+?)-main\./;
+const BATCH_SIZE = 100;
 
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
@@ -27,7 +28,7 @@ function App() {
   const locationId = locationIdMatch ? locationIdMatch[1] : null;
 
   const machineInfo = window.location.pathname.split("/")[2];
-    
+
   const {
     apiKey: { id: apiKeyId, key: apiKeySecret },
     machineId,
@@ -38,7 +39,7 @@ function App() {
     if (!viamClient) return;
 
     const end = new Date();
-    
+
     console.log("Fetching for time range:", start, end);
     if (shouldSetLoadingState) {
       setFetchTimestamp(start);
@@ -65,12 +66,12 @@ function App() {
         false,
         false
       );
-      
+
       // Process files once and build files, videoFiles, and images lists
       const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newImages = new Map<string, VIAM.dataApi.BinaryData>();
-      
+
       binaryData.data.forEach(file => {
         if (file.metadata?.binaryDataId) {
           const isVideo = file.metadata.fileName?.toLowerCase().includes('.mp4');
@@ -95,7 +96,7 @@ function App() {
       if (binaryData.data.length > 0 && shouldSetLoadingState) {
         setFetchTimestamp(binaryData.data[binaryData.data.length - 1].metadata!.timeRequested!.toDate());
       }
-      
+
       // Update both states with the processed files
       setFiles(prevFiles => {
         const updatedFiles = new Map(prevFiles);
@@ -104,7 +105,7 @@ function App() {
         });
         return updatedFiles;
       });
-      
+
       setVideoFiles(prevVideoFiles => {
         const updatedVideoFiles = new Map(prevVideoFiles);
         newVideoFiles.forEach((file, id) => {
@@ -120,13 +121,13 @@ function App() {
         });
         return updatedImageFiles;
       });
-      
+
       // Break if no more data to fetch
       if (!binaryData.last) break;
     }
     console.log("total files count:", files.size);
     console.log("total video files count:", videoFiles.size);
-    
+
     setFetchTimestamp(null)
   };
 
@@ -139,7 +140,7 @@ function App() {
 
       try {
         const robotClient = await viamClient.connectToMachine({
-          host: hostname, 
+          host: hostname,
           id: machineId,
         });
         setRobotClient(robotClient);
@@ -147,7 +148,7 @@ function App() {
         console.error('Failed to create robot client:', error);
         setRobotClient(null);
       }
-      
+
       const organizations = await viamClient.appClient.listOrganizations();
       console.log("Organizations:", organizations);
       if (organizations.length !== 1) {
@@ -159,31 +160,80 @@ function App() {
       console.log("machineId:", machineId);
       console.log("orgID:", orgID);
 
-      const mqlQuery: Record<string, JsonValue>[] = [
-        {
-          $match: {
-            organization_id: orgID,
-            location_id: locationId,
-            component_name: sandingSummaryName,
-            robot_id: machineId,
-            component_type: sandingSummaryComponentType
-          },
-        },
-        {
-          $sort: {
-            time_received: -1,
-          },
-        },
-        {
-          $limit: 100
-        }
-      ];
+      // Implement batched fetching of pass summaries
+      let allTabularData: any[] = [];
+      let hasMoreData = true;
+      let oldestTimeReceived: string | null = null;
 
-      const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
-      console.log("Tabular Data:", tabularData);
+      while (hasMoreData) {
+        // Base query
+        const baseQuery: Record<string, JsonValue>[] = [
+          {
+            $match: {
+              organization_id: orgID,
+              location_id: locationId,
+              component_name: sandingSummaryName,
+              robot_id: machineId,
+              component_type: sandingSummaryComponentType
+            }
+          },
+          {
+            $sort: {
+              time_received: -1
+            }
+          }
+        ];
+
+        // Add time filter for pagination if we have a previous batch
+        if (oldestTimeReceived) {
+          (baseQuery[0].$match as Record<string, JsonValue>).time_received = {
+            $lt: oldestTimeReceived
+          };
+        }
+
+        // Add limit
+        const mqlQuery = [
+          ...baseQuery,
+          {
+            $limit: BATCH_SIZE
+          }
+        ];
+
+        console.log(`Fetching batch of sanding summaries${oldestTimeReceived ? ' older than ' + new Date(oldestTimeReceived).toISOString() : ''}`);
+        const batchData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
+        console.log(`Received ${batchData.length} records in batch`);
+
+        // If we have data, process it
+        if (batchData.length > 0) {
+          // Get the oldest time_received from this batch for next query
+          const lastItem = batchData[batchData.length - 1];
+
+          if ('timeReceived' in lastItem) {
+            oldestTimeReceived = lastItem.timeReceived as string;
+          } else if ('time_received' in lastItem) {
+            // This matches the field name in $match query
+            oldestTimeReceived = lastItem.time_received as string;
+          } else {
+            console.error("Cannot find time field in tabular data response:", lastItem);
+            hasMoreData = false;
+          }
+
+          allTabularData = [...allTabularData, ...batchData];
+
+          // If we have fewer records than the batch size, we're done
+          if (batchData.length < BATCH_SIZE) {
+            hasMoreData = false;
+          }
+        } else {
+          // No more data
+          hasMoreData = false;
+        }
+      }
+
+      console.log(`Total tabular data records fetched: ${allTabularData.length}`);
 
       // Process tabular data into pass summaries
-      const processedPasses: Pass[] = tabularData.map((item: any) => {
+      const processedPasses: Pass[] = allTabularData.map((item: any) => {
         const pass = item.data!.readings!;
         const buildInfo = pass.build_info ? pass.build_info : {};
 
@@ -195,7 +245,7 @@ function App() {
             start: new Date(x.start),
             end: new Date(x.end),
             pass_id: pass.pass_id,
-          })): [],
+          })) : [],
           success: pass.success ?? true,
           pass_id: pass.pass_id,
           err_string: pass.err_string || null,
@@ -205,9 +255,9 @@ function App() {
       setPassSummaries(processedPasses);
       console.log("Fetching data end");
     };
-    
-      fetchPasses();
-    }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
+
+    fetchPasses();
+  }, [apiKeyId, apiKeySecret, hostname, machineId, locationId]);
 
 
   // Fetch videos when passSummaries and viamClient are available
@@ -219,7 +269,7 @@ function App() {
   }, [passSummaries, viamClient]);
 
   return (
-    <AppInterface 
+    <AppInterface
       machineName={machineName}
       viamClient={viamClient!}
       passSummaries={passSummaries}
