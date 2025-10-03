@@ -207,13 +207,10 @@ function App() {
           // Get the oldest time_received from this batch for next query
           const lastItem = batchData[batchData.length - 1];
 
-          if ('timeReceived' in lastItem) {
-            oldestTimeReceived = lastItem.timeReceived as string;
-          } else if ('time_received' in lastItem) {
-            // This matches the field name in $match query
+          if ('time_received' in lastItem) {
             oldestTimeReceived = lastItem.time_received as string;
           } else {
-            console.error("Cannot find time field in tabular data response:", lastItem);
+            console.error("Cannot find 'time_received' field for pagination in tabular data response:", lastItem);
             hasMoreData = false;
           }
 
