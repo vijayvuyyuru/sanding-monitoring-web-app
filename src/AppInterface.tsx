@@ -546,7 +546,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                                       <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: '8px' }}>
                                                         ({formatTimeDifference(
                                                           passEnd.getTime(),
-                                                          afterImage.metadata?.toDate()?.getTime() || passEnd.getTime()
+                                                          afterImage.metadata?.timeRequested?.toDate()?.getTime() || passEnd.getTime()
                                                         )} before end)
                                                       </span>
                                                     </div>
