@@ -53,7 +53,7 @@ export class NotesManager {
       "SaveNote",
       ".json",
       [now, now],
-      ["sanding-notes"]
+      ["summary-web-app"]
     );
 
     console.log("Note saved successfully!");
@@ -76,7 +76,7 @@ export class NotesManager {
       robotId: this.machineId,
       componentName: "sanding-notes",
       componentType: "rdk:component:generic",
-      tags: ["sanding-notes"],
+      tags: ["summary-web-app"],
     } as unknown as VIAM.dataApi.Filter;
 
     const allNotesForPass: PassNoteWithId[] = [];
@@ -149,7 +149,7 @@ export class NotesManager {
       robotId: this.machineId,
       componentName: "sanding-notes",
       componentType: "rdk:component:generic",
-      tags: ["sanding-notes"],
+      tags: ["summary-web-app"],
     } as unknown as VIAM.dataApi.Filter;
 
     const allNotesByPassId = new Map<string, PassNote[]>();
