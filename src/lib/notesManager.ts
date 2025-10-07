@@ -57,7 +57,7 @@ export class NotesManager {
       "SaveNote",
       ".json",
       [now, now],
-      ["summary-web-app"]
+      ["sanding-notes"]
     );
 
     console.log("Note saved successfully!");
@@ -77,7 +77,7 @@ export class NotesManager {
       robotId: this.machineId,
       componentName: "sanding-notes",
       componentType: "rdk:component:generic",
-      tags: ["summary-web-app"],
+      tags: ["sanding-notes"],
     } as unknown as VIAM.dataApi.Filter;
 
     const allNotesForPass: PassNoteWithId[] = [];
@@ -98,6 +98,13 @@ export class NotesManager {
         try {
           const noteDataArray = await this.viamClient.dataClient.binaryDataByIds([item.metadata!.binaryDataId!]);
           if (noteDataArray.length > 0 && noteDataArray[0].binary) {
+            // Verify the item has the required tag before processing
+            const tags = item.metadata?.tags || [];
+            if (!tags.includes("sanding-notes")) {
+              console.warn(`Skipping binary data ${item.metadata!.binaryDataId!} - missing required tag`);
+              return;
+            }
+
             const noteJson = new TextDecoder().decode(noteDataArray[0].binary);
             const noteData = JSON.parse(noteJson) as PassNote;
             if (noteData.pass_id === passId) {
@@ -147,7 +154,7 @@ export class NotesManager {
       robotId: this.machineId,
       componentName: "sanding-notes",
       componentType: "rdk:component:generic",
-      tags: ["summary-web-app"],
+      tags: ["sanding-notes"],
     } as unknown as VIAM.dataApi.Filter;
 
     const notesToDelete: string[] = [];
@@ -211,7 +218,7 @@ export class NotesManager {
       robotId: this.machineId,
       componentName: "sanding-notes",
       componentType: "rdk:component:generic",
-      tags: ["summary-web-app"],
+      tags: ["sanding-notes"],
     } as unknown as VIAM.dataApi.Filter;
 
     const allNotesByPassId = new Map<string, PassNote[]>();
