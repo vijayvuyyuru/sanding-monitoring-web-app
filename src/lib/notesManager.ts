@@ -35,6 +35,10 @@ export class NotesManager {
       throw new Error("No part ID available for upload");
     }
 
+    // First, delete any existing notes for this pass
+    await this.deleteAllNotesForPass(passId);
+
+    // Then create the new note
     const noteData: PassNote = {
       pass_id: passId,
       note_text: noteText,
@@ -57,9 +61,6 @@ export class NotesManager {
     );
 
     console.log("Note saved successfully!");
-
-    // After saving, clean up old notes for the same pass
-    await this.deleteOldNotesForPass(passId);
   }
 
   /**
@@ -132,6 +133,67 @@ export class NotesManager {
   }
 
   /**
+   * Deletes all notes for a given pass ID.
+   * @param passId - The ID of the pass to delete notes for.
+   */
+  async deleteAllNotesForPass(passId: string): Promise<void> {
+    if (!this.viamClient) {
+      throw new Error("Viam client not initialized");
+    }
+
+    console.log(`Deleting any existing notes for pass ${passId}`);
+
+    const filter = {
+      robotId: this.machineId,
+      componentName: "sanding-notes",
+      componentType: "rdk:component:generic",
+      tags: ["summary-web-app"],
+    } as unknown as VIAM.dataApi.Filter;
+
+    const notesToDelete: string[] = [];
+    let paginationToken: string | undefined = undefined;
+    let hasMore = true;
+
+    // Find all notes for this pass ID
+    while (hasMore) {
+      const binaryData = await this.viamClient.dataClient.binaryDataByFilter(
+        filter,
+        100,
+        VIAM.dataApi.Order.DESCENDING,
+        paginationToken,
+        false
+      );
+
+      const promises = binaryData.data.map(async (item) => {
+        try {
+          const noteDataArray = await this.viamClient.dataClient.binaryDataByIds([item.metadata!.binaryDataId!]);
+          if (noteDataArray.length > 0 && noteDataArray[0].binary) {
+            const noteJson = new TextDecoder().decode(noteDataArray[0].binary);
+            const noteData = JSON.parse(noteJson) as PassNote;
+            if (noteData.pass_id === passId) {
+              notesToDelete.push(item.metadata!.binaryDataId!);
+            }
+          }
+        } catch (parseError) {
+          console.warn("Failed to parse note data during cleanup:", parseError);
+        }
+      });
+      await Promise.all(promises);
+
+      paginationToken = binaryData.last;
+      hasMore = !!paginationToken;
+    }
+
+    if (notesToDelete.length > 0) {
+      console.log(`Deleting ${notesToDelete.length} existing notes.`);
+      const deletedCount = await this.viamClient.dataClient.deleteBinaryDataByIds(notesToDelete);
+      console.log(`Successfully deleted ${deletedCount} notes.`);
+    } else {
+      console.log("No existing notes to delete.");
+    }
+  }
+
+  /**
    * Fetch notes for multiple passes, with optional batching.
    * @param passIds - An array of pass IDs to fetch notes for.
    * @param onBatchReceived - An optional callback that receives notes as they are fetched in batches.
@@ -153,17 +215,15 @@ export class NotesManager {
     } as unknown as VIAM.dataApi.Filter;
 
     const allNotesByPassId = new Map<string, PassNote[]>();
-    passIds.forEach(passId => {
-      allNotesByPassId.set(passId, []);
-    });
 
     let paginationToken: string | undefined = undefined;
     let hasMore = true;
+    const foundPassIds = new Set<string>();
 
     while (hasMore) {
       const binaryData = await this.viamClient.dataClient.binaryDataByFilter(
         filter,
-        50, // Fetch in smaller batches
+        50,
         VIAM.dataApi.Order.DESCENDING,
         paginationToken,
         false,
@@ -172,6 +232,7 @@ export class NotesManager {
       );
 
       const batchNotes = new Map<string, PassNote[]>();
+
       const promises = binaryData.data.map(async (item) => {
         try {
           const noteDataArray = await this.viamClient.dataClient.binaryDataByIds([item.metadata!.binaryDataId!]);
@@ -179,11 +240,10 @@ export class NotesManager {
             const noteJson = new TextDecoder().decode(noteDataArray[0].binary);
             const noteData = JSON.parse(noteJson) as PassNote;
 
-            if (passIds.includes(noteData.pass_id)) {
-              if (!batchNotes.has(noteData.pass_id)) {
-                batchNotes.set(noteData.pass_id, []);
-              }
-              batchNotes.get(noteData.pass_id)!.push(noteData);
+            // Only add the note if we haven't already found one for this pass ID
+            if (passIds.includes(noteData.pass_id) && !foundPassIds.has(noteData.pass_id)) {
+              foundPassIds.add(noteData.pass_id);
+              batchNotes.set(noteData.pass_id, [noteData]);
             }
           }
         } catch (parseError) {
@@ -195,8 +255,7 @@ export class NotesManager {
 
       if (batchNotes.size > 0) {
         batchNotes.forEach((notes, passId) => {
-          const existingNotes = allNotesByPassId.get(passId) || [];
-          allNotesByPassId.set(passId, [...existingNotes, ...notes]);
+          allNotesByPassId.set(passId, notes);
         });
 
         if (onBatchReceived) {
@@ -204,16 +263,14 @@ export class NotesManager {
         }
       }
 
+      // If we've found notes for all requested pass IDs, stop fetching
+      if (foundPassIds.size === passIds.length) {
+        break;
+      }
+
       paginationToken = binaryData.last;
       hasMore = !!paginationToken;
     }
-
-    allNotesByPassId.forEach((notes, passId) => {
-      allNotesByPassId.set(
-        passId,
-        notes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      );
-    });
 
     return allNotesByPassId;
   }
