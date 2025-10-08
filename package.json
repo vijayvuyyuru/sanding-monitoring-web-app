@@ -11,7 +11,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@viamrobotics/sdk": "^0.47.0",
+    "@viamrobotics/sdk": "^0.52.2",
     "js-cookie": "^3.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
