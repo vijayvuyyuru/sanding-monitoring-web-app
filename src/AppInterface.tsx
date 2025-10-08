@@ -323,10 +323,10 @@ const AppInterface: React.FC<AppViewProps> = ({
                     <th>Day</th>
                     <th>Pass ID</th>
                     <th>Status</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Total Duration</th>
-                    <th>Execution Time</th>
+                    <th>Start time</th>
+                    <th>End time</th>
+                    <th>Total duration</th>
+                    <th>Execution time</th>
                     <th>Steps</th>
                     <th>Error</th>
                   </tr>
