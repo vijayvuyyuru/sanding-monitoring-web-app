@@ -114,6 +114,16 @@ const AppInterface: React.FC<AppViewProps> = ({
     return `${Math.round(minutes)}m`;
   };
 
+  // Compute total execution time (ms) for a pass by summing 'executing' steps
+  const getExecutionTimeMs = (pass: Pass): number => {
+    if (!pass.steps || pass.steps.length === 0) return 0;
+    return pass.steps.reduce((sum, step) => {
+      return step.name.toLowerCase() === 'executing'
+        ? sum + (step.end.getTime() - step.start.getTime())
+        : sum;
+    }, 0);
+  };
+
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
 
@@ -150,15 +160,16 @@ const AppInterface: React.FC<AppViewProps> = ({
         const passDuration = pass.end.getTime() - pass.start.getTime();
         totalFactoryTime += passDuration;
 
-        // Calculate execution time for percentage
+        // Use the existing function to calculate execution time
+        totalExecutionTime += getExecutionTimeMs(pass);
+
+        // Calculate other steps time (total steps time minus execution time)
         if (pass.steps && Array.isArray(pass.steps)) {
           pass.steps.forEach(step => {
             const stepDuration = step.end.getTime() - step.start.getTime();
 
-            // Look for the specific "executing" step (exact match or case-insensitive)
-            if (step.name.toLowerCase() === 'executing') {
-              totalExecutionTime += stepDuration;
-            } else {
+            // Only add to otherStepsTime if it's not an executing step
+            if (step.name.toLowerCase() !== 'executing') {
               totalOtherStepsTime += stepDuration;
             }
           });
@@ -251,16 +262,6 @@ const AppInterface: React.FC<AppViewProps> = ({
         {displayText}
       </span>
     );
-  };
-
-  // Compute total execution time (ms) for a pass by summing 'executing' steps
-  const getExecutionTimeMs = (pass: Pass): number => {
-    if (!pass.steps || pass.steps.length === 0) return 0;
-    return pass.steps.reduce((sum, step) => {
-      return step.name.toLowerCase() === 'executing'
-        ? sum + (step.end.getTime() - step.start.getTime())
-        : sum;
-    }, 0);
   };
 
   return (
