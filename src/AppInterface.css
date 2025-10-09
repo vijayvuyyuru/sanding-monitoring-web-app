@@ -289,18 +289,18 @@ button:focus {
   min-width: 0;
 }
 
-@media (min-width: 480px) {
+/* @media (min-width: 480px) {
   .mainContent {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
-}
+} */
 
 @media (min-width: 640px) {
   .mainContent {
     padding-left: 1rem;
     padding-right: 1rem;
-    width: 95%;
+    width: 100%;
   }
 }
 
@@ -308,13 +308,13 @@ button:focus {
   .mainContent {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-    width: 95%;
+    width: 100%;
   }
 }
 
 @media (min-width: 1024px) {
   .mainContent {
-    width: 95%;
+    width: 100%;
     padding-left: 2rem;
     padding-right: 2rem;
     max-width: none;
@@ -323,13 +323,13 @@ button:focus {
 
 @media (min-width: 1280px) {
   .mainContent {
-    max-width: 1440px;
+    max-width: none;
   }
 }
 
 @media (min-width: 1536px) {
   .mainContent {
-    max-width: 1440px;
+    max-width: 1728px;
   }
 }
 
@@ -1508,15 +1508,6 @@ button:focus {
 .expandable-row:last-of-type,
 .expanded-content:last-of-type {
   margin-bottom: 8px;
-}
-}
-
-/* Ensure proper spacing after each day group */
-.expandable-row:last-of-type,
-.expanded-content:last-of-type {
-  margin-bottom: 8px;
-}
-  border-top: none;
 }
 
 /* Ensure proper spacing after each day group */
