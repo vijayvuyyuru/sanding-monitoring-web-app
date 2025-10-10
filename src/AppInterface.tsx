@@ -19,6 +19,16 @@ interface AppViewProps {
   fetchVideos: (start: Date) => Promise<void>;
   machineName: string | null;
   fetchTimestamp: Date | null;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    itemsPerPage: number;
+    totalItems: number;
+    onPageChange: (page: number) => void;
+    daysPerPage?: boolean;
+    currentDaysDisplayed?: number;
+    totalEntries?: number;
+  };
 }
 
 export interface Step {
@@ -52,6 +62,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   robotClient,
   fetchVideos,
   fetchTimestamp,
+  pagination,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -160,16 +171,15 @@ const AppInterface: React.FC<AppViewProps> = ({
         const passDuration = pass.end.getTime() - pass.start.getTime();
         totalFactoryTime += passDuration;
 
-        // Use the existing function to calculate execution time
-        totalExecutionTime += getExecutionTimeMs(pass);
-
-        // Calculate other steps time (total steps time minus execution time)
+        // Calculate execution time for percentage
         if (pass.steps && Array.isArray(pass.steps)) {
           pass.steps.forEach(step => {
             const stepDuration = step.end.getTime() - step.start.getTime();
 
-            // Only add to otherStepsTime if it's not an executing step
-            if (step.name.toLowerCase() !== 'executing') {
+            // Look for the specific "executing" step (exact match or case-insensitive)
+            if (step.name.toLowerCase() === 'executing') {
+              totalExecutionTime += stepDuration;
+            } else {
               totalOtherStepsTime += stepDuration;
             }
           });
@@ -785,6 +795,73 @@ const AppInterface: React.FC<AppViewProps> = ({
           </section>
         )}
       </main>
+
+      {/* Add pagination controls as sticky footer - only show when data is loaded */}
+      {pagination && passSummaries.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-controls" style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            gap: '4px'
+          }}>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.onPageChange(1)}
+            >
+              &laquo; First
+            </button>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+            >
+              &lt; Prev
+            </button>
+
+            {/* Page numbers */}
+            {(() => {
+              const pages = [];
+              const maxVisible = 5; // Max visible page numbers
+              let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
+              let endPage = Math.min(pagination.totalPages, startPage + maxVisible - 1);
+
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+              }
+
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <button
+                    key={i}
+                    className={`pagination-button ${pagination.currentPage === i ? 'active' : ''}`}
+                    onClick={() => pagination.onPageChange(i)}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pages;
+            })()}
+
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+            >
+              Next &gt;
+            </button>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.onPageChange(pagination.totalPages)}
+            >
+              Last &raquo;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add the modal at the end */}
       {beforeAfterModal && (
