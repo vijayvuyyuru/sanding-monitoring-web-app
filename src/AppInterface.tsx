@@ -386,6 +386,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                         </tr>
                         {passes.map((pass: Pass, passIndex: number) => {
                           const globalIndex = `${dayIndex}-${passIndex}`;
+                          const execMs = getExecutionTimeMs(pass);
 
                           return (
                             <React.Fragment key={pass.pass_id || globalIndex}>
