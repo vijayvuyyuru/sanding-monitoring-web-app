@@ -11,6 +11,7 @@ const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
 const locationIdRegex = /main\.([^.]+)\.viam\.cloud/;
 const machineNameRegex = /\/machine\/(.+?)-main\./;
+const BATCH_SIZE = 100;
 
 function App() {
   const [passSummaries, setPassSummaries] = useState<Pass[]>([]);
@@ -23,6 +24,8 @@ function App() {
   const [partId, setPartId] = useState<string>('');
   const [passNotes, setPassNotes] = useState<Map<string, PassNote[]>>(new Map());
   const [fetchingNotes, setFetchingNotes] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 7; // 7 days per page
 
   const machineNameMatch = window.location.pathname.match(machineNameRegex);
   const machineName = machineNameMatch ? machineNameMatch[1] : null;
@@ -58,7 +61,7 @@ function App() {
 
     let paginationToken: string | undefined = undefined;
 
-    // Process files in batches using a while loop to eliminate code duplication
+    // Process files in batches
     while (true) {
       let binaryData = await viamClient.dataClient.binaryDataByFilter(
         filter,
@@ -70,7 +73,6 @@ function App() {
         false
       );
 
-      // Process files once and build files, videoFiles, and images lists
       const newFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newVideoFiles = new Map<string, VIAM.dataApi.BinaryData>();
       const newImages = new Map<string, VIAM.dataApi.BinaryData>();
@@ -100,7 +102,6 @@ function App() {
         setFetchTimestamp(binaryData.data[binaryData.data.length - 1].metadata!.timeRequested!.toDate());
       }
 
-      // Update both states with the processed files
       setFiles(prevFiles => {
         const updatedFiles = new Map(prevFiles);
         newFiles.forEach((file, id) => {
@@ -163,36 +164,82 @@ function App() {
       console.log("machineId:", machineId);
       console.log("orgID:", orgID);
 
-      const mqlQuery: Record<string, JsonValue>[] = [
-        {
-          $match: {
-            organization_id: orgID,
-            location_id: locationId,
-            component_name: sandingSummaryName,
-            robot_id: machineId,
-            component_type: sandingSummaryComponentType
-          },
-        },
-        {
-          $sort: {
-            time_received: -1,
-          },
-        },
-        {
-          $limit: 100
-        }
-      ];
+      // batched fetching of pass summaries
+      let allTabularData: any[] = [];
+      let hasMoreData = true;
+      let oldestTimeReceived: string | null = null;
 
-      const tabularData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
-      console.log("Tabular Data:", tabularData);
+      while (hasMoreData) {
+        const baseQuery: Record<string, JsonValue>[] = [
+          {
+            $match: {
+              organization_id: orgID,
+              location_id: locationId,
+              component_name: sandingSummaryName,
+              robot_id: machineId,
+              component_type: sandingSummaryComponentType
+            }
+          },
+          {
+            $sort: {
+              time_received: -1
+            }
+          }
+        ];
+
+        // Add time filter for pagination if we have a previous batch
+        if (oldestTimeReceived) {
+          (baseQuery[0].$match as Record<string, JsonValue>).time_received = {
+            $lt: oldestTimeReceived
+          };
+        }
+
+        // Add limit
+        const mqlQuery = [
+          ...baseQuery,
+          {
+            $limit: BATCH_SIZE
+          }
+        ];
+
+        console.log(`Fetching batch of sanding summaries${oldestTimeReceived ? ' older than ' + new Date(oldestTimeReceived).toISOString() : ''}`);
+        const batchData = await viamClient.dataClient.tabularDataByMQL(orgID, mqlQuery);
+        console.log(`Received ${batchData.length} records in batch`);
+
+        // If we have data, process it
+        if (batchData.length > 0) {
+          // Get the oldest time_received from this batch for next query
+          const lastItem = batchData[batchData.length - 1];
+
+          if ('time_received' in lastItem) {
+            oldestTimeReceived = lastItem.time_received as string;
+          } else {
+            console.error("Cannot find 'time_received' field for pagination in tabular data response:", lastItem);
+            hasMoreData = false;
+          }
+
+          allTabularData = [...allTabularData, ...batchData];
+
+          // If we have fewer records than the batch size, we're done
+          if (batchData.length < BATCH_SIZE) {
+            hasMoreData = false;
+          }
+        } else {
+          // No more data
+          hasMoreData = false;
+        }
+      }
+
+      console.log(`Total tabular data records fetched: ${allTabularData.length}`);
 
       let extractedPartId = '';
-      if (tabularData && tabularData.length > 0) {
-        extractedPartId = (tabularData[0] as any).part_id || '';
+      if (allTabularData && allTabularData.length > 0) {
+        extractedPartId = (allTabularData[0] as any).part_id || '';
         setPartId(extractedPartId);
       }
 
-      const processedPasses: Pass[] = tabularData.map((item: any) => {
+      // Process tabular data into pass summaries
+      const processedPasses: Pass[] = allTabularData.map((item: any) => {
         const pass = item.data!.readings!;
         const buildInfo = pass.build_info ? pass.build_info : {};
 
@@ -250,11 +297,40 @@ function App() {
     }
   }, [passSummaries, viamClient]);
 
+  // After fetching all pass summaries, add grouping by day logic
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Group passes by day
+  const groupedByDay = passSummaries.reduce((acc: Record<string, Pass[]>, pass) => {
+    // Use a consistent date key (YYYY-MM-DD)
+    const dateKey = pass.start.toISOString().split('T')[0];
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(pass);
+    return acc;
+  }, {});
+
+  // Get sorted day keys (dates)
+  const sortedDays = Object.keys(groupedByDay).sort().reverse(); // Most recent first
+
+  // Paginate by days
+  const indexOfLastDay = currentPage * itemsPerPage;
+  const indexOfFirstDay = indexOfLastDay - itemsPerPage;
+  const currentDays = sortedDays.slice(indexOfFirstDay, indexOfLastDay);
+
+  // Get all passes for the current days
+  const currentPassSummaries = currentDays.flatMap(day => groupedByDay[day]);
+
+  const totalPages = Math.ceil(sortedDays.length / itemsPerPage);
+
   return (
     <AppInterface
       machineName={machineName}
       viamClient={viamClient!}
-      passSummaries={passSummaries}
+      passSummaries={currentPassSummaries}
       files={files}
       videoFiles={videoFiles}
       imageFiles={imageFiles}
@@ -266,6 +342,16 @@ function App() {
       passNotes={passNotes}
       onNotesUpdate={setPassNotes}
       fetchingNotes={fetchingNotes}
+      pagination={{
+        currentPage,
+        totalPages,
+        itemsPerPage,
+        totalItems: sortedDays.length,
+        totalEntries: passSummaries.length,
+        onPageChange: handlePageChange,
+        currentDaysDisplayed: currentDays.length,
+        daysPerPage: true
+      }}
     />
   );
 }

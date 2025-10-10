@@ -33,8 +33,8 @@ export class VideoPollingManager {
   checkVideoAvailability(step: Step): boolean {
     return Array.from(this.currentVideos.values()).some(file => {
       if (!file.metadata || !file.metadata.fileName) return false;
-      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) && 
-                           file.metadata.fileName.includes(step.name);
+      const isMatchingStep = file.metadata.fileName.includes(step.pass_id) &&
+        file.metadata.fileName.includes(step.name);
       return isMatchingStep;
     });
   }
@@ -46,7 +46,7 @@ export class VideoPollingManager {
 
   addRequest(step: Step, onComplete: () => void): string {
     const requestId = `${step.pass_id}-${step.name}`;
-    
+
     if (this.activeRequests.has(requestId)) {
       // Request already exists, just update the callback
       const existing = this.activeRequests.get(requestId)!;
@@ -63,7 +63,7 @@ export class VideoPollingManager {
     };
 
     this.activeRequests.set(requestId, request);
-    
+
     // Start polling if not already active
     if (!this.isPolling) {
       this.startPolling();
@@ -74,7 +74,7 @@ export class VideoPollingManager {
 
   removeRequest(requestId: string) {
     this.activeRequests.delete(requestId);
-    
+
     // Stop polling if no more requests
     if (this.activeRequests.size === 0) {
       this.stopPolling();
@@ -83,10 +83,10 @@ export class VideoPollingManager {
 
   private startPolling() {
     if (this.isPolling || !this.fetchDataFn) return;
-    
+
     this.isPolling = true;
     const pollInterval = 5000; // Poll every 5 seconds
-    
+
     this.pollInterval = setInterval(async () => {
       if (this.activeRequests.size === 0) {
         this.stopPolling();
@@ -98,11 +98,11 @@ export class VideoPollingManager {
         if (this.fetchDataFn) {
           await this.fetchDataFn();
         }
-        
+
         // Check each request to see if videos are available
         const currentTime = Date.now();
         const maxPollingTime = 60000; // 60 seconds
-        
+
         for (const [requestId, request] of this.activeRequests.entries()) {
           // Check timeout
           if (currentTime - request.startTime > maxPollingTime) {
@@ -115,11 +115,11 @@ export class VideoPollingManager {
           // Check if videos are available for this step
           const step: Step = {
             name: request.stepName,
-            pass_id: request.passId,  
+            pass_id: request.passId,
             start: new Date(),
             end: new Date()
           };
-          
+
           if (this.checkVideoAvailability(step)) {
             console.log(`Videos found for ${requestId}, stopping polling for this request`);
             request.onComplete();
@@ -156,7 +156,7 @@ export class VideoPollingManager {
     const completedRequests: string[] = [];
     console.log(`Checking ${this.activeRequests.size} active requests for video availability`);
     console.log(`Current videos count: ${this.currentVideos.size}`);
-    
+
     for (const [requestId, request] of this.activeRequests.entries()) {
       const step: Step = {
         name: request.stepName,
@@ -164,9 +164,9 @@ export class VideoPollingManager {
         start: new Date(),
         end: new Date()
       };
-      
+
       console.log(`Checking request ${requestId} for step ${request.stepName} with pass_id ${request.passId}`);
-      
+
       if (this.checkVideoAvailability(step)) {
         console.log(`Videos found for ${requestId}, marking request as complete`);
         request.onComplete();
@@ -175,20 +175,20 @@ export class VideoPollingManager {
         console.log(`No videos found yet for ${requestId}`);
       }
     }
-    
+
     // Remove completed requests
     completedRequests.forEach(requestId => {
       this.activeRequests.delete(requestId);
     });
-    
+
     console.log(`Completed ${completedRequests.length} requests, ${this.activeRequests.size} remaining`);
-    
+
     // Stop polling if no more active requests
     if (this.activeRequests.size === 0) {
       console.log("No more active requests, stopping polling");
       this.stopPolling();
     }
-    
+
     return completedRequests.length > 0;
   }
 
@@ -198,5 +198,18 @@ export class VideoPollingManager {
       console.log("Forcing video availability check after data update");
       this.checkAllRequestsForVideos();
     }
+  }
+
+  // Add cleanup method
+  cleanupAll(): void {
+    // Stop the main polling interval
+    if (this.pollInterval) {
+      clearInterval(this.pollInterval);
+      this.pollInterval = null;
+    }
+
+    // Clear all active requests
+    this.activeRequests.clear();
+    this.isPolling = false;
   }
 }

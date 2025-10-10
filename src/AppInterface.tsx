@@ -28,6 +28,16 @@ interface AppViewProps {
   passNotes: Map<string, PassNote[]>;
   onNotesUpdate: React.Dispatch<React.SetStateAction<Map<string, PassNote[]>>>;
   fetchingNotes: boolean;
+  pagination?: {
+    currentPage: number;
+    totalPages: number;
+    itemsPerPage: number;
+    totalItems: number;
+    onPageChange: (page: number) => void;
+    daysPerPage?: boolean;
+    currentDaysDisplayed?: number;
+    totalEntries?: number;
+  };
 }
 
 export interface Step {
@@ -66,6 +76,7 @@ const AppInterface: React.FC<AppViewProps> = ({
   passNotes,
   onNotesUpdate,
   fetchingNotes,
+  pagination,
 }) => {
   const [activeRoute, setActiveRoute] = useState('live');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -175,6 +186,16 @@ const AppInterface: React.FC<AppViewProps> = ({
 
   // Helper function to get before/after images for a pass
   const passImages = (pass: Pass) => getBeforeAfterImages(pass, imageFiles, selectedCamera);
+
+  // Compute total execution time (ms) for a pass by summing 'executing' steps
+  const getExecutionTimeMs = (pass: Pass): number => {
+    if (!pass.steps || pass.steps.length === 0) return 0;
+    return pass.steps.reduce((sum, step) => {
+      return step.name.toLowerCase() === 'executing'
+        ? sum + (step.end.getTime() - step.start.getTime())
+        : sum;
+    }, 0);
+  };
 
   const activeTabStyle = "bg-blue-600 text-white";
   const inactiveTabStyle = "bg-gray-200 text-gray-700 hover:bg-gray-300";
@@ -409,9 +430,10 @@ const AppInterface: React.FC<AppViewProps> = ({
                     <th>Day</th>
                     <th>Pass ID</th>
                     <th>Status</th>
-                    <th>Start Time</th>
-                    <th>End Time</th>
-                    <th>Duration</th>
+                    <th>Start time</th>
+                    <th>End time</th>
+                    <th>Total duration</th>
+                    <th>Execution time</th>
                     <th>Steps</th>
                     <th>Error</th>
                   </tr>
@@ -430,7 +452,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                     return (
                       <React.Fragment key={dateKey}>
                         <tr className="day-summary-header">
-                          <td colSpan={9}>
+                          <td colSpan={10}>
                             <div className="day-summary-content">
                               <div className="day-summary-date">{formattedDate}</div>
                               <div className="day-summary-stats">
@@ -462,6 +484,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                           const globalIndex = `${dayIndex}-${passIndex}`;
                           const passId = pass.pass_id;
                           const passNotesData = passNotes.get(passId) || [];
+                          const execMs = getExecutionTimeMs(pass);
 
                           return (
                             <React.Fragment key={pass.pass_id || globalIndex}>
@@ -515,6 +538,9 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 <td className="text-zinc-700">{pass.end.toLocaleTimeString()}</td>
                                 <td className="text-zinc-700">{formatDurationToMinutesSeconds(pass.start, pass.end)}</td>
                                 <td className="text-zinc-700">
+                                  {formatDurationToMinutesSeconds(new Date(0), new Date(execMs))}
+                                </td>
+                                <td className="text-zinc-700">
                                   {pass.steps ? `${pass.steps.length} steps` : '—'}
                                 </td>
                                 <td className="text-zinc-700">
@@ -528,7 +554,7 @@ const AppInterface: React.FC<AppViewProps> = ({
                                 </td>
                               </tr>{expandedRows.has(globalIndex) && (
                                 <tr className="expanded-content">
-                                  <td colSpan={9}>
+                                  <td colSpan={10}>
                                     <div className="pass-details">
                                       {/* Build information section moved inside expanded row */}
                                       {pass.build_info && (
@@ -968,6 +994,73 @@ const AppInterface: React.FC<AppViewProps> = ({
           </section>
         )}
       </main>
+
+      {/* Add pagination controls as sticky footer - only show when data is loaded */}
+      {pagination && passSummaries.length > 0 && (
+        <div className="pagination-container">
+          <div className="pagination-controls" style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            gap: '4px'
+          }}>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.onPageChange(1)}
+            >
+              &laquo; First
+            </button>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === 1}
+              onClick={() => pagination.onPageChange(pagination.currentPage - 1)}
+            >
+              &lt; Prev
+            </button>
+
+            {/* Page numbers */}
+            {(() => {
+              const pages = [];
+              const maxVisible = 5; // Max visible page numbers
+              let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
+              let endPage = Math.min(pagination.totalPages, startPage + maxVisible - 1);
+
+              if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+              }
+
+              for (let i = startPage; i <= endPage; i++) {
+                pages.push(
+                  <button
+                    key={i}
+                    className={`pagination-button ${pagination.currentPage === i ? 'active' : ''}`}
+                    onClick={() => pagination.onPageChange(i)}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              return pages;
+            })()}
+
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.onPageChange(pagination.currentPage + 1)}
+            >
+              Next &gt;
+            </button>
+            <button
+              className="pagination-button"
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => pagination.onPageChange(pagination.totalPages)}
+            >
+              Last &raquo;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Add the modal at the end */}
       {beforeAfterModal && (

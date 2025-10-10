@@ -289,22 +289,22 @@ button:focus {
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding: 2rem 0.5rem;
+  padding: 2rem 0.5rem 0;
   min-width: 0;
 }
 
-@media (min-width: 480px) {
+/* @media (min-width: 480px) {
   .mainContent {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
-}
+} */
 
 @media (min-width: 640px) {
   .mainContent {
     padding-left: 1rem;
     padding-right: 1rem;
-    width: 95%;
+    width: 100%;
   }
 }
 
@@ -312,13 +312,13 @@ button:focus {
   .mainContent {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
-    width: 95%;
+    width: 100%;
   }
 }
 
 @media (min-width: 1024px) {
   .mainContent {
-    width: 95%;
+    width: 100%;
     padding-left: 2rem;
     padding-right: 2rem;
     max-width: none;
@@ -327,13 +327,13 @@ button:focus {
 
 @media (min-width: 1280px) {
   .mainContent {
-    max-width: 1440px;
+    max-width: none;
   }
 }
 
 @media (min-width: 1536px) {
   .mainContent {
-    max-width: 1440px;
+    max-width: 1728px;
   }
 }
 
@@ -355,9 +355,8 @@ button:focus {
 
 /* Viam Table Styles */
 .viam-table-container {
-  border-radius: 8px;
+  border-radius: 2px;
   border: 1px solid #e4e4e7;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px 0 rgb(0 0 0 / 0.06);
   overflow: hidden;
   overflow-x: auto;
   max-width: 100%;
@@ -371,12 +370,12 @@ button:focus {
 }
 
 .viam-table thead {
-  background-color: #fafafa;
+  background-color: #fcfcfc;
   border-bottom: 1px solid #e4e4e7;
 }
 
 .viam-table th {
-  padding: 12px 16px;
+  padding: 8px 16px;
   text-align: left;
   font-weight: 500;
   font-size: 14px;
@@ -1518,18 +1517,122 @@ button:focus {
 .expanded-content:last-of-type {
   margin-bottom: 8px;
 }
+
+.pagination {
+  margin: 20px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* Ensure proper spacing after each day group */
-.expandable-row:last-of-type,
-.expanded-content:last-of-type {
-  margin-bottom: 8px;
-}
-  border-top: none;
+.pagination-controls {
+  display: flex;
+  gap: 5px;
 }
 
-/* Ensure proper spacing after each day group */
-.expandable-row:last-of-type,
-.expanded-content:last-of-type {
-  margin-bottom: 8px;
+.pagination-btn {
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background: #f8f8f8;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-btn.active {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.pagination-info {
+  color: #666;
+}
+
+.pagination-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  margin: 1rem 0 3rem;
+}
+
+.pagination-info {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  background: white;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-button.active {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.pagination-button.active:hover {
+  background-color: #2563eb;
+}
+
+.items-per-page {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.items-per-page label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.items-per-page select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+  background-color: white;
+}
+
+@media (min-width: 768px) {
+  .pagination-container {
+    flex-wrap: nowrap;
+  }
+  
+  .pagination-info,
+  .items-per-page {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
 }
