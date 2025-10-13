@@ -132,7 +132,7 @@ const AppInterface: React.FC<AppViewProps> = ({
         pass_id: passId,
         note_text: noteText,
         created_at: new Date().toISOString(),
-        created_by: "web-app"
+        created_by: "summary-web-app"
       };
 
       // Update notes in state

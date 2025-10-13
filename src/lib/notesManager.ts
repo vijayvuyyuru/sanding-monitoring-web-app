@@ -43,7 +43,7 @@ export class NotesManager {
       pass_id: passId,
       note_text: noteText,
       created_at: now.toISOString(),
-      created_by: "web-app"
+      created_by: "summary-web-app"
     };
 
     const noteJson = JSON.stringify(noteData);
