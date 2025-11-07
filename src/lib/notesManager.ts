@@ -76,7 +76,7 @@ export class NotesManager {
 
     // Add all current notes
     notes.forEach((note, passId) => {
-      currentMetadata[`note-${passId}`] = JSON.stringify(note);
+      currentMetadata[`${PREFIX}${passId}`] = JSON.stringify(note);
     });
 
     // Save merged metadata (preserves other apps' keys)
