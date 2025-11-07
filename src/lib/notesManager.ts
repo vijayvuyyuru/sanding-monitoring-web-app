@@ -60,16 +60,27 @@ export class NotesManager {
 
   /**
    * Save all notes to metadata as flat key-value pairs
+   * IMPORTANT: Merges with existing metadata to preserve other apps' data
    */
   private async saveNotesMetadata(notes: Map<string, PassNote>): Promise<void> {
-    // Build a flat metadata object with all notes
-    const metadata: Record<string, string> = {};
+    // Read current metadata to preserve non-note keys
+    const currentMetadata = await this.viamClient.appClient.getRobotMetadata(this.machineId);
 
-    notes.forEach((note, passId) => {
-      metadata[`note-${passId}`] = JSON.stringify(note);
+    // Remove old note keys (cleanup any deleted notes)
+    const PREFIX = 'note-';
+    Object.keys(currentMetadata).forEach(key => {
+      if (key.startsWith(PREFIX)) {
+        delete currentMetadata[key];
+      }
     });
 
-    await this.viamClient.appClient.updateRobotMetadata(this.machineId, metadata);
+    // Add all current notes
+    notes.forEach((note, passId) => {
+      currentMetadata[`note-${passId}`] = JSON.stringify(note);
+    });
+
+    // Save merged metadata (preserves other apps' keys)
+    await this.viamClient.appClient.updateRobotMetadata(this.machineId, currentMetadata);
 
     // Update cache
     this.cachedNotes = notes;
