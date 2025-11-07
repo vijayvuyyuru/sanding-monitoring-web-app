@@ -23,12 +23,16 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
 
   // Fetch available resources when robotClient changes
   useEffect(() => {
-    const fetchResources = async () => {
-      if (!robotClient) {
-        setResources([]);
-        return;
-      }
+    // Don't fetch if no robot client
+    if (!robotClient) {
+      setResources([]);
+      setSelectedResource('');
+      setError(null);
+      onVideoStoreSelected(null);
+      return;
+    }
 
+    const fetchResources = async () => {
       setIsLoading(true);
       setError(null);
 
@@ -77,6 +81,17 @@ const VideoStoreSelector: React.FC<VideoStoreSelectorProps> = ({
       onVideoStoreSelected(null);
     }
   };
+
+  // Conditional rendering AFTER all hooks
+  if (!robotClient) {
+    return (
+      <div className="video-store-selector">
+        <div className="video-store-selector-message info">
+          Robot not connected
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="video-store-selector">

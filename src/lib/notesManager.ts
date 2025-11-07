@@ -169,13 +169,6 @@ export class NotesManager {
     console.log(`Found notes for ${result.size} passes`);
     return result;
   }
-
-  /**
-   * Clear cache - useful after clearing metadata
-   */
-  clearCache(): void {
-    this.cachedNotes = null;
-  }
 }
 
 export function createNotesManager(viamClient: VIAM.ViamClient, machineId: string): NotesManager {
