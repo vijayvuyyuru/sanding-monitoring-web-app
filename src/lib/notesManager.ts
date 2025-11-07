@@ -99,9 +99,17 @@ export class NotesManager {
 
   /**
    * Save a note for a specific pass (replaces any existing note)
+   * If noteText is empty, deletes the note instead
    */
   async savePassNote(passId: string, noteText: string): Promise<void> {
     console.log(`Saving note for pass ${passId}`);
+
+    // If note text is empty, delete the note instead
+    if (!noteText || noteText.trim() === '') {
+      console.log('Note text is empty - deleting note instead');
+      await this.deleteAllNotesForPass(passId);
+      return;
+    }
 
     const notes = await this.getNotesMetadata();
 
