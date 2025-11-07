@@ -261,24 +261,16 @@ function App() {
 
       setPassSummaries(processedPasses);
 
-      // Fetch all notes for all passes incrementally
+      // Fetch all notes for all passes
       if (processedPasses.length > 0 && extractedPartId) {
         const passIds = processedPasses.map(pass => pass.pass_id).filter(Boolean);
 
         setFetchingNotes(true);
-        setPassNotes(new Map()); // Clear old notes before fetching
 
         const notesManager = createNotesManager(viamClient, machineId);
-        await notesManager.fetchNotesForPasses(passIds, (batch) => {
-          setPassNotes(prevNotes => {
-            const newNotes = new Map(prevNotes);
-            batch.forEach((notes, passId) => {
-              const existing = newNotes.get(passId) || [];
-              newNotes.set(passId, [...existing, ...notes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
-            });
-            return newNotes;
-          });
-        });
+        const fetchedNotes = await notesManager.fetchNotesForPasses(passIds);
+        
+        setPassNotes(fetchedNotes);
         setFetchingNotes(false);
       }
 

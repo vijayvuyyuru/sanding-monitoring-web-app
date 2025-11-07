@@ -148,12 +148,10 @@ export class NotesManager {
   /**
    * Fetch notes for multiple passes
    * @param passIds - An array of pass IDs to fetch notes for
-   * @param onBatchReceived - Optional callback (kept for API compatibility but not used since we fetch all at once)
    * @returns A Promise that resolves to a map of all fetched notes
    */
   async fetchNotesForPasses(
-    passIds: string[],
-    onBatchReceived?: (batch: Map<string, PassNote[]>) => void
+    passIds: string[]
   ): Promise<Map<string, PassNote[]>> {
     console.log(`Fetching notes for ${passIds.length} passes`);
 
@@ -167,11 +165,6 @@ export class NotesManager {
         result.set(passId, [note]);
       }
     });
-
-    // Call the callback if provided (for compatibility with existing code)
-    if (onBatchReceived && result.size > 0) {
-      onBatchReceived(result);
-    }
 
     console.log(`Found notes for ${result.size} passes`);
     return result;
