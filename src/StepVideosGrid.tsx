@@ -43,7 +43,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
@@ -51,7 +51,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
 
   // Update current videos in the polling manager and check for completed requests
   pollingManager.setFetchData(() => fetchVideos(step.start, false));
-  
+
   // Update polling manager whenever videoFiles changes
   useEffect(() => {
     pollingManager.updateCurrentVideos(videoFiles);
@@ -82,22 +82,22 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
 
   const handleGenerateVideo = async () => {
     if (!videoStoreClient) {
-        console.error("No video store client available");
-        return;
+      console.error("No video store client available");
+      return;
     }
 
 
     setIsPolling(true);
-    
+
     try {
       // Start video generation
       await generateVideo(videoStoreClient, step);
-      
+
       // Add to polling manager
       requestIdRef.current = pollingManager.addRequest(step, () => {
         setIsPolling(false);
       });
-      
+
     } catch (error) {
       console.error("Error generating video:", error);
       setIsPolling(false);
@@ -114,7 +114,7 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
         padding: '20px',
         color: '#6b7280'
       }}>
-        <div 
+        <div
           style={{
             width: '24px',
             height: '24px',
@@ -133,74 +133,72 @@ const StepVideosGrid: React.FC<StepVideosGridProps> = ({
   if (stepVideos.length === 0) {
     return (
       <>
-      <div className="generate-video" style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        marginTop: '18px'
-      }}>
-        <button
-          className="generate-video-button"
-          onClick={() => handleGenerateVideo()}
-          disabled={videoStoreClient == null || isPolling}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: videoStoreClient && !isPolling ? '#3b82f6' : '#9ca3af',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: videoStoreClient && !isPolling ? 'pointer' : 'not-allowed',
-            fontSize: '14px',
-            transition: 'background-color 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            minWidth: '140px',
-            justifyContent: 'center'
-          }}
-          onMouseEnter={(e) => {
-            if (videoStoreClient && !isPolling) {
-              e.currentTarget.style.backgroundColor = '#2563eb';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (videoStoreClient && !isPolling) {
-              e.currentTarget.style.backgroundColor = '#3b82f6';
-            }
-          }}
-        >
-          {isPolling ? (
-            <>
-              <div 
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  border: '2px solid #ffffff',
-                  borderTop: '2px solid transparent',
-                  borderRadius: '50%',
-                  animation: 'spin 1s linear infinite'
-                }}
-              />
-              Generating...
-            </>
-          ) : (
-            'Generate Video'
-          )}
-        </button>
-        {isPolling && (
-          <div 
+        <div className="generate-video" style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: '18px'
+        }}>
+          <button
+            className="generate-video-button"
+            onClick={() => handleGenerateVideo()}
+            disabled={videoStoreClient == null || isPolling}
             style={{
-              marginTop: '8px',
+              padding: '6px 8px',
               fontSize: '12px',
-              color: '#6b7280',
-              textAlign: 'center'
+              backgroundColor: (videoStoreClient == null || isPolling) ? '#9ca3af' : '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: (videoStoreClient == null || isPolling) ? 'not-allowed' : 'pointer',
+              transition: 'background-color 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+            onMouseEnter={(e) => {
+              if (videoStoreClient && !isPolling) {
+                e.currentTarget.style.backgroundColor = '#2563eb';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (videoStoreClient && !isPolling) {
+                e.currentTarget.style.backgroundColor = '#3b82f6';
+              }
             }}
           >
-            This can take up to a minute.
-          </div>
-        )}
-      </div>
+            {isPolling ? (
+              <>
+                <div
+                  style={{
+                    width: '12px',
+                    height: '12px',
+                    border: '2px solid #ffffff',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}
+                />
+                Generating...
+              </>
+            ) : (
+              'Generate Video'
+            )}
+          </button>
+          {isPolling && (
+            <div
+              style={{
+                marginTop: '8px',
+                fontSize: '12px',
+                color: '#6b7280',
+                textAlign: 'center'
+              }}
+            >
+              This can take up to a minute.
+            </div>
+          )}
+        </div>
       </>
     );
   }

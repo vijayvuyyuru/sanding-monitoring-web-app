@@ -38,6 +38,10 @@ header {
   display: flex;
 }
 
+.grow {
+  flex-grow: 1;
+}
+
 .flex-row {
   flex-direction: row;
 }
@@ -582,6 +586,10 @@ button:focus {
   gap: 1rem;
 }
 
+.pass-notes-section h4 {
+  margin-bottom: 11px;
+}
+
 .pass-duration {
   font-size: 14px;
   color: #6b7280;
@@ -591,6 +599,7 @@ button:focus {
 
 .pass-files-section {
   margin: 0;
+  padding-right: 10px;
 }
 
 .pass-files-section h4 {

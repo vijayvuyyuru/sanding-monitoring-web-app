@@ -5,7 +5,7 @@ export const createVideoStreamFromBase64 = (base64Data: Uint8Array): string | nu
   try {
     console.log("Creating video stream from base64...");
 
-    const blob = new Blob([base64Data], { type: 'video/mp4' });
+    const blob = new Blob([new Uint8Array(base64Data)], { type: 'video/mp4' });
     const url = URL.createObjectURL(blob);
 
     console.log("Video stream URL created successfully");
@@ -29,6 +29,20 @@ export const formatDuration = (durationMs?: number, start?: string, end?: string
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+/**
+ * Formats the time difference between two timestamps into a short string (e.g., "30s", "5m").
+ * @param time1 - The first time in milliseconds.
+ * @param time2 - The second time in milliseconds.
+ * @returns A string representing the time difference.
+ */
+export const formatTimeDifference = (time1: number, time2: number): string => {
+  const minutes = Math.abs(time1 - time2) / 60000;
+  if (minutes < 1) {
+    return `${Math.round(minutes * 60)}s`;
+  }
+  return `${Math.round(minutes)}m`;
 };
 
 export const formatDurationToMinutesSeconds = (start: Date, end: Date): string => {
@@ -66,8 +80,8 @@ const formatDateToVideoStoreFormat = (date: Date): string => {
   const hours = String(date.getUTCHours()).padStart(2, '0');
   const minutes = String(date.getUTCMinutes()).padStart(2, '0');
   const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-  // Z means UTC
-  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}Z`;
+
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
 };
 
 // 10 seconds in milliseconds

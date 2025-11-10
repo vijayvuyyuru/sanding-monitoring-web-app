@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import { JsonValue } from '@viamrobotics/sdk';
 import { Pass } from './AppInterface';
 import { Timestamp } from '@bufbuild/protobuf';
+import { PassNote, createNotesManager } from './lib/notesManager';
 
 const sandingSummaryName = "sanding-summary";
 const sandingSummaryComponentType = "rdk:component:sensor";
@@ -20,6 +21,9 @@ function App() {
   const [viamClient, setViamClient] = useState<VIAM.ViamClient | null>(null);
   const [robotClient, setRobotClient] = useState<VIAM.RobotClient | null>(null);
   const [fetchTimestamp, setFetchTimestamp] = useState<Date | null>(null);
+  const [partId, setPartId] = useState<string>('');
+  const [passNotes, setPassNotes] = useState<Map<string, PassNote[]>>(new Map());
+  const [fetchingNotes, setFetchingNotes] = useState<boolean>(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 7; // 7 days per page
 
@@ -228,6 +232,12 @@ function App() {
 
       console.log(`Total tabular data records fetched: ${allTabularData.length}`);
 
+      let extractedPartId = '';
+      if (allTabularData && allTabularData.length > 0) {
+        extractedPartId = (allTabularData[0] as any).part_id || '';
+        setPartId(extractedPartId);
+      }
+
       // Process tabular data into pass summaries
       const processedPasses: Pass[] = allTabularData.map((item: any) => {
         const pass = item.data!.readings!;
@@ -248,7 +258,22 @@ function App() {
           build_info: buildInfo
         };
       });
+
       setPassSummaries(processedPasses);
+
+      // Fetch all notes for all passes
+      if (processedPasses.length > 0 && extractedPartId) {
+        const passIds = processedPasses.map(pass => pass.pass_id).filter(Boolean);
+
+        setFetchingNotes(true);
+
+        const notesManager = createNotesManager(viamClient, machineId);
+        const fetchedNotes = await notesManager.fetchNotesForPasses(passIds);
+        
+        setPassNotes(fetchedNotes);
+        setFetchingNotes(false);
+      }
+
       console.log("Fetching data end");
     };
 
@@ -304,6 +329,11 @@ function App() {
       robotClient={robotClient}
       fetchVideos={fetchFiles}
       fetchTimestamp={fetchTimestamp}
+      machineId={machineId}
+      partId={partId}
+      passNotes={passNotes}
+      onNotesUpdate={setPassNotes}
+      fetchingNotes={fetchingNotes}
       pagination={{
         currentPage,
         totalPages,
