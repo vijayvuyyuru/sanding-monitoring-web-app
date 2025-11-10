@@ -125,7 +125,7 @@ const AppInterface: React.FC<AppViewProps> = ({
 
     try {
       const notesManager = createNotesManager(viamClient, machineId);
-      await notesManager.savePassNote(passId, noteText, partId);
+      await notesManager.savePassNote(passId, noteText);
 
       // Create new note object
       const newNote: PassNote = {
@@ -138,8 +138,7 @@ const AppInterface: React.FC<AppViewProps> = ({
       // Update notes in state
       onNotesUpdate(prevNotes => {
         const newNotesMap = new Map(prevNotes);
-        const existingNotes = newNotesMap.get(passId) || [];
-        const updatedNotes = [newNote, ...existingNotes];
+        const updatedNotes = [newNote];
         newNotesMap.set(passId, updatedNotes);
         return newNotesMap;
       });
