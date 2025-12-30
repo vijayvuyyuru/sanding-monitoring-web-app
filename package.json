@@ -1,6 +1,6 @@
 {
   "name": "sanding-monitoring-web-app",
-  "version": "1.0.50",
+  "version": "1.1.0",
   "description": "A basic React app with minimal dependencies",
   "type": "module",
   "scripts": {

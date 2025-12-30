@@ -1,5 +1,11 @@
 # sanding-monitoring-web-app
 
+## 1.1.0
+
+### Minor Changes
+
+- babec0f: Add selected_zones and selected_intensity columns to pass history table
+
 ## 1.0.50
 
 ### Patch Changes
